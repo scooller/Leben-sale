@@ -27,6 +27,11 @@ class PlantResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'Plantas';
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PlantForm::configure($schema);

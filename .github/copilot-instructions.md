@@ -1,5 +1,8 @@
 Instrucciones para Copilot – Proyecto Laravel 12 + Filament + Salesforce + React
 
+LEE el archivo AGENT.md en la raiz para entender el contexto general del proyecto y las expectativas de tu rol como asistente de desarrollo.
+tambien lee el archivo .github/skills para entender tus habilidades y limitaciones técnicas.
+
 1. Reglas generales del proyecto
 El proyecto es backend-first: primero se implementa el backoffice en Laravel 12 con Filament 5, luego se define y construye el frontend en React (Vite).
 Siempre usar las últimas versiones estables de los paquetes, respetando compatibilidad con Laravel 12.

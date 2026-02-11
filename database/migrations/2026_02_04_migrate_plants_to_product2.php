@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('plants', function (Blueprint $table) {
             $table->id();
             $table->string('salesforce_product_id')->unique();
+            $table->string('salesforce_proyecto_id')->nullable();
             $table->string('name');
             $table->string('product_code');
             $table->string('orientacion')->nullable();
@@ -34,9 +35,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_synced_at')->nullable();
             $table->timestamps();
-            
+
             $table->index('name');
             $table->index(['programa', 'piso']);
+            $table->index('salesforce_proyecto_id');
             $table->index('is_active');
         });
     }
