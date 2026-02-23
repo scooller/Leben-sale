@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
 
+const DEFAULT_PLANT_IMAGE = 'https://sale.ileben.cl/wp-content/uploads/2022/11/portada_bold_terraza.jpg';
+
 /**
  * Componente para el grid de plantas con tarjetas, skeleton, diálogo de detalles y paginación
  */
@@ -15,6 +17,36 @@ function PlantsGrid({
 }) {
   const [selectedPlant, setSelectedPlant] = useState(null);
   const dialogRef = useRef(null);
+
+  const buildPaginationItems = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const items = [1];
+    const left = Math.max(2, page - 1);
+    const right = Math.min(totalPages - 1, page + 1);
+
+    if (left > 2) {
+      items.push('left-ellipsis');
+    }
+
+    for (let current = left; current <= right; current += 1) {
+      items.push(current);
+    }
+
+    if (right < totalPages - 1) {
+      items.push('right-ellipsis');
+    }
+
+    items.push(totalPages);
+
+    return items;
+  };
+
+  const paginationItems = buildPaginationItems();
+  const showingFrom = totalPlants > 0 ? (page - 1) * 12 + 1 : 0;
+  const showingTo = Math.min((page - 1) * 12 + plants.length, totalPlants || 0);
 
   const openPlantDetail = (plant) => {
     setSelectedPlant(plant);
@@ -35,15 +67,51 @@ function PlantsGrid({
   
   // Skeleton de carga
   if (loading) {
+
     return (
-      <div className="plants-grid">
+      <div className="plants-grid wa-grid">
         {[...Array(6)].map((_, i) => (
-          <wa-card key={i} className="skeleton-card">
-            <wa-skeleton effect="pulse" style={{ height: '200px', marginBottom: '1rem' }}></wa-skeleton>
-            <wa-skeleton effect="pulse" style={{ height: '40px', marginBottom: '0.5rem' }}></wa-skeleton>
-            <wa-skeleton effect="pulse" style={{ height: '80px', marginBottom: '0.5rem' }}></wa-skeleton>
-            <wa-skeleton effect="pulse" style={{ height: '30px', marginBottom: '0.5rem' }}></wa-skeleton>
-            <wa-skeleton effect="pulse" style={{ height: '100px' }}></wa-skeleton>
+          <wa-card key={i} className="skeleton-card" appearance="filled">
+            <wa-skeleton slot="media" effect="pulse" style={{ height: '220px' }}></wa-skeleton>
+
+            <div slot="header" className="plant-header-wrapper">
+              <div className="wa-stack wa-gap-xs" style={{ width: '100%' }}>
+                <wa-skeleton effect="pulse" style={{ height: '18px', width: '65%' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '18px', width: '45%' }}></wa-skeleton>
+              </div>
+            </div>
+
+            <div slot="header-actions">
+              <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
+            </div>
+
+            <div className="plant-body">
+              <div className="wa-split wa-align-items-center">
+                <wa-skeleton effect="pulse" style={{ height: '16px', width: '35%' }}></wa-skeleton>
+                <div className="wa-cluster wa-gap-xs">
+                  <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
+                </div>
+              </div>
+            </div>
+
+            <div slot="footer" className="plant-price-wrapper">
+              <div className="wa-stack wa-gap-xs">
+                <wa-skeleton effect="pulse" style={{ height: '14px', width: '50%' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '28px', width: '40%' }}></wa-skeleton>
+              </div>
+            </div>
+
+            <div slot="footer-actions" className="wa-cluster wa-gap-s">
+              <wa-button-group label="Skeleton actions">
+                <wa-button size="small" disabled>
+                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '70px' }}></wa-skeleton>
+                </wa-button>
+                <wa-button size="small" variant="brand" disabled>
+                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '54px' }}></wa-skeleton>
+                </wa-button>
+              </wa-button-group>
+            </div>
           </wa-card>
         ))}
       </div>
@@ -71,9 +139,7 @@ function PlantsGrid({
       <div className="plants-grid wa-grid">
         {plants.map((plant) => (
           <wa-card key={plant.id} className="plant-card" appearance="filled">
-            {/* {plant.imagen && ( */}
-            <img slot="media" src="https://sale.ileben.cl/wp-content/uploads/2022/11/portada_bold_terraza.jpg" alt={plant.nombre} className="plant-image" />
-            {/* )} */}
+            <img slot="media" src={plant.imagen || DEFAULT_PLANT_IMAGE} alt={plant.nombre} className="plant-image" />
 
             <div slot="header" className="plant-header-wrapper">
               <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
@@ -172,9 +238,7 @@ function PlantsGrid({
       >
         {selectedPlant && (
           <>
-            {selectedPlant.imagen && (
-              <img src={selectedPlant.imagen} alt={selectedPlant.nombre} className="detail-img" />
-            )}
+            <img src={selectedPlant.imagen || DEFAULT_PLANT_IMAGE} alt={selectedPlant.nombre} className="detail-img" />
 
             <div className="detail-content">
               {selectedPlant.proyectoNombre && (
@@ -331,14 +395,45 @@ function PlantsGrid({
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="wa-cluster wa-gap-l wa-align-items-center pagination">
-          <wa-button disabled={page === 1} onClick={() => onPageChange(page - 1)}>
-            ← Anterior
-          </wa-button>
-          <span className="pagination-info">Página {page} de {totalPages}</span>
-          <wa-button disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
-            Siguiente →
-          </wa-button>
+        <div className="wa-stack pagination">
+          <wa-divider></wa-divider>
+          <div className="wa-split wa-align-items-center">
+            <span className="wa-caption-m pagination-info">
+              Mostrando {showingFrom} a {showingTo} de {totalPlants || 0} resultados
+            </span>
+            <wa-button-group orientation="horizontal" label="Paginación">
+              <wa-button appearance="outlined" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+                <wa-icon name="chevron-left"></wa-icon>
+              </wa-button>
+
+              {paginationItems.map((item, index) => {
+                if (typeof item === 'string') {
+                  return (
+                    <wa-button key={`${item}-${index}`} appearance="outlined" disabled>
+                      ...
+                    </wa-button>
+                  );
+                }
+
+                const isActivePage = item === page;
+
+                return (
+                  <wa-button
+                    key={item}
+                    appearance={isActivePage ? 'accent' : 'outlined'}
+                    {...(isActivePage ? { variant: 'brand' } : {})}
+                    onClick={() => onPageChange(item)}
+                  >
+                    {item}
+                  </wa-button>
+                );
+              })}
+
+              <wa-button appearance="outlined" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
+                <wa-icon name="chevron-right"></wa-icon>
+              </wa-button>
+            </wa-button-group>
+          </div>
         </div>
       )}
     </>

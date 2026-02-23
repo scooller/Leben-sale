@@ -77,7 +77,7 @@ function ErrorNotification({ error, onClose, duration = 5000, persistent = false
         animation: 'slideInFromRight 0.3s ease-out',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
       }}>
-        <wa-callout variant={getVariant()} closable onWaClose={onClose}>
+        <wa-callout variant={getVariant()}>
           <wa-icon slot="icon" name={getIcon()} variant="regular"></wa-icon>
           <strong>{error.title || 'Error'}</strong>
           <div style={{ marginTop: '8px', lineHeight: '1.5' }}>
@@ -92,6 +92,13 @@ function ErrorNotification({ error, onClose, duration = 5000, persistent = false
               color: 'var(--wa-color-neutral-600)'
             }}>
               <small>{typeof error.details === 'string' ? error.details : JSON.stringify(error.details)}</small>
+            </div>
+          )}
+          {onClose && (
+            <div style={{ marginTop: '12px' }}>
+              <wa-button size="small" variant="neutral" onClick={onClose}>
+                Cerrar
+              </wa-button>
             </div>
           )}
         </wa-callout>

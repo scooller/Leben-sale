@@ -10,6 +10,10 @@ export const SiteConfigProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const htmlElement = document.documentElement;
+    htmlElement.classList.remove('wa-light');
+    htmlElement.classList.add('wa-dark');
+
     loadConfig();
   }, []);
 

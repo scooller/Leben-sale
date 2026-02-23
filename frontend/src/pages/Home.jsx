@@ -28,20 +28,40 @@ function Home() {
   
   // Estados para filtros
   const [proyectos, setProyectos] = useState([]);
-  const [selectedProyecto, setSelectedProyecto] = useState('');
-  const [selectedDormitorios, setSelectedDormitorios] = useState('');
-  const [selectedBanos, setSelectedBanos] = useState('');
+  const [selectedProyecto, setSelectedProyecto] = useState([]);
+  const [selectedDormitorios, setSelectedDormitorios] = useState([]);
+  const [selectedBanos, setSelectedBanos] = useState([]);
   const [selectedPrecioMin, setSelectedPrecioMin] = useState('');
   const [selectedPrecioMax, setSelectedPrecioMax] = useState('');
   
   // Estados temporales para filtros (antes de aplicar)
-  const [tempProyecto, setTempProyecto] = useState('');
-  const [tempDormitorios, setTempDormitorios] = useState('');
-  const [tempBanos, setTempBanos] = useState('');
+  const [tempProyecto, setTempProyecto] = useState([]);
+  const [tempDormitorios, setTempDormitorios] = useState([]);
+  const [tempBanos, setTempBanos] = useState([]);
   const [tempPrecioMin, setTempPrecioMin] = useState('');
   const [tempPrecioMax, setTempPrecioMax] = useState('');
   
   const gatewayDialogRef = useRef(null);
+
+  const normalizeMultiValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.filter((item) => item !== null && item !== undefined && `${item}`.trim() !== '');
+    }
+
+    if (value === null || value === undefined || `${value}`.trim() === '') {
+      return [];
+    }
+
+    return [value];
+  };
+
+  const getMultiSelectValue = (event) => normalizeMultiValue(event?.target?.value);
+
+  const activeFilterCount = selectedProyecto.length
+    + selectedDormitorios.length
+    + selectedBanos.length
+    + (selectedPrecioMin ? 1 : 0)
+    + (selectedPrecioMax ? 1 : 0);
 
   // Cargar proyectos para el filtro
   useEffect(() => {
@@ -78,15 +98,15 @@ function Home() {
           perPage: 12,
         };
         
-        if (selectedProyecto) {
+        if (selectedProyecto.length > 0) {
           filters.salesforce_proyecto_id = selectedProyecto;
         }
         
-        if (selectedDormitorios) {
+        if (selectedDormitorios.length > 0) {
           filters.programa = selectedDormitorios;
         }
         
-        if (selectedBanos) {
+        if (selectedBanos.length > 0) {
           filters.programa2 = selectedBanos;
         }
         
@@ -185,14 +205,14 @@ function Home() {
   // Limpiar filtros
   const handleClearFilters = () => {
     console.log('🧹 [FILTROS] Limpiando filtros...');
-    setTempProyecto('');
-    setTempDormitorios('');
-    setTempBanos('');
+    setTempProyecto([]);
+    setTempDormitorios([]);
+    setTempBanos([]);
     setTempPrecioMin('');
     setTempPrecioMax('');
-    setSelectedProyecto('');
-    setSelectedDormitorios('');
-    setSelectedBanos('');
+    setSelectedProyecto([]);
+    setSelectedDormitorios([]);
+    setSelectedBanos([]);
     setSelectedPrecioMin('');
     setSelectedPrecioMax('');
     setPage(1);
@@ -274,18 +294,73 @@ function Home() {
   if (configLoading) {
     return (
       <div className="home-container">
-        <div className="loading-skeletons">
-          <wa-skeleton effect="pulse" style={{ height: '100px', marginBottom: '2rem' }}></wa-skeleton>
-          <wa-skeleton effect="pulse" style={{ height: '60px', marginBottom: '2rem' }}></wa-skeleton>
-          
-          <div className="plants-grid">
+        <div className="loading-skeletons wa-stack wa-gap-l">
+          <wa-card appearance="filled">
+            <div className="wa-stack wa-gap-s" style={{ padding: '1.5rem' }}>
+              <wa-skeleton effect="pulse" style={{ height: '28px', width: '35%', margin: '0 auto' }}></wa-skeleton>
+              <wa-skeleton effect="pulse" style={{ height: '18px', width: '60%', margin: '0 auto' }}></wa-skeleton>
+            </div>
+          </wa-card>
+
+          <div className="wa-stack wa-gap-xs">
+            <wa-skeleton effect="pulse" style={{ height: '26px', width: '220px' }}></wa-skeleton>
+            <wa-skeleton effect="pulse" style={{ height: '16px', width: '320px' }}></wa-skeleton>
+          </div>
+
+          <wa-card appearance="outlined">
+            <div className="wa-stack wa-gap-m" style={{ padding: '1rem' }}>
+              <wa-skeleton effect="pulse" style={{ height: '18px', width: '140px' }}></wa-skeleton>
+              <div className="wa-cluster wa-gap-s">
+                <wa-skeleton effect="pulse" style={{ height: '42px', width: '220px' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '42px', width: '160px' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '42px', width: '140px' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '42px', width: '150px' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '42px', width: '150px' }}></wa-skeleton>
+              </div>
+              <div className="wa-cluster wa-gap-s">
+                <wa-skeleton effect="pulse" style={{ height: '34px', width: '150px' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '34px', width: '150px' }}></wa-skeleton>
+              </div>
+            </div>
+          </wa-card>
+
+          <div className="plants-grid wa-grid">
             {[...Array(6)].map((_, i) => (
-              <wa-card key={i} className="skeleton-card">
-                <wa-skeleton effect="pulse" style={{ height: '200px', marginBottom: '1rem' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '40px', marginBottom: '0.5rem' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '80px', marginBottom: '0.5rem' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '30px', marginBottom: '0.5rem' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '100px' }}></wa-skeleton>
+              <wa-card key={i} className="skeleton-card" appearance="filled">
+                <wa-skeleton slot="media" effect="pulse" style={{ height: '220px' }}></wa-skeleton>
+
+                <div slot="header" className="wa-stack wa-gap-xs" style={{ width: '100%' }}>
+                  <wa-skeleton effect="pulse" style={{ height: '18px', width: '65%' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '18px', width: '45%' }}></wa-skeleton>
+                </div>
+
+                <div slot="header-actions">
+                  <wa-skeleton effect="pulse" style={{ height: '24px', width: '70px' }}></wa-skeleton>
+                </div>
+
+                <div className="wa-split wa-align-items-center">
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '35%' }}></wa-skeleton>
+                  <div className="wa-cluster wa-gap-xs">
+                    <wa-skeleton effect="pulse" style={{ height: '24px', width: '65px' }}></wa-skeleton>
+                    <wa-skeleton effect="pulse" style={{ height: '24px', width: '65px' }}></wa-skeleton>
+                  </div>
+                </div>
+
+                <div slot="footer" className="wa-stack wa-gap-xs">
+                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '48%' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '28px', width: '38%' }}></wa-skeleton>
+                </div>
+
+                <div slot="footer-actions">
+                  <wa-button-group label="Skeleton actions">
+                    <wa-button size="small" disabled>
+                      <wa-skeleton effect="pulse" style={{ height: '14px', width: '72px' }}></wa-skeleton>
+                    </wa-button>
+                    <wa-button size="small" variant="brand" disabled>
+                      <wa-skeleton effect="pulse" style={{ height: '14px', width: '56px' }}></wa-skeleton>
+                    </wa-button>
+                  </wa-button-group>
+                </div>
               </wa-card>
             ))}
           </div>
@@ -339,9 +414,9 @@ function Home() {
       <div className="plants-header">
         <div className="wa-cluster wa-gap-s wa-align-items-center">
           <h2>Nuestras Plantas</h2>
-          {(selectedProyecto || selectedDormitorios || selectedBanos || selectedPrecioMin || selectedPrecioMax) && (
+          {activeFilterCount > 0 && (
             <wa-badge variant="brand" pill>
-              {[selectedProyecto, selectedDormitorios, selectedBanos, selectedPrecioMin, selectedPrecioMax].filter(Boolean).length} {[selectedProyecto, selectedDormitorios, selectedBanos, selectedPrecioMin, selectedPrecioMax].filter(Boolean).length === 1 ? 'filtro' : 'filtros'} activo{[selectedProyecto, selectedDormitorios, selectedBanos, selectedPrecioMin, selectedPrecioMax].filter(Boolean).length === 1 ? '' : 's'}
+              {activeFilterCount} {activeFilterCount === 1 ? 'filtro' : 'filtros'} activo{activeFilterCount === 1 ? '' : 's'}
             </wa-badge>
           )}
         </div>
@@ -357,14 +432,13 @@ function Home() {
               placeholder="Todos los proyectos"
               value={tempProyecto}
               onChange={(e) => {
-                const value = e.target.value || '';
+                const value = getMultiSelectValue(e);
                 console.log('🏢 [FILTRO] Proyecto cambiado:', value);
                 setTempProyecto(value);
               }}
               multiple
               clearable
             >
-              <wa-option value="">Todos los proyectos</wa-option>
               {proyectos.map((proyecto) => (
                 <wa-option key={proyecto.id} value={proyecto.salesforce_id}>
                   {proyecto.name}
@@ -377,13 +451,13 @@ function Home() {
               placeholder="Todos"
               value={tempDormitorios}
               onChange={(e) => {
-                const value = e.target.value || '';
+                const value = getMultiSelectValue(e);
                 console.log('🛏️ [FILTRO] Dormitorios cambiado:', value);
                 setTempDormitorios(value);
               }}
+              multiple
               clearable
             >
-              <wa-option value="">Todos</wa-option>
               <wa-option value="ST">Studio</wa-option>
               <wa-option value="1D">1 Dormitorio</wa-option>
               <wa-option value="2D">2 Dormitorios</wa-option>
@@ -396,13 +470,13 @@ function Home() {
               placeholder="Todos"
               value={tempBanos}
               onChange={(e) => {
-                const value = e.target.value || '';
+                const value = getMultiSelectValue(e);
                 console.log('🚿 [FILTRO] Baños cambiado:', value);
                 setTempBanos(value);
               }}
+              multiple
               clearable
             >
-              <wa-option value="">Todos</wa-option>
               <wa-option value="1B">1 Baño</wa-option>
               <wa-option value="2B">2 Baños</wa-option>
               <wa-option value="3B">3 Baños</wa-option>
@@ -448,7 +522,7 @@ function Home() {
               Aplicar Filtros
             </wa-button>
 
-            {(selectedProyecto || selectedDormitorios || selectedBanos || selectedPrecioMin || selectedPrecioMax) && (
+            {activeFilterCount > 0 && (
               <wa-button 
                 variant="neutral"
                 onClick={handleClearFilters}
@@ -486,7 +560,7 @@ function Home() {
           {gateways.length > 0 ? (
             <wa-radio-group
               value={selectedGateway}
-              onWaChange={(e) => setSelectedGateway(e.target.value)}
+              onChange={(e) => setSelectedGateway(e.target.value)}
             >
               {gateways.map((gateway) => (
                 <wa-radio key={gateway.id} value={gateway.id}>

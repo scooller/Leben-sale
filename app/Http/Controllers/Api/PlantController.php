@@ -18,31 +18,45 @@ class PlantController extends Controller
             ->with('proyecto')
             ->whereHas('proyecto'); // Solo plantas con proyecto asociado
 
+        $projectValues = $this->normalizeInputValues($request->input('salesforce_proyecto_id'));
+        $dormValues = $this->normalizeInputValues($request->input('programa'));
+        $banosValues = $this->normalizeInputValues($request->input('programa2'));
+
         // Filtros
-        if ($request->has('salesforce_proyecto_id')) {
-            $query->where('salesforce_proyecto_id', $request->salesforce_proyecto_id);
+        if (count($projectValues) > 0) {
+            $query->whereIn('salesforce_proyecto_id', $projectValues);
         }
 
-        if ($request->filled('programa') || $request->filled('programa2')) {
-            $dormValue = (string) $request->input('programa', '');
-            $banosValue = (string) $request->input('programa2', '');
-            $dormNumber = preg_replace('/\D+/', '', $dormValue);
-            $banosNumber = preg_replace('/\D+/', '', $banosValue);
-
-            $query->where(function ($subQuery) use ($dormValue, $dormNumber, $banosNumber) {
+        if (count($dormValues) > 0 || count($banosValues) > 0) {
+            $query->where(function ($subQuery) use ($dormValues, $banosValues) {
                 $normalizedColumn = "REPLACE(programa, ' ', '')";
 
-                if (strtoupper($dormValue) === 'ST') {
-                    $subQuery->whereRaw($normalizedColumn.' like ?', ['ST%']);
-                } elseif ($dormNumber !== '') {
-                    $subQuery->whereRaw($normalizedColumn.' like ?', [$dormNumber.'D%']);
+                if (count($dormValues) > 0) {
+                    $subQuery->where(function ($dormQuery) use ($normalizedColumn, $dormValues) {
+                        foreach ($dormValues as $dormValue) {
+                            $dormText = strtoupper((string) $dormValue);
+                            $dormNumber = preg_replace('/\D+/', '', $dormText);
+
+                            if ($dormText === 'ST') {
+                                $dormQuery->orWhereRaw($normalizedColumn.' like ?', ['ST%']);
+                            } elseif ($dormNumber !== '') {
+                                $dormQuery->orWhereRaw($normalizedColumn.' like ?', [$dormNumber.'D%']);
+                            }
+                        }
+                    });
                 }
 
-                if ($banosNumber !== '') {
-                    $subQuery->where(function ($banosQuery) use ($normalizedColumn, $banosNumber) {
-                        $banosQuery
-                            ->whereRaw($normalizedColumn.' like ?', ['%+'.$banosNumber.'B%'])
-                            ->orWhereRaw($normalizedColumn.' like ?', ['%+'.$banosNumber]);
+                if (count($banosValues) > 0) {
+                    $subQuery->where(function ($banosQuery) use ($normalizedColumn, $banosValues) {
+                        foreach ($banosValues as $banosValue) {
+                            $banosNumber = preg_replace('/\D+/', '', (string) $banosValue);
+
+                            if ($banosNumber !== '') {
+                                $banosQuery
+                                    ->orWhereRaw($normalizedColumn.' like ?', ['%+'.$banosNumber.'B%'])
+                                    ->orWhereRaw($normalizedColumn.' like ?', ['%+'.$banosNumber]);
+                            }
+                        }
                     });
                 }
             });
@@ -61,6 +75,36 @@ class PlantController extends Controller
         $plants = $query->paginate($perPage);
 
         return response()->json($plants);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeInputValues(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter(array_map(static fn (mixed $item): string => trim((string) $item), $value), static fn (string $item): bool => $item !== ''));
+        }
+
+        if (is_string($value)) {
+            if ($value === '') {
+                return [];
+            }
+
+            if (str_contains($value, ',')) {
+                $parts = explode(',', $value);
+
+                return array_values(array_filter(array_map(static fn (string $item): string => trim($item), $parts), static fn (string $item): bool => $item !== ''));
+            }
+
+            return [trim($value)];
+        }
+
+        if ($value === null) {
+            return [];
+        }
+
+        return [trim((string) $value)];
     }
 
     /**
