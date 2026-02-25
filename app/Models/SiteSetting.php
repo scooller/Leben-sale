@@ -58,6 +58,7 @@ class SiteSetting extends Model
         'banner_image',
         'banner_image_id',
         'banner_link',
+        'dashboard_widget_order',
     ];
 
     protected $casts = [
@@ -70,6 +71,7 @@ class SiteSetting extends Model
         'gateway_transbank_config' => 'array',
         'gateway_mercadopago_config' => 'array',
         'gateway_manual_config' => 'array',
+        'dashboard_widget_order' => 'array',
     ];
 
     /**

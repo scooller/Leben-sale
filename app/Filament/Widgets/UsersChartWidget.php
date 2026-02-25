@@ -10,8 +10,6 @@ class UsersChartWidget extends ChartWidget
 {
     protected ?string $heading = 'Usuarios Registrados por Mes';
 
-    protected static ?int $sort = 12;
-
     protected ?string $pollingInterval = null;
 
     protected function getData(): array
@@ -41,7 +39,7 @@ class UsersChartWidget extends ChartWidget
                     'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
                 ],
             ],
-            'labels' => $months->pluck('label')->toArray(),
+
         ];
     }
 

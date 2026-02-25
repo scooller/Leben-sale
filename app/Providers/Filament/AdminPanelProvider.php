@@ -42,6 +42,28 @@ class AdminPanelProvider extends PanelProvider
             }
         }
 
+        $defaultWidgets = [
+            AccountWidget::class,
+            UsersChartWidget::class,
+            ActivityChartWidget::class,
+            LatestActivityWidget::class,
+            PaymentsChartWidget::class,
+            PaymentStatusChartWidget::class,
+            SyncPlantsWidget::class,
+            SyncProjectsWidget::class,
+        ];
+
+        $widgetOrder = $settings?->dashboard_widget_order;
+        $widgetOrder = is_array($widgetOrder) ? array_values($widgetOrder) : [];
+
+        if (! empty($widgetOrder)) {
+            $ordered = array_values(array_filter($widgetOrder, fn (string $widget): bool => in_array($widget, $defaultWidgets, true)));
+            $missing = array_values(array_diff($defaultWidgets, $ordered));
+            $widgets = array_merge($ordered, $missing);
+        } else {
+            $widgets = $defaultWidgets;
+        }
+
         return $panel
             ->default()
             ->id('admin')
@@ -66,16 +88,7 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                UsersChartWidget::class,
-                ActivityChartWidget::class,
-                LatestActivityWidget::class,
-                PaymentsChartWidget::class,
-                PaymentStatusChartWidget::class,
-                SyncPlantsWidget::class,
-                SyncProjectsWidget::class,                
-            ])
+            ->widgets($widgets)
             ->plugins([
                 \Awcodes\Curator\CuratorPlugin::make()
                     ->label('Archivos')

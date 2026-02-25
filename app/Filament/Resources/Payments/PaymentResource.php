@@ -33,6 +33,11 @@ class PaymentResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'gateway_tx_id';
 
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) Payment::query()->count();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PaymentForm::configure($schema);

@@ -10,8 +10,6 @@ class PaymentsChartWidget extends ChartWidget
 {
     protected ?string $heading = 'Pagos por Mes';
 
-    protected static ?int $sort = 2;
-
     protected ?string $pollingInterval = null;
 
     protected function getData(): array
@@ -43,6 +41,7 @@ class PaymentsChartWidget extends ChartWidget
             ],
             'labels' => $months->pluck('label')->toArray(),
         ];
+
     }
 
     protected function getType(): string

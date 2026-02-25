@@ -10,8 +10,6 @@ class PaymentStatusChartWidget extends ChartWidget
 {
     protected ?string $heading = 'Pagos por Estado';
 
-    protected static ?int $sort = 3;
-
     protected ?string $pollingInterval = null;
 
     protected function getData(): array
@@ -29,7 +27,6 @@ class PaymentStatusChartWidget extends ChartWidget
             PaymentStatus::PENDING_APPROVAL,
         ];
 
-        $data = [];
         $labels = [];
         $colors = [];
 

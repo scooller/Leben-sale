@@ -112,7 +112,7 @@ enum PaymentStatus: string
             self::PROCESSING => 'heroicon-o-arrow-path',
             self::AUTHORIZED, self::COMPLETED => 'heroicon-o-check-circle',
             self::FAILED => 'heroicon-o-x-circle',
-            self::CANCELLED => 'heroicon-o-ban',
+            self::CANCELLED => 'heroicon-o-no-symbol',
             self::REFUNDED, self::PARTIALLY_REFUNDED => 'heroicon-o-arrow-uturn-left',
             self::EXPIRED => 'heroicon-o-exclamation-triangle',
             self::PENDING_APPROVAL => 'heroicon-o-hand-raised',

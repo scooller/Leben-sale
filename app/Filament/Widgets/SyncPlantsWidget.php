@@ -11,13 +11,9 @@ class SyncPlantsWidget extends Widget
 {
     protected string $view = 'filament.widgets.sync-plants-widget';
 
-    protected static ?int $sort = 5;
-
     protected int|string|array $columnSpan = [
         'md' => 1,
     ];
-
-    public ?string $lastSyncTime = null;
 
     public int $totalPlants = 0;
 

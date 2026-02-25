@@ -41,6 +41,11 @@ class UserResource extends Resource
         return auth()->user()?->isAdmin() ?? false;
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) User::query()->count();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);

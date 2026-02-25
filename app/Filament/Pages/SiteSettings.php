@@ -2,6 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
+use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
+use App\Filament\Widgets\PaymentsChartWidget;
+use App\Filament\Widgets\PaymentStatusChartWidget;
+use App\Filament\Widgets\SyncPlantsWidget;
+use App\Filament\Widgets\SyncProjectsWidget;
+use App\Filament\Widgets\UsersChartWidget;
 use App\Models\SiteSetting;
 use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
@@ -39,6 +46,22 @@ class SiteSettings extends Page implements HasForms
     protected static ?int $navigationSort = 99;
 
     protected string $view = 'filament.pages.site-settings';
+
+    /**
+     * Opciones de widgets disponibles para ordenar en el dashboard.
+     */
+    protected static function dashboardWidgetOptions(): array
+    {
+        return [
+            UsersChartWidget::class => 'Usuarios (Gráfico)',
+            ActivityChartWidget::class => 'Actividad (Gráfico)',
+            LatestActivityWidget::class => 'Actividad (Últimos)',
+            PaymentsChartWidget::class => 'Pagos (Gráfico)',
+            PaymentStatusChartWidget::class => 'Pagos (Estado)',
+            SyncPlantsWidget::class => 'Sync Plantas',
+            SyncProjectsWidget::class => 'Sync Proyectos',
+        ];
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -102,6 +125,24 @@ class SiteSettings extends Page implements HasForms
                                             ->url()
                                             ->placeholder('https://ejemplo.com')
                                             ->helperText('El link al que dirigirá al hacer click en el banner. Dejar vacío para no tener link.'),
+                                    ])
+                                    ->columns(1),
+                            ]),
+
+                        Tabs\Tab::make('Dashboard')
+                            ->icon('heroicon-o-chart-bar')
+                            ->schema([
+                                Section::make('Orden de Widgets')
+                                    ->description('Ordena los widgets del dashboard arrastrando las opciones')
+                                    ->schema([
+                                        Select::make('dashboard_widget_order')
+                                            ->label('Widgets del Dashboard')
+                                            ->options(self::dashboardWidgetOptions())
+                                            ->multiple()
+                                            ->reorderable()
+                                            ->searchable()
+                                            ->default(array_keys(self::dashboardWidgetOptions()))
+                                            ->helperText('Arrastra para reordenar. El orden se aplica al dashboard principal. Para ocultar, elimina el widget del selector.'),
                                     ])
                                     ->columns(1),
                             ]),
