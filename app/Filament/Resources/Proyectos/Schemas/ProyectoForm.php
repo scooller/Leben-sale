@@ -221,7 +221,6 @@ class ProyectoForm
                                 TextInput::make('valor_reserva_exigido_defecto_peso')
                                     ->label('Valor Defecto ($)')
                                     ->numeric()
-                                    ->disabled()
                                     ->prefix('$'),
 
                                 TextInput::make('valor_reserva_exigido_min_peso')

@@ -7,6 +7,7 @@ import { authService } from '../services/auth';
 import ErrorNotification from '../components/ErrorNotification';
 import PlantsGrid from '../components/PlantsGrid';
 import BannerPromo from '../components/BannerPromo';
+import PaymentGatewayDialog from '../components/PaymentGatewayDialog';
 import { isRetryableError } from '../utils/errorHandler';
 import gsap from 'gsap';
 import '../styles/home.scss' with { type: 'css' };
@@ -27,11 +28,7 @@ function Home() {
   const [gateways, setGateways] = useState([]);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [plantForCheckout, setPlantForCheckout] = useState(null);
-  const [selectedGateway, setSelectedGateway] = useState('');
-  const [checkoutName, setCheckoutName] = useState('');
-  const [checkoutEmail, setCheckoutEmail] = useState('');
-  const [checkoutPhone, setCheckoutPhone] = useState('');
-  const [checkoutRut, setCheckoutRut] = useState('');
+  const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
   const isAuthenticated = authService.isAuthenticated();
   
   // Estados para filtros
@@ -49,57 +46,7 @@ function Home() {
   const [tempPrecioMin, setTempPrecioMin] = useState('');
   const [tempPrecioMax, setTempPrecioMax] = useState('');
   
-  const gatewayDialogRef = useRef(null);
   const heroRef = useRef(null);
-
-  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
-
-  const isValidPhone = (value) => {
-    const digits = value.replace(/\D/g, '');
-    return digits.length >= 8 && digits.length <= 15;
-  };
-
-  const isValidRut = (value) => {
-    const cleaned = value.replace(/[^0-9kK]/g, '').toLowerCase();
-    if (cleaned.length < 8) {
-      return false;
-    }
-
-    const body = cleaned.slice(0, -1);
-    const dv = cleaned.slice(-1);
-
-    if (body.length < 7 || body.length > 8) {
-      return false;
-    }
-
-    let sum = 0;
-    let multiplier = 2;
-
-    for (let i = body.length - 1; i >= 0; i -= 1) {
-      sum += Number(body[i]) * multiplier;
-      multiplier = multiplier === 7 ? 2 : multiplier + 1;
-    }
-
-    const remainder = 11 - (sum % 11);
-    const expectedDv = remainder === 11 ? '0' : remainder === 10 ? 'k' : `${remainder}`;
-
-    return dv === expectedDv;
-  };
-
-  const isEmailValid = checkoutEmail ? isValidEmail(checkoutEmail) : false;
-  const isPhoneValid = checkoutPhone ? isValidPhone(checkoutPhone) : false;
-  const isRutValid = checkoutRut ? isValidRut(checkoutRut) : false;
-  const isCheckoutReady = Boolean(
-    isAuthenticated
-    && selectedGateway
-    && checkoutName
-    && checkoutEmail
-    && isEmailValid
-    && checkoutPhone
-    && isPhoneValid
-    && checkoutRut
-    && isRutValid
-  );
 
   const normalizeMultiValue = (value) => {
     if (Array.isArray(value)) {
@@ -175,6 +122,7 @@ function Home() {
           categoria: plant.programa,
           precioBase: Number(plant.precio_base) || 0,
           precioLista: Number(plant.precio_lista) || 0,
+          reservaExigidaPeso: Number(plant.proyecto?.valor_reserva_exigido_defecto_peso) || 0,
           proyectoNombre: plant.proyecto?.name,
           proyectoDescripcion: plant.proyecto?.descripcion,
           proyectoDireccion: plant.proyecto?.direccion,
@@ -281,13 +229,6 @@ function Home() {
     setPage(1);
   };
 
-  const closeGatewayDialog = () => {
-    if (gatewayDialogRef.current) {
-      gatewayDialogRef.current.open = false;
-    }
-    setPlantForCheckout(null);
-  };
-
   // Cargar pasarelas disponibles
   useEffect(() => {
     const fetchGateways = async () => {
@@ -309,21 +250,12 @@ function Home() {
 
   // Manejar compra directo desde la tarjeta
   const handleQuickCheckout = async (plant) => {
-    const currentUser = authService.getCurrentUser();
-
     setPlantForCheckout(plant);
-    setSelectedGateway(gateways.length > 0 ? gateways[0].id : '');
-    setCheckoutName(currentUser?.name || '');
-    setCheckoutEmail(currentUser?.email || '');
-    setCheckoutPhone(currentUser?.phone || '');
-    setCheckoutRut(currentUser?.rut || '');
-    if (gatewayDialogRef.current) {
-      gatewayDialogRef.current.open = true;
-    }
+    setGatewayDialogOpen(true);
   };
 
   // Confirmar checkout con pasarela seleccionada
-  const handleConfirmCheckout = async () => {
+  const handleConfirmCheckout = async ({ plantId, gateway, userData }) => {
     if (!isAuthenticated) {
       setCheckoutError({
         type: 'auth',
@@ -334,81 +266,21 @@ function Home() {
       return;
     }
 
-    if (!plantForCheckout || !selectedGateway) {
-      setCheckoutError({
-        type: 'validation',
-        message: 'Datos incompletos',
-        userMessage: 'Por favor selecciona una planta y una pasarela de pago',
-        title: 'Error de validación',
-      });
-      return;
-    }
-
-    if (!checkoutName || !checkoutEmail || !checkoutPhone || !checkoutRut) {
-      setCheckoutError({
-        type: 'validation',
-        message: 'Datos de usuario incompletos',
-        userMessage: 'Completa tu nombre, email, telefono y RUT antes de pagar',
-        title: 'Datos requeridos',
-      });
-      return;
-    }
-
-    if (!isValidEmail(checkoutEmail)) {
-      setCheckoutError({
-        type: 'validation',
-        message: 'Correo electronico invalido',
-        userMessage: 'Ingresa un correo electronico valido.',
-        title: 'Email invalido',
-      });
-      return;
-    }
-
-    if (!isValidPhone(checkoutPhone)) {
-      setCheckoutError({
-        type: 'validation',
-        message: 'Telefono invalido',
-        userMessage: 'Ingresa un telefono valido con al menos 8 digitos.',
-        title: 'Telefono invalido',
-      });
-      return;
-    }
-
-    if (!isValidRut(checkoutRut)) {
-      setCheckoutError({
-        type: 'validation',
-        message: 'RUT invalido',
-        userMessage: 'Ingresa un RUT valido (ej: 12.345.678-9).',
-        title: 'RUT invalido',
-      });
-      return;
-    }
-
     try {
       setCheckoutLoading(true);
       setCheckoutError(null);
-      const response = await CheckoutService.initiate(plantForCheckout.id, 1, selectedGateway, {
-        name: checkoutName,
-        email: checkoutEmail,
-        phone: checkoutPhone,
-        rut: checkoutRut,
-      });
+      const response = await CheckoutService.initiate(plantId, 1, gateway, userData);
 
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
         localStorage.setItem('user', JSON.stringify({
           ...currentUser,
-          name: checkoutName,
-          email: checkoutEmail,
-          phone: checkoutPhone,
-          rut: checkoutRut,
+          ...userData,
         }));
       }
       
       // Cerrar diálogo antes de redirigir
-      if (gatewayDialogRef.current) {
-        gatewayDialogRef.current.open = false;
-      }
+      setGatewayDialogOpen(false);
       
       // Redirigir a la pasarela
       CheckoutService.redirect(response.redirect_url);
@@ -679,96 +551,18 @@ function Home() {
       />
 
       {/* Diálogo - Selección de Pasarela de Pago */}
-      <wa-dialog
-        ref={gatewayDialogRef}
-        label="Seleccionar Pasarela de Pago"
-        style={{ '--width': '500px' }}
-        light-dismiss
-      >
-        <div className="gateway-selection">        
-          <div className="checkout-user-fields wa-stack wa-gap-s">
-            {!isAuthenticated && (
-              <wa-callout variant="info">
-                <wa-icon name="address-card" slot="icon"></wa-icon>
-                Rellena todos los campos para continuar al pago.
-              </wa-callout>
-            )}
-            <p className="gateway-instructions">Datos del comprador:</p>
-            <wa-input
-              label="Nombre completo"
-              value={checkoutName}
-              onChange={(e) => setCheckoutName(e.target.value)}
-              required
-            ></wa-input>
-
-            <wa-input
-              type="email"
-              label="Correo electronico"
-              value={checkoutEmail}
-              onChange={(e) => setCheckoutEmail(e.target.value)}
-              required
-            ></wa-input>
-
-            <wa-input
-              type="tel"
-              label="Telefono"
-              placeholder="+56 9 1234 5678"
-              value={checkoutPhone}
-              onChange={(e) => setCheckoutPhone(e.target.value)}
-              required
-            ></wa-input>
-
-            <wa-input
-              label="RUT"
-              placeholder="12.345.678-9"
-              value={checkoutRut}
-              onChange={(e) => setCheckoutRut(e.target.value)}
-              required
-            ></wa-input>
-          </div>
-
-          <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
-          
-          {gateways.length > 0 ? (
-            <wa-radio-group
-              value={selectedGateway}
-              onChange={(e) => setSelectedGateway(e.target.value)}
-            >
-              {gateways.map((gateway) => (
-                <wa-radio key={gateway.id} value={gateway.id}>
-                  <div className="gateway-option-content">
-                    <strong>{gateway.name}</strong>
-                    <br />
-                    <small>{gateway.description}</small>
-                  </div>
-                </wa-radio>
-              ))}
-            </wa-radio-group>
-          ) : (
-            <wa-callout variant="warning">
-              No hay pasarelas de pago configuradas
-            </wa-callout>
-          )}
-        </div>
-
-        <wa-button 
-          slot="footer"
-          variant="neutral"
-          data-dialog="close" 
-          disabled={checkoutLoading}
-        >
-          Cancelar
-        </wa-button>
-        <wa-button 
-          slot="footer"
-          variant="brand" 
-          onClick={handleConfirmCheckout}
-          disabled={checkoutLoading || !isCheckoutReady}
-          {...(checkoutLoading && { loading: true })}
-        >
-          {checkoutLoading ? 'Procesando...' : 'Continuar al Pago'}
-        </wa-button>
-      </wa-dialog>
+      <PaymentGatewayDialog
+        open={gatewayDialogOpen}
+        onClose={() => {
+          setGatewayDialogOpen(false);
+          setPlantForCheckout(null);
+        }}
+        plant={plantForCheckout}
+        gateways={gateways}
+        loading={checkoutLoading}
+        isAuthenticated={isAuthenticated}
+        onConfirm={handleConfirmCheckout}
+      />
 
       {/* Notificación de errores de checkout */}
       <ErrorNotification 
