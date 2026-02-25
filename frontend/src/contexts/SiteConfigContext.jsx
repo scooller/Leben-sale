@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import siteConfigService from '../services/siteConfig';
 import WebAwesomeService from '../services/webAwesome';
 
@@ -8,13 +8,19 @@ export const SiteConfigProvider = ({ children }) => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const hasLoadedConfig = useRef(false);  
 
   useEffect(() => {
+    // Prevenir doble ejecución en React StrictMode
+    if (hasLoadedConfig.current) return;
+    hasLoadedConfig.current = true;
+
     const htmlElement = document.documentElement;
     htmlElement.classList.remove('wa-light');
     htmlElement.classList.add('wa-dark');
 
     loadConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadConfig = async () => {
@@ -28,14 +34,51 @@ export const SiteConfigProvider = ({ children }) => {
         siteConfigService.setTitle(data.site_name);
       }
 
-      // Aplicar tema de Web Awesome con los colores del backend
-      WebAwesomeService.applyTheme({
-        primary_color: data.primary_color,
-        secondary_color: data.secondary_color,
-        accent_color: data.accent_color,
-        background_color: data.background_color,
-        text_color: data.text_color,
+      // Aplicar tema predefinido de Web Awesome
+      // Los colores semánticos (brand, success, warning, danger, neutral) están definidos por el tema
+      const theme = data.webawesome_theme || 'mellow';
+      await WebAwesomeService.applyPrebuiltTheme(theme);
+
+      // Aplicar paleta de colores
+      // Define los tonos y matices específicos de los colores
+      const palette = data.webawesome_palette || 'natural';
+      WebAwesomeService.applyPalette(palette);
+
+      // Aplicar colores semánticos específicos (wa-brand-blue, wa-success-green, etc.)
+      WebAwesomeService.applySemanticColors({
+        semantic_brand_color: data.semantic_brand_color || 'blue',
+        semantic_neutral_color: data.semantic_neutral_color || 'gray',
+        semantic_success_color: data.semantic_success_color || 'green',
+        semantic_warning_color: data.semantic_warning_color || 'yellow',
+        semantic_danger_color: data.semantic_danger_color || 'red',
       });
+
+      // Aplicar familia de iconos (data-font-family en HTML)
+      const iconFamily = data.icon_family || 'classic';
+      document.documentElement.setAttribute('data-font-family', iconFamily);
+
+      // Cargar stylesheet de Google Fonts si existe
+      if (data.google_fonts_stylesheet) {
+        const linkId = 'google-fonts-stylesheet';
+        let link = document.getElementById(linkId);
+        
+        if (!link) {
+          link = document.createElement('link');
+          link.id = linkId;
+          link.rel = 'stylesheet';
+          document.head.appendChild(link);
+        }
+        
+        link.href = data.google_fonts_stylesheet;
+      }
+
+      // Aplicar tipografía personalizada (Google Fonts u otras fuentes)
+      if (data.font_family_body || data.font_family_heading) {
+        WebAwesomeService.applyFonts({
+          font_family_body: data.font_family_body,
+          font_family_heading: data.font_family_heading,
+        });
+      }
 
       if (data.custom_css) {
         siteConfigService.injectCustomCSS(data.custom_css);
@@ -54,10 +97,10 @@ export const SiteConfigProvider = ({ children }) => {
 
       setError(null);
     } catch (err) {
-      console.error('Error loading site config:', err);
       setError(err);
     } finally {
       setLoading(false);
+      console.log('Site configuration loaded and applied successfully.');
     }
   };
 

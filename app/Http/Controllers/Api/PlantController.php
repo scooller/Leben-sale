@@ -16,7 +16,8 @@ class PlantController extends Controller
     {
         $query = Plant::query()
             ->with('proyecto')
-            ->whereHas('proyecto'); // Solo plantas con proyecto asociado
+            ->whereHas('proyecto') // Solo plantas con proyecto asociado
+            ->where('is_active', true); // Solo plantas activas
 
         $projectValues = $this->normalizeInputValues($request->input('salesforce_proyecto_id'));
         $dormValues = $this->normalizeInputValues($request->input('programa'));

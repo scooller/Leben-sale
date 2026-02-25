@@ -2,34 +2,56 @@
 
 namespace App\Providers\Filament;
 
+use AchyutN\FilamentLogViewer\FilamentLogViewer;
+use AlizHarb\ActivityLog\ActivityLogPlugin;
+use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
+use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
+use App\Filament\Pages\Dashboard;
+use App\Filament\Widgets\PaymentsChartWidget;
+use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
 use App\Filament\Widgets\SyncProjectsWidget;
+use App\Filament\Widgets\UsersChartWidget;
+use App\Models\SiteSetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        // Solo obtener configuración si la tabla ya existe (después de migraciones)
+        $settings = null;
+        if (Schema::hasTable('site_settings')) {
+            $settings = SiteSetting::current();
+            // Cargar las relaciones de media
+            if ($settings) {
+                $settings->load(['faviconMedia', 'logoMedia']);
+            }
+        }
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->brandName($settings?->site_name ?? 'iLeben')
+            ->favicon($settings?->faviconMedia?->url)
+            ->brandLogo($settings?->logoMedia?->url)
+            ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => '#eb0029',
                 'danger' => '#eb0029',
@@ -45,8 +67,33 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                SyncPlantsWidget::class,                SyncProjectsWidget::class,                AccountWidget::class,
-                FilamentInfoWidget::class,
+                AccountWidget::class,
+                UsersChartWidget::class,
+                ActivityChartWidget::class,
+                LatestActivityWidget::class,
+                PaymentsChartWidget::class,
+                PaymentStatusChartWidget::class,
+                SyncPlantsWidget::class,
+                SyncProjectsWidget::class,                
+            ])
+            ->plugins([
+                \Awcodes\Curator\CuratorPlugin::make()
+                    ->label('Archivos')
+                    ->pluralLabel('Archivos')
+                    ->navigationIcon('heroicon-o-photo')
+                    ->navigationGroup('Sistema')
+                    ->navigationSort(98),
+                ActivityLogPlugin::make()
+                    ->label('Logs')
+                    ->pluralLabel('Logs')
+                    ->navigationGroup('Sistema')
+                    ->navigationSort(99),
+                FilamentLogViewer::make()
+                    ->authorize(fn (): bool => auth()->user()?->isAdmin() ?? false)
+                    ->navigationGroup('Sistema')
+                    ->navigationIcon('heroicon-o-document-text')
+                    ->navigationLabel('Log Viewer')
+                    ->navigationSort(100),
             ])
             ->middleware([
                 EncryptCookies::class,

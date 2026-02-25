@@ -10,4 +10,19 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separar librerías pesadas en chunks propios
+          'vendor-web-awesome': ['@awesome.me/webawesome-pro'],
+          'vendor-gsap': ['gsap'],
+          'vendor-react': ['react', 'react-dom'],
+          // Separar axios en su propio chunk
+          'vendor-axios': ['axios'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600, // Aumentar el límite a 600kB si es necesario
+  },
 })

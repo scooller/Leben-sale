@@ -39,66 +39,6 @@ class PlantsService {
       };
     }
   }
-
-  /**
-   * Crear una planta
-   */
-  async create(data) {
-    try {
-      const response = await api.post('/plants', data);
-      return response.data;
-    } catch (error) {
-      logError('PlantsService.create', error);
-      const parsed = parseError(error);
-      throw {
-        ...parsed,
-        context: 'create',
-        userMessage: parsed.type === 'validation' 
-          ? 'Error en los datos proporcionados.' 
-          : 'No se pudo crear la planta.',
-      };
-    }
-  }
-
-  /**
-   * Actualizar una planta
-   */
-  async update(id, data) {
-    try {
-      const response = await api.put(`/plants/${id}`, data);
-      return response.data;
-    } catch (error) {
-      logError('PlantsService.update', error);
-      const parsed = parseError(error);
-      throw {
-        ...parsed,
-        context: 'update',
-        userMessage: parsed.type === 'validation' 
-          ? 'Error en los datos proporcionados.' 
-          : 'No se pudo actualizar la planta.',
-      };
-    }
-  }
-
-  /**
-   * Eliminar una planta
-   */
-  async delete(id) {
-    try {
-      const response = await api.delete(`/plants/${id}`);
-      return response.data;
-    } catch (error) {
-      logError('PlantsService.delete', error);
-      const parsed = parseError(error);
-      throw {
-        ...parsed,
-        context: 'delete',
-        userMessage: parsed.type === 'not_found' 
-          ? 'La planta no existe.' 
-          : 'No se pudo eliminar la planta.',
-      };
-    }
-  }
 }
 
 export default new PlantsService();

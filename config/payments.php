@@ -33,6 +33,15 @@ return [
             'api_key' => env('TRANSBANK_API_KEY', '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'),
             'return_url' => env('TRANSBANK_RETURN_URL', env('APP_URL').'/payments/transbank/return'),
             'timeout' => 60, // segundos
+
+            // Transbank Mall - Soporte para múltiples proyectos con códigos únicos
+            'mall_mode' => (bool) env('TRANSBANK_MALL_MODE', false),
+            'commerce_codes' => (function () {
+                $json = env('TRANSBANK_STORE_CODES', '{}');
+                $decoded = json_decode($json, true);
+
+                return is_array($decoded) ? $decoded : [];
+            })(),
         ],
 
         PaymentGateway::MERCADOPAGO->value => [

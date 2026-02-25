@@ -1,4 +1,4 @@
-<x-filament::card class="col-span-1 sm:col-span-2">
+<x-filament::card>
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <div>
@@ -19,7 +19,7 @@
             </div>
             <div class="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-3">
                 <p class="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">Última Sync</p>
-                <p class="mt-1 text-sm font-semibold text-purple-900 dark:text-purple-100 break-words">{{ $this->lastSyncTime }}</p>
+                <p class="mt-1 text-sm font-semibold text-purple-900 dark:text-purple-100 wrap-break-word">{{ $this->lastSyncTime }}</p>
             </div>
         </div>
 
@@ -59,6 +59,11 @@
                 <span wire:loading.remove wire:target="syncProjects">Sincronizar Ahora</span>
                 <span wire:loading.add wire:target="syncProjects" class="hidden">Sincronizando...</span>
             </button>
+        </div>
+        <!-- Información adicional -->
+        <div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-3 text-xs text-gray-600 dark:text-gray-400">
+            <p>💡 Esta acción importa todos los proyectos desde Salesforce (obj <em>Account</em>) a la base de datos local.<br>
+            Se debe importar antes de Plantas.</p>
         </div>
     </div>
 </x-filament::card>

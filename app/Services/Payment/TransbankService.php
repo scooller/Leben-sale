@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Contracts\PaymentGatewayInterface;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 use Transbank\Webpay\WebpayPlus;
 use Transbank\Webpay\WebpayPlus\Transaction;
@@ -19,6 +20,10 @@ class TransbankService implements PaymentGatewayInterface
 
     protected string $returnUrl;
 
+    protected bool $mallMode;
+
+    protected array $commerceCodes;
+
     public function __construct(array $config)
     {
         $this->config = $config;
@@ -26,6 +31,8 @@ class TransbankService implements PaymentGatewayInterface
         $this->commerceCode = $config['commerce_code'] ?? '';
         $this->apiKey = $config['api_key'] ?? '';
         $this->returnUrl = $config['return_url'] ?? '';
+        $this->mallMode = $config['mall_mode'] ?? false;
+        $this->commerceCodes = $config['commerce_codes'] ?? [];
 
         $this->configureSDK();
     }
@@ -39,16 +46,50 @@ class TransbankService implements PaymentGatewayInterface
         // porque el SDK de Transbank v5 usa configuración estática global
     }
 
-    /**
-     * Crear una transacción Webpay Plus
+    /**     * Resolver el código de comercio para una transacción
+     * En modo mall: obtiene del proyecto, si no existe usa el default
+     * En modo simple: siempre usa el default
+     */
+    protected function resolveCommerceCode(?Payment $payment = null): string
+    {
+        // Si no estamos en mall mode o no hay payment, usar código default
+        if (! $this->mallMode || ! $payment) {
+            return $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+        }
+
+        // Cargar proyecto si existe
+        if ($payment->project) {
+            $projectCode = $payment->project->transbank_commerce_code;
+            if ($projectCode) {
+                Log::info('Transbank: Resolviendo código para proyecto', [
+                    'project_id' => $payment->project_id,
+                    'project_slug' => $payment->project->slug,
+                    'commerce_code' => $projectCode,
+                ]);
+
+                return $projectCode;
+            }
+        }
+
+        // Fallback al código default
+        Log::warning('Transbank: Código de proyecto no encontrado, usando default', [
+            'project_id' => $payment?->project_id,
+            'payment_id' => $payment?->id,
+        ]);
+
+        return $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+    }
+
+    /**     * Crear una transacción Webpay Plus
      *
      * @param  array  $data  Datos de la transacción
      *                       - amount: Monto de la transacción
      *                       - buy_order: Orden de compra (máx 26 caracteres)
      *                       - session_id: ID de sesión (máx 61 caracteres)
      *                       - return_url: URL de retorno (opcional, usa default si no se provee)
+     * @param  Payment|null  $payment  Pago asociado (usado en mall mode para resolver código dinámico)
      */
-    public function createTransaction(array $data): array
+    public function createTransaction(array $data, ?Payment $payment = null): array
     {
         try {
             $amount = $data['amount'];
@@ -56,16 +97,18 @@ class TransbankService implements PaymentGatewayInterface
             $sessionId = $data['session_id'] ?? uniqid('session-');
             $returnUrl = $data['return_url'] ?? $this->returnUrl;
 
+            // Resolver código de comercio (mall o default)
+            $commerceCode = $this->resolveCommerceCode($payment);
+            $apiKey = $this->apiKey ?: WebpayPlus::INTEGRATION_API_KEY;
+
             Log::info('Transbank: Creando transacción', [
                 'amount' => $amount,
                 'buy_order' => $buyOrder,
                 'session_id' => $sessionId,
+                'commerce_code' => $commerceCode,
                 'environment' => $this->environment,
+                'mall_mode' => $this->mallMode,
             ]);
-
-            // Obtener credenciales (usar defaults de integración si están vacías)
-            $commerceCode = $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
-            $apiKey = $this->apiKey ?: WebpayPlus::INTEGRATION_API_KEY;
 
             // Crear instancia de Transaction configurada para el ambiente
             if ($this->environment === 'production') {
@@ -80,6 +123,7 @@ class TransbankService implements PaymentGatewayInterface
             Log::info('Transbank: Transacción creada exitosamente', [
                 'token' => $response->getToken(),
                 'url' => $response->getUrl(),
+                'commerce_code' => $commerceCode,
             ]);
 
             return [
@@ -90,6 +134,7 @@ class TransbankService implements PaymentGatewayInterface
             Log::error('Transbank: Error al crear transacción', [
                 'error' => $e->getMessage(),
                 'data' => $data,
+                'payment_id' => $payment?->id,
             ]);
 
             throw new \Exception('Error al crear transacción en Transbank: '.$e->getMessage());
@@ -100,15 +145,20 @@ class TransbankService implements PaymentGatewayInterface
      * Confirmar transacción después del retorno
      *
      * @param  string  $token  Token de la transacción
+     * @param  Payment|null  $payment  Pago asociado (usado en mall mode para validar código)
      */
-    public function confirmTransaction(string $token): array
+    public function confirmTransaction(string $token, ?Payment $payment = null): array
     {
         try {
-            Log::info('Transbank: Confirmando transacción', ['token' => $token]);
-
-            // Obtener credenciales (usar defaults de integración si están vacías)
-            $commerceCode = $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+            // Resolver código de comercio (mall o default)
+            $commerceCode = $this->resolveCommerceCode($payment);
             $apiKey = $this->apiKey ?: WebpayPlus::INTEGRATION_API_KEY;
+
+            Log::info('Transbank: Confirmando transacción', [
+                'token' => $token,
+                'commerce_code' => $commerceCode,
+                'mall_mode' => $this->mallMode,
+            ]);
 
             // Crear instancia de Transaction configurada para el ambiente
             if ($this->environment === 'production') {
@@ -133,6 +183,7 @@ class TransbankService implements PaymentGatewayInterface
                 'response_code' => $response->getResponseCode(),
                 'installments_amount' => $response->getInstallmentsAmount() ?? null,
                 'installments_number' => $response->getInstallmentsNumber() ?? null,
+                'commerce_code' => $commerceCode,
             ];
 
             Log::info('Transbank: Transacción confirmada', [

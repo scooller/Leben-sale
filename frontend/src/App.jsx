@@ -1,24 +1,19 @@
-import { useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import { SiteConfigProvider, SiteConfigContext } from './contexts/SiteConfigContext';
-import WebAwesomeService from './services/webAwesome';
+import MaintenanceMode from './components/MaintenanceMode';
 import Home from './pages/Home';
 import './App.scss';
+import './styles/maintenance.scss';
 
 function AppContent() {
   const { config } = useContext(SiteConfigContext) || {};
 
-  useEffect(() => {
-    // Cargar stylesheet de Web Awesome (solo una vez)
-    WebAwesomeService.loadStylesheet();
-
-    // Inicializar Web Awesome (solo una vez)
-    WebAwesomeService.init().catch(err => {
-      console.error('Error inicializando Web Awesome:', err);
-    });
-  }, []); // Aplicar tema es responsabilidad del SiteConfigContext
-
   return (
     <div className="app">
+      <MaintenanceMode 
+        maintenanceMode={config?.maintenance_mode} 
+        maintenanceMessage={config?.maintenance_message}
+      />
       <main>
         <Home />
       </main>

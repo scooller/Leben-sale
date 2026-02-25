@@ -33,8 +33,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/plants', [App\Http\Controllers\Api\PlantController::class, 'index']);
     Route::get('/plants/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
 
-    // Checkout y pasarelas
-    Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'initiate']);
+    // Pasarelas disponibles
     Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
 });
 
@@ -45,6 +44,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+
+    // Checkout
+    Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'initiate']);
 
     // Pagos
     Route::post('/payments', [App\Http\Controllers\Api\PaymentController::class, 'create']);

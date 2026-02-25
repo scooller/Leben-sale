@@ -1,0 +1,17 @@
+body.mantencion .app{
+    main{
+        //blur de fondo
+        filter: blur(10px);
+    }
+    wa-dialog.maintenance-dialog{
+        .dialog.open{
+            --wa-color-surface-raised: #fff!important;
+            
+        }
+        .header-actions{
+            wa-button.close{
+                display: none !important;
+            }
+        }
+    }
+}

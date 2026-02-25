@@ -1,7 +1,42 @@
 import axios from 'axios';
+import api from '../lib/api';
 import { logError, parseError, ErrorTypes } from '../utils/errorHandler';
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+
+const isValidPhone = (value) => {
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 15;
+};
+
+const isValidRut = (value) => {
+  const cleaned = value.replace(/[^0-9kK]/g, '').toLowerCase();
+  if (cleaned.length < 8) {
+    return false;
+  }
+
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+
+  if (body.length < 7 || body.length > 8) {
+    return false;
+  }
+
+  let sum = 0;
+  let multiplier = 2;
+
+  for (let i = body.length - 1; i >= 0; i -= 1) {
+    sum += Number(body[i]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+
+  const remainder = 11 - (sum % 11);
+  const expectedDv = remainder === 11 ? '0' : remainder === 10 ? 'k' : `${remainder}`;
+
+  return dv === expectedDv;
+};
 
 class CheckoutService {
   /**
@@ -27,8 +62,9 @@ class CheckoutService {
    * @param {number} plantId - ID de la planta
    * @param {number} quantity - Cantidad
    * @param {string} gateway - Pasarela de pago ('transbank' o 'mercadopago')
+   * @param {{name: string, email: string, phone: string, rut: string}} userData - Datos del usuario
    */
-  static async initiate(plantId, quantity = 1, gateway = 'transbank') {
+  static async initiate(plantId, quantity = 1, gateway = 'transbank', userData = {}) {
     try {
       // Validaciones básicas antes de hacer la petición
       if (!plantId || plantId <= 0) {
@@ -47,10 +83,46 @@ class CheckoutService {
         };
       }
 
-      const response = await axios.post(`${API_URL}/checkout`, {
+      if (!userData.name || !userData.email || !userData.phone || !userData.rut) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'Datos de usuario incompletos',
+          userMessage: 'Completa tu nombre, email, telefono y RUT antes de pagar',
+        };
+      }
+
+      if (!isValidEmail(userData.email)) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'Correo electronico invalido',
+          userMessage: 'Ingresa un correo electronico valido.',
+        };
+      }
+
+      if (!isValidPhone(userData.phone)) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'Telefono invalido',
+          userMessage: 'Ingresa un telefono valido con al menos 8 digitos.',
+        };
+      }
+
+      if (!isValidRut(userData.rut)) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'RUT invalido',
+          userMessage: 'Ingresa un RUT valido (ej: 12.345.678-9).',
+        };
+      }
+
+      const response = await api.post('/checkout', {
         plant_id: plantId,
         quantity,
         gateway,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        rut: userData.rut,
       });
 
       // Validar que la respuesta contenga redirect_url
@@ -77,7 +149,16 @@ class CheckoutService {
       // Agregar contexto específico para errores de checkout
       let userMessage = parsed.message;
       if (parsed.type === ErrorTypes.VALIDATION && parsed.details) {
-        userMessage = 'Error de validación: ' + (parsed.details.plant_id?.[0] || parsed.details.gateway?.[0] || parsed.message);
+        userMessage = 'Error de validacion: '
+          + (parsed.details.name?.[0]
+            || parsed.details.email?.[0]
+            || parsed.details.phone?.[0]
+            || parsed.details.rut?.[0]
+            || parsed.details.plant_id?.[0]
+            || parsed.details.gateway?.[0]
+            || parsed.message);
+      } else if (parsed.type === ErrorTypes.AUTHENTICATION) {
+        userMessage = 'Debes iniciar sesion antes de pagar.';
       } else if (parsed.type === ErrorTypes.NETWORK) {
         userMessage = 'No se pudo conectar con el servidor de pagos. Verifica tu conexión.';
       } else if (parsed.type === ErrorTypes.SERVER) {

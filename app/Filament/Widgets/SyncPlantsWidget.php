@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Actions\SyncPlantsAction;
+use App\Models\Proyecto;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 
@@ -10,13 +11,19 @@ class SyncPlantsWidget extends Widget
 {
     protected string $view = 'filament.widgets.sync-plants-widget';
 
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 5;
+
+    protected int|string|array $columnSpan = [
+        'md' => 1,
+    ];
 
     public ?string $lastSyncTime = null;
 
     public int $totalPlants = 0;
 
     public int $activePlants = 0;
+
+    public int $totalProyectos = 0;
 
     public function mount(): void
     {
@@ -27,6 +34,7 @@ class SyncPlantsWidget extends Widget
     {
         $this->totalPlants = SyncPlantsAction::getTotalPlants();
         $this->activePlants = SyncPlantsAction::getActivePlants();
+        $this->totalProyectos = Proyecto::count();
 
         $lastSync = SyncPlantsAction::getLastSyncTime();
         $this->lastSyncTime = $lastSync ? $lastSync->diffForHumans() : 'Nunca';
@@ -34,6 +42,16 @@ class SyncPlantsWidget extends Widget
 
     public function syncPlants(): void
     {
+        if ($this->totalProyectos === 0) {
+            Notification::make()
+                ->title('⚠️ No hay proyectos')
+                ->body('Debes importar proyectos antes de sincronizar plantas.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $this->dispatch('sync-started');
 
         try {

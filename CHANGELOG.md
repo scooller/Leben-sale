@@ -2,6 +2,209 @@
 
 Todos los cambios relevantes de este proyecto serán documentados en este archivo.
 
+## [Unreleased] - Próximas Versiones
+
+### 📋 Planificado para v1.1.0
+
+#### ⚠️ Cambio Crítico: Transbank Simple → Transbank Mall
+
+**Contexto:**
+La configuración actual usa Webpay Plus Simple (un código comercial). Necesitamos cambiar a **Transbank Mall** para soportar múltiples códigos únicos por proyecto.
+
+**Cambios Requeridos:**
+
+1. **TransbankService** - Cambiar SDK de Simple a Mall
+   - `createTransaction()`: Agregar `commerce_code_store` dinámico del proyecto
+   - `confirmTransaction()`: Validar `commerceCodeStore` en respuesta vs proyecto
+
+2. **config/payments.php** - Nueva estructura con mapeo de proyectos
+   ```php
+   'transbank' => [
+       'environment' => env('TRANSBANK_ENV', 'integration'),
+       'commerce_code' => env('TRANSBANK_COMMERCE_CODE'), // Principal (Mall)
+       'mall_mode' => true,
+       // Cargar map de códigos desde .env (JSON)
+       'commerce_codes' => json_decode(env('TRANSBANK_STORE_CODES', '{}'), true),
+   ]
+   ```
+
+3. **.env - Códigos de Comercio (desde JSON configurado)**
+   ```env
+   # Transbank Mall - Principal
+   TRANSBANK_COMMERCE_CODE=xxxxx
+   
+   # Todos los códigos de comercio por proyecto (JSON)
+   # Formato: {"proyecto_slug": "codigo", "proyecto_slug2": "codigo2", ...}
+   # ⚠️ CONTENIDO SENSIBLE: Guardar en .env.local o secretos del servidor
+   TRANSBANK_STORE_CODES='{"proyecto-slug-1":"codigo1","proyecto-slug-2":"codigo2",...}'
+   ```
+
+**Sistema de Códigos de Comercio:**
+- ✅ Soporte para N proyectos únicos con su propio código Transbank
+- ✅ Configuración centralizada y segura en .env
+- ✅ Resolución dinámica de códigos por proyecto
+- ⚠️ Los códigos reales y RUTs se mantienen fuera del repositorio
+
+4. **Models** - Payment + Project
+   - `Payment`: Agregar `project_id` (FK al proyecto para obtener código Transbank)
+   - `Proyecto`: Usar slug para resolver código desde config
+   ```php
+   // app/Models/Proyecto.php
+   public function getTransbankCommerceCodeAttribute(): ?string {
+       $codes = config('payments.transbank.commerce_codes', []);
+       return $codes[$this->slug] ?? null; // Buscar en config por slug del proyecto
+   }
+   ```
+
+5. **Database** - Nueva migración
+   ```php
+   // Agregar a payments table
+   $table->foreignId('project_id')->nullable()->constrained()->onDelete('set null');
+   ```
+
+6. **PaymentWebhookController** - Validación Mall
+   ```php
+   // Validar que commerceCodeStore coincida con proyecto
+   $expectedCode = $payment->project->transbank_commerce_code;
+   if ($response['commerceCodeStore'] !== $expectedCode) {
+       // ❌ Código no coincide - rechazar
+       return reject('invalid_store_code');
+   }
+   ```
+
+**Flujo de Pago Actualizado:**
+```php
+// Ahora incluir project_id
+$payment = Payment::create([
+    'user_id' => auth()->id(),
+    'project_id' => $project->id,  // ← NUEVO: Para obtener código Transbank único
+    'gateway' => PaymentGateway::TRANSBANK,
+    'amount' => 10000,
+]);
+
+// Service accede al código del proyecto vía configuración
+$commerceCode = $payment->project->transbank_commerce_code; // Del .env vía config('payments.transbank.commerce_codes')
+$service->createTransaction($payment, $commerceCode);
+```
+
+**Resolución de Código Dinámico:**
+1. Payment se crea con `project_id`
+2. `$payment->project` accede al proyecto relacionado
+3. `$project->transbank_commerce_code` busca en `config/payments.php`
+4. Config carga desde `.env` la variable JSON `TRANSBANK_STORE_CODES`
+5. Se resuelve el código usando el slug del proyecto como clave
+
+**Impacto:**
+- ✅ 21 códigos únicos para cada proyecto
+- ✅ Configuración centralizada en .env
+- ✅ Pagos totalmente independientes por proyecto
+- ✅ Mejor seguridad y trazabilidad
+- ⚠️ Requiere migración de BD (agregar `project_id` a payments)
+- ⚠️ Requiere actualizar lógica de pagos
+- ⚠️ Requiere validar slugs de proyectos vs keys del JSON
+
+**Datos Reales (Producción - Transbank Mall):**
+```
+Principal (Mall): xxxxx (a configurar)
+
+Códigos por Proyecto (21 tiendas):
+... (17 más, ver variables .env)
+```
+
+**Ver Tarjetas Test Transbank:**
+- 4051885600446623 (Visa Débito - Aprobada)
+- 5186059559590568 (Mastercard - Aprobada)
+
+**Referencia:**
+- [Transbank Webpay Plus Mall](https://www.transbankdevelopers.cl/guides/webpay-plus)
+- [Integración Mall](https://www.transbankdevelopers.cl/guides/webpay-plus#integración-mall)
+
+### 📝 Instrucciones de Configuración v1.1.0
+
+**1. Asegurar estructura de slugs en Proyectos**
+
+Los slugs de los proyectos deben coincidir con las claves en el JSON de `TRANSBANK_STORE_CODES`:
+
+```php
+// Proyectos deben tener estos slugs exactos (sincronizados con TRANSBANK_STORE_CODES):
+- proyecto-1
+- proyecto-2
+- proyecto-3
+- proyecto-4
+- proyecto-5
+- proyecto-6
+- proyecto-7
+- proyecto-8
+- proyecto-9
+- proyecto-10
+- proyecto-11
+- proyecto-12
+- proyecto-13
+- proyecto-14
+- proyecto-15
+- proyecto-16
+- proyecto-17
+- proyecto-18
+- proyecto-19
+- proyecto-20
+- proyecto-21
+
+// ⚠️ Los nombres reales de proyectos y RUTs se mantienen en la base de datos
+// Estos slugs son solo para mapeo con códigos Transbank en .env
+```
+
+**2. Helper para generar slugs**
+```php
+// Function en app/Helpers.php o Proyecto.php
+protected static function booted() {
+    static::creating(function ($model) {
+        if (!$model->slug) {
+            $model->slug = Str::slug($model->name);
+        }
+    });
+}
+```
+
+**3. Validar en Seeder o Migraciones**
+
+```php
+// database/seeders/ProyectoSeeder.php o migración
+$codes = json_decode(env('TRANSBANK_STORE_CODES', '{}'), true);
+
+foreach ($codes as $slug => $code) {
+    \App\Models\Proyecto::updateOrCreate(
+        ['slug' => $slug],
+        ['name' => ucfirst(str_replace('-', ' ', $slug)), 'transbank_status' => 'active']
+    );
+}
+```
+
+**4. Testing post-implementación**
+
+```php
+// Verificar en tinker
+$project = Proyecto::where('slug', 'leben-76281214-2')->first();
+$code = $project->transbank_commerce_code; // Debe ser 597035563628
+
+$payment = Payment::create([
+    'project_id' => $project->id,
+    'user_id' => auth()->id(),
+    'gateway' => PaymentGateway::TRANSBANK,
+    'amount' => 10000,
+]);
+
+$service = PaymentGateway::driver('transbank');
+$response = $service->createTransaction($payment);
+// Debe contener 'commerceCodeStore' => '597035563628'
+```
+
+**Timeline:**
+- v1.1.0 - Implementar Mall con 21 códigos de comercio
+- v1.2.0 - UI Filament para gestionar códigos dinámicamente
+- v2.0.0 - Dashboard de ventas por sub-tienda/proyecto
+
+---
+
 ## [1.0.0] - 2026-02-25
 
 ### ✨ Agregado

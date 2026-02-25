@@ -16,3 +16,16 @@ Note: This will impact Vite dev & build performances.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## 📚 Documentación de Librerías
+
+### Animaciones
+- **GSAP v3**: https://gsap.com/docs/v3/
+- **GSAP para LLMs**: https://gsap.com/llms.txt
+- **ScrollTrigger Plugin**: https://gsap.com/docs/v3/Plugins/ScrollTrigger
+- **React + GSAP**: https://gsap.com/resources/React
+
+### UI Components
+- **Web Awesome Pro**: https://webawesome.com/docs/
+- **Web Awesome Themes**: https://webawesome.com/docs/themes/
+

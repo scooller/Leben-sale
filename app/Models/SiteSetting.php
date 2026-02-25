@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class SiteSetting extends Model
 {
@@ -15,11 +15,21 @@ class SiteSetting extends Model
         'logo_dark',
         'favicon',
         'icon',
-        'primary_color',
-        'secondary_color',
-        'accent_color',
-        'background_color',
-        'text_color',
+        'logo_id',
+        'logo_dark_id',
+        'favicon_id',
+        'icon_id',
+        'webawesome_theme',
+        'webawesome_palette',
+        'semantic_brand_color',
+        'semantic_neutral_color',
+        'semantic_success_color',
+        'semantic_warning_color',
+        'semantic_danger_color',
+        'icon_family',
+        'font_family_body',
+        'font_family_heading',
+        'google_fonts_stylesheet',
         'meta_keywords',
         'meta_author',
         'og_image',
@@ -36,6 +46,7 @@ class SiteSetting extends Model
         'header_scripts',
         'footer_scripts',
         'maintenance_mode',
+        'maintenance_use_html',
         'maintenance_message',
         'extra_settings',
         'gateway_transbank_enabled',
@@ -44,10 +55,14 @@ class SiteSetting extends Model
         'gateway_transbank_config',
         'gateway_mercadopago_config',
         'gateway_manual_config',
+        'banner_image',
+        'banner_image_id',
+        'banner_link',
     ];
 
     protected $casts = [
         'maintenance_mode' => 'boolean',
+        'maintenance_use_html' => 'boolean',
         'gateway_transbank_enabled' => 'boolean',
         'gateway_mercadopago_enabled' => 'boolean',
         'gateway_manual_enabled' => 'boolean',
@@ -58,6 +73,34 @@ class SiteSetting extends Model
     ];
 
     /**
+     * Relaciones con Curator Media
+     */
+    public function logoMedia()
+    {
+        return $this->belongsTo(Media::class, 'logo_id');
+    }
+
+    public function logoDarkMedia()
+    {
+        return $this->belongsTo(Media::class, 'logo_dark_id');
+    }
+
+    public function iconMedia()
+    {
+        return $this->belongsTo(Media::class, 'icon_id');
+    }
+
+    public function faviconMedia()
+    {
+        return $this->belongsTo(Media::class, 'favicon_id');
+    }
+
+    public function bannerImageMedia()
+    {
+        return $this->belongsTo(Media::class, 'banner_image_id');
+    }
+
+    /**
      * Obtener la configuración (singleton)
      */
     public static function current(): self
@@ -66,8 +109,8 @@ class SiteSetting extends Model
             ['id' => 1],
             [
                 'site_name' => 'iLeben',
-                'primary_color' => '#667eea',
-                'secondary_color' => '#764ba2',
+                'webawesome_theme' => 'mellow',
+                'webawesome_palette' => 'natural',
             ]
         );
     }
@@ -103,22 +146,27 @@ class SiteSetting extends Model
     public static function forFrontend(): array
     {
         $settings = static::current();
+        $settings->load(['logoMedia', 'logoDarkMedia', 'faviconMedia', 'iconMedia', 'bannerImageMedia']);
 
         return [
             'site_name' => $settings->site_name,
             'site_description' => $settings->site_description,
             'site_url' => $settings->site_url,
-            'logo' => $settings->logo ? Storage::disk('branding')->url($settings->logo) : null,
-            'logo_dark' => $settings->logo_dark ? Storage::disk('branding')->url($settings->logo_dark) : null,
-            'favicon' => $settings->favicon ? Storage::disk('branding')->url($settings->favicon) : null,
-            'icon' => $settings->icon ? Storage::disk('branding')->url($settings->icon) : null,
-            'theme' => [
-                'primary_color' => $settings->primary_color,
-                'secondary_color' => $settings->secondary_color,
-                'accent_color' => $settings->accent_color,
-                'background_color' => $settings->background_color,
-                'text_color' => $settings->text_color,
-            ],
+            'logo' => $settings->logoMedia?->url ?? null,
+            'logo_dark' => $settings->logoDarkMedia?->url ?? null,
+            'favicon' => $settings->faviconMedia?->url ?? null,
+            'icon' => $settings->iconMedia?->url ?? null,
+            'webawesome_theme' => $settings->webawesome_theme ?? 'mellow',
+            'webawesome_palette' => $settings->webawesome_palette ?? 'natural',
+            'semantic_brand_color' => $settings->semantic_brand_color ?? 'blue',
+            'semantic_neutral_color' => $settings->semantic_neutral_color ?? 'gray',
+            'semantic_success_color' => $settings->semantic_success_color ?? 'green',
+            'semantic_warning_color' => $settings->semantic_warning_color ?? 'yellow',
+            'semantic_danger_color' => $settings->semantic_danger_color ?? 'red',
+            'icon_family' => $settings->icon_family ?? 'classic',
+            'font_family_body' => $settings->font_family_body,
+            'font_family_heading' => $settings->font_family_heading,
+            'google_fonts_stylesheet' => $settings->google_fonts_stylesheet,
             'seo' => [
                 'meta_keywords' => $settings->meta_keywords,
                 'meta_author' => $settings->meta_author,
@@ -139,6 +187,10 @@ class SiteSetting extends Model
             'custom_css' => $settings->custom_css,
             'maintenance_mode' => $settings->maintenance_mode,
             'maintenance_message' => $settings->maintenance_message,
+            'banner' => [
+                'image' => $settings->bannerImageMedia?->url ?? null,
+                'link' => $settings->banner_link,
+            ],
             'payment_gateways' => [
                 'transbank' => [
                     'enabled' => $settings->gateway_transbank_enabled,

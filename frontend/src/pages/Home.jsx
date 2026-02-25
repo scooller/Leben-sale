@@ -3,9 +3,12 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import PlantsService from '../services/plants';
 import CheckoutService from '../services/checkout';
 import { proyectosService } from '../services/proyectos';
+import { authService } from '../services/auth';
 import ErrorNotification from '../components/ErrorNotification';
 import PlantsGrid from '../components/PlantsGrid';
+import BannerPromo from '../components/BannerPromo';
 import { isRetryableError } from '../utils/errorHandler';
+import gsap from 'gsap';
 import '../styles/home.scss' with { type: 'css' };
 
 /**
@@ -25,6 +28,11 @@ function Home() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [plantForCheckout, setPlantForCheckout] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState('');
+  const [checkoutName, setCheckoutName] = useState('');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
+  const [checkoutPhone, setCheckoutPhone] = useState('');
+  const [checkoutRut, setCheckoutRut] = useState('');
+  const isAuthenticated = authService.isAuthenticated();
   
   // Estados para filtros
   const [proyectos, setProyectos] = useState([]);
@@ -42,6 +50,56 @@ function Home() {
   const [tempPrecioMax, setTempPrecioMax] = useState('');
   
   const gatewayDialogRef = useRef(null);
+  const heroRef = useRef(null);
+
+  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+
+  const isValidPhone = (value) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15;
+  };
+
+  const isValidRut = (value) => {
+    const cleaned = value.replace(/[^0-9kK]/g, '').toLowerCase();
+    if (cleaned.length < 8) {
+      return false;
+    }
+
+    const body = cleaned.slice(0, -1);
+    const dv = cleaned.slice(-1);
+
+    if (body.length < 7 || body.length > 8) {
+      return false;
+    }
+
+    let sum = 0;
+    let multiplier = 2;
+
+    for (let i = body.length - 1; i >= 0; i -= 1) {
+      sum += Number(body[i]) * multiplier;
+      multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+
+    const remainder = 11 - (sum % 11);
+    const expectedDv = remainder === 11 ? '0' : remainder === 10 ? 'k' : `${remainder}`;
+
+    return dv === expectedDv;
+  };
+
+  const isEmailValid = checkoutEmail ? isValidEmail(checkoutEmail) : false;
+  const isPhoneValid = checkoutPhone ? isValidPhone(checkoutPhone) : false;
+  const isRutValid = checkoutRut ? isValidRut(checkoutRut) : false;
+  const isCheckoutReady = Boolean(
+    isAuthenticated
+    && selectedGateway
+    && checkoutName
+    && checkoutEmail
+    && isEmailValid
+    && checkoutPhone
+    && isPhoneValid
+    && checkoutRut
+    && isRutValid
+  );
 
   const normalizeMultiValue = (value) => {
     if (Array.isArray(value)) {
@@ -70,7 +128,6 @@ function Home() {
         const data = await proyectosService.getProyectos({ perPage: 100 });
         setProyectos(data.data || []);
       } catch (err) {
-        console.error('Error cargando proyectos:', err);
       }
     };
     fetchProyectos();
@@ -78,16 +135,6 @@ function Home() {
 
   // Cargar plantas cuando cambian los filtros
   useEffect(() => {
-    console.log('🔄 [USEEFFECT] Detectado cambio en filtros');
-    console.log('📊 Estados actuales:', {
-      page,
-      selectedProyecto,
-      selectedDormitorios,
-      selectedBanos,
-      selectedPrecioMin,
-      selectedPrecioMax
-    });
-    
     const loadPlants = async () => {
       try {
         setLoading(true);
@@ -118,17 +165,9 @@ function Home() {
           filters.max_precio = selectedPrecioMax;
         }
         
-        console.log('🚀 [API] Enviando petición con filtros:', filters);
-        
         const data = await PlantsService.getAll(filters);
         
         const totalCount = data.total ?? data.data?.length ?? 0;
-
-        console.log('📦 [API] Respuesta recibida:', {
-          totalPlantas: totalCount,
-          totalPages: data.last_page,
-          currentPage: data.current_page
-        });
         
         const mappedPlants = (data.data || []).map(plant => ({
           ...plant,
@@ -142,27 +181,10 @@ function Home() {
           proyectoComuna: plant.proyecto?.comuna,
         }));
         
-        // Debug: Ver valores de precios
-        if (mappedPlants.length > 0) {
-          console.log('🔍 [DEBUG] Primeras 3 plantas con precios:', 
-            mappedPlants.slice(0, 3).map(p => ({
-              id: p.id,
-              nombre: p.nombre,
-              precioBase: p.precioBase,
-              precioLista: p.precioLista,
-              diferencia: p.precioBase !== p.precioLista,
-              baseEsMenor: p.precioBase < p.precioLista
-            }))
-          );
-        }
-        
-        console.log('✅ [MAPEO] Plantas mapeadas:', mappedPlants.length);
-        
         setPlants(mappedPlants);
         setTotalPages(data.last_page || 1);
         setTotalPlants(totalCount);
       } catch (err) {
-        console.error('❌ [ERROR] Error al cargar plantas:', err);
         const errorInfo = {
           type: err.type || 'unknown',
           message: err.message || 'Error al cargar las plantas',
@@ -171,40 +193,81 @@ function Home() {
           canRetry: isRetryableError(err),
         };
         setError(errorInfo);
-        console.error('Error cargando plantas:', err);
-      } finally {
+      } finally {        
         setLoading(false);
-        console.log('🏁 [CARGA] Finalizada');
       }
     };
 
     loadPlants();
   }, [page, selectedProyecto, selectedDormitorios, selectedBanos, selectedPrecioMin, selectedPrecioMax]);
 
+  // Animaciones del Hero con GSAP
+  useEffect(() => {
+    if (configLoading || !heroRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline();
+      
+      // Logo - flipInX (0ms)
+      const logo = heroRef.current.querySelector('.hero-logo');
+      if (logo) {
+        tl.fromTo(logo, {
+          y: -90,
+          opacity: 0,
+        }, {
+          y: 0,
+          opacity: 1,
+          duration: 1.8,
+          ease: 'back.out(1.7)',
+        }, 0);
+      }
+      
+      // Título y descripción - fadeInDown (500ms)
+      tl.fromTo(['.hero-section h1', '.hero-section p'], {
+        y: -50,
+        opacity: 0,
+      }, {
+        y: 0,
+        opacity: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+        stagger: 0.1
+      }, 0.5);
+      
+      // Header plantas - fadeIn (700ms)
+      tl.fromTo('.plants-header', {
+        opacity: 0,
+      }, {
+        opacity: 1,
+        duration: 1,
+        ease: 'power1.out'
+      }, 0.7);
+      
+      // Filtros - fadeIn (1000ms)
+      tl.fromTo('.filters-details', {
+        opacity: 0,
+      }, {
+        opacity: 1,
+        duration: 1,
+        ease: 'power1.out'
+      }, 1);
+    }, heroRef);
+
+    return () => ctx.revert();
+  }, [configLoading]);
+
   // Aplicar filtros
   const handleApplyFilters = () => {
-    console.log('🔍 [FILTROS] Aplicando filtros...');
-    console.log('📋 Valores temporales:', {
-      tempProyecto,
-      tempDormitorios,
-      tempBanos,
-      tempPrecioMin,
-      tempPrecioMax
-    });
-    
     setSelectedProyecto(tempProyecto);
     setSelectedDormitorios(tempDormitorios);
     setSelectedBanos(tempBanos);
     setSelectedPrecioMin(tempPrecioMin);
     setSelectedPrecioMax(tempPrecioMax);
     setPage(1); // Volver a la primera página al aplicar filtros
-    
-    console.log('✅ [FILTROS] Estados actualizados');
   };
 
   // Limpiar filtros
   const handleClearFilters = () => {
-    console.log('🧹 [FILTROS] Limpiando filtros...');
     setTempProyecto([]);
     setTempDormitorios([]);
     setTempBanos([]);
@@ -216,7 +279,6 @@ function Home() {
     setSelectedPrecioMin('');
     setSelectedPrecioMax('');
     setPage(1);
-    console.log('✅ [FILTROS] Filtros limpiados');
   };
 
   const closeGatewayDialog = () => {
@@ -234,7 +296,6 @@ function Home() {
         setGateways(availableGateways);
       } catch (err) {
         // Error no crítico, el usuario puede no ver las pasarelas pero no bloquea la app
-        console.error('Error cargando pasarelas:', err);
         setCheckoutError({
           type: err.type || 'gateway',
           message: err.message || 'Error al cargar pasarelas',
@@ -248,8 +309,14 @@ function Home() {
 
   // Manejar compra directo desde la tarjeta
   const handleQuickCheckout = async (plant) => {
+    const currentUser = authService.getCurrentUser();
+
     setPlantForCheckout(plant);
     setSelectedGateway(gateways.length > 0 ? gateways[0].id : '');
+    setCheckoutName(currentUser?.name || '');
+    setCheckoutEmail(currentUser?.email || '');
+    setCheckoutPhone(currentUser?.phone || '');
+    setCheckoutRut(currentUser?.rut || '');
     if (gatewayDialogRef.current) {
       gatewayDialogRef.current.open = true;
     }
@@ -257,6 +324,16 @@ function Home() {
 
   // Confirmar checkout con pasarela seleccionada
   const handleConfirmCheckout = async () => {
+    if (!isAuthenticated) {
+      setCheckoutError({
+        type: 'auth',
+        message: 'Usuario no autenticado',
+        userMessage: 'Debes iniciar sesion antes de pagar.',
+        title: 'Inicio de sesion requerido',
+      });
+      return;
+    }
+
     if (!plantForCheckout || !selectedGateway) {
       setCheckoutError({
         type: 'validation',
@@ -267,10 +344,66 @@ function Home() {
       return;
     }
 
+    if (!checkoutName || !checkoutEmail || !checkoutPhone || !checkoutRut) {
+      setCheckoutError({
+        type: 'validation',
+        message: 'Datos de usuario incompletos',
+        userMessage: 'Completa tu nombre, email, telefono y RUT antes de pagar',
+        title: 'Datos requeridos',
+      });
+      return;
+    }
+
+    if (!isValidEmail(checkoutEmail)) {
+      setCheckoutError({
+        type: 'validation',
+        message: 'Correo electronico invalido',
+        userMessage: 'Ingresa un correo electronico valido.',
+        title: 'Email invalido',
+      });
+      return;
+    }
+
+    if (!isValidPhone(checkoutPhone)) {
+      setCheckoutError({
+        type: 'validation',
+        message: 'Telefono invalido',
+        userMessage: 'Ingresa un telefono valido con al menos 8 digitos.',
+        title: 'Telefono invalido',
+      });
+      return;
+    }
+
+    if (!isValidRut(checkoutRut)) {
+      setCheckoutError({
+        type: 'validation',
+        message: 'RUT invalido',
+        userMessage: 'Ingresa un RUT valido (ej: 12.345.678-9).',
+        title: 'RUT invalido',
+      });
+      return;
+    }
+
     try {
       setCheckoutLoading(true);
       setCheckoutError(null);
-      const response = await CheckoutService.initiate(plantForCheckout.id, 1, selectedGateway);
+      const response = await CheckoutService.initiate(plantForCheckout.id, 1, selectedGateway, {
+        name: checkoutName,
+        email: checkoutEmail,
+        phone: checkoutPhone,
+        rut: checkoutRut,
+      });
+
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        localStorage.setItem('user', JSON.stringify({
+          ...currentUser,
+          name: checkoutName,
+          email: checkoutEmail,
+          phone: checkoutPhone,
+          rut: checkoutRut,
+        }));
+      }
       
       // Cerrar diálogo antes de redirigir
       if (gatewayDialogRef.current) {
@@ -400,8 +533,11 @@ function Home() {
   }
 
   return (
-    <div className="home-container">
-      {/* Hero Section */}
+    <div className="home-container" ref={heroRef}>
+      {/* Banner Promocional */}
+      <BannerPromo banner={config?.banner} />
+
+      {/* Hero Section */}      
       <div className="hero-section">
         {config?.logo && (
           <img src={config.logo} alt={config?.site_name} className="hero-logo" />
@@ -424,118 +560,113 @@ function Home() {
       </div>
 
       {/* Filtros */}
-      <wa-details summary="Filtros" className="filters-details">
-        <div className="wa-stack wa-gap-m">
-          <div className="wa-cluster wa-gap-m filters-inputs">
-            <wa-select
-              label="Proyecto"
-              placeholder="Todos los proyectos"
-              value={tempProyecto}
-              onChange={(e) => {
-                const value = getMultiSelectValue(e);
-                console.log('🏢 [FILTRO] Proyecto cambiado:', value);
-                setTempProyecto(value);
-              }}
-              multiple
-              clearable
-            >
-              {proyectos.map((proyecto) => (
-                <wa-option key={proyecto.id} value={proyecto.salesforce_id}>
-                  {proyecto.name}
-                </wa-option>
-              ))}
-            </wa-select>
-
-            <wa-select
-              label="Dormitorios"
-              placeholder="Todos"
-              value={tempDormitorios}
-              onChange={(e) => {
-                const value = getMultiSelectValue(e);
-                console.log('🛏️ [FILTRO] Dormitorios cambiado:', value);
-                setTempDormitorios(value);
-              }}
-              multiple
-              clearable
-            >
-              <wa-option value="ST">Studio</wa-option>
-              <wa-option value="1D">1 Dormitorio</wa-option>
-              <wa-option value="2D">2 Dormitorios</wa-option>
-              <wa-option value="3D">3 Dormitorios</wa-option>
-              <wa-option value="4D">4 Dormitorios</wa-option>
-            </wa-select>
-
-            <wa-select
-              label="Baños"
-              placeholder="Todos"
-              value={tempBanos}
-              onChange={(e) => {
-                const value = getMultiSelectValue(e);
-                console.log('🚿 [FILTRO] Baños cambiado:', value);
-                setTempBanos(value);
-              }}
-              multiple
-              clearable
-            >
-              <wa-option value="1B">1 Baño</wa-option>
-              <wa-option value="2B">2 Baños</wa-option>
-              <wa-option value="3B">3 Baños</wa-option>
-            </wa-select>
-
-            <wa-input
-              type="number"
-              label="Precio Mínimo"
-              placeholder="Desde UF"
-              value={tempPrecioMin}
-              onChange={(e) => {
-                const value = e.target.value || '';
-                console.log('💰 [FILTRO] Precio mínimo cambiado:', value);
-                setTempPrecioMin(value);
-              }}
-              clearable
-            >
-              <wa-icon slot="start" name="dollar-sign"></wa-icon>
-            </wa-input>
-
-            <wa-input
-              type="number"
-              label="Precio Máximo"
-              placeholder="Hasta UF"
-              value={tempPrecioMax}
-              onChange={(e) => {
-                const value = e.target.value || '';
-                console.log('💵 [FILTRO] Precio máximo cambiado:', value);
-                setTempPrecioMax(value);
-              }}
-              clearable
-            >
-              <wa-icon slot="start" name="dollar-sign"></wa-icon>
-            </wa-input>
-          </div>
-
-          <div className="wa-cluster wa-gap-s filters-actions">
-            <wa-button 
-              variant="brand"
-              onClick={handleApplyFilters}
-            >
-              <wa-icon slot="start" name="filter"></wa-icon>
-              Aplicar Filtros
-            </wa-button>
-
-            {activeFilterCount > 0 && (
-              <wa-button 
-                variant="neutral"
-                onClick={handleClearFilters}
+      <wa-details summary="Filtros" className="filters-details wa-mb-m">
+          <div className="wa-stack wa-gap-m">
+            <div className="wa-cluster wa-gap-m filters-inputs">
+              <wa-select
+                label="Proyecto"
+                placeholder="Todos los proyectos"
+                value={tempProyecto}
+                onChange={(e) => {
+                  const value = getMultiSelectValue(e);
+                  setTempProyecto(value);
+                }}
+                multiple
+                clearable
               >
-                <wa-icon slot="start" name="xmark"></wa-icon>
-                Limpiar Filtros
-              </wa-button>
-            )}
-          </div>
-        </div>
-      </wa-details>
+                {proyectos.map((proyecto) => (
+                  <wa-option key={proyecto.id} value={proyecto.salesforce_id}>
+                    {proyecto.name}
+                  </wa-option>
+                ))}
+              </wa-select>
 
-      {/* Plantas Grid */}
+              <wa-select
+                label="Dormitorios"
+                placeholder="Todos"
+                value={tempDormitorios}
+                onChange={(e) => {
+                  const value = getMultiSelectValue(e);
+                  setTempDormitorios(value);
+                }}
+                multiple
+                clearable
+              >
+                <wa-option value="ST">Studio</wa-option>
+                <wa-option value="1D">1 Dormitorio</wa-option>
+                <wa-option value="2D">2 Dormitorios</wa-option>
+                <wa-option value="3D">3 Dormitorios</wa-option>
+                <wa-option value="4D">4 Dormitorios</wa-option>
+              </wa-select>
+
+              <wa-select
+                label="Baños"
+                placeholder="Todos"
+                value={tempBanos}
+                onChange={(e) => {
+                  const value = getMultiSelectValue(e);
+                  setTempBanos(value);
+                }}
+                multiple
+                clearable
+              >
+                <wa-option value="1B">1 Baño</wa-option>
+                <wa-option value="2B">2 Baños</wa-option>
+                <wa-option value="3B">3 Baños</wa-option>
+              </wa-select>
+
+              <wa-input
+                type="number"
+                label="Precio Mínimo"
+                placeholder="Desde UF"
+                value={tempPrecioMin}
+                onChange={(e) => {
+                  const value = e.target.value || '';
+                  setTempPrecioMin(value);
+                }}
+                clearable
+              >
+                <wa-icon slot="start" name="dollar-sign"></wa-icon>
+              </wa-input>
+
+              <wa-input
+                type="number"
+                label="Precio Máximo"
+                placeholder="Hasta UF"
+                value={tempPrecioMax}
+                onChange={(e) => {
+                  const value = e.target.value || '';
+                  setTempPrecioMax(value);
+                }}
+                clearable
+              >
+                <wa-icon slot="start" name="dollar-sign"></wa-icon>
+              </wa-input>
+            </div>
+
+            <div className="wa-cluster wa-gap-s filters-actions">
+              <wa-button 
+                variant="brand"
+                onClick={handleApplyFilters}
+              >
+                <wa-icon slot="start" name="filter"></wa-icon>
+                Aplicar Filtros
+              </wa-button>
+
+              {activeFilterCount > 0 && (
+                <wa-button 
+                  variant="neutral"
+                  onClick={handleClearFilters}
+                >
+                  <wa-icon slot="start" name="xmark"></wa-icon>
+                  Limpiar Filtros
+                </wa-button>
+              )}
+            </div>
+          </div>
+        </wa-details>
+
+      {/* Plantas Grid */}      
       <PlantsGrid 
         plants={plants}
         loading={loading}
@@ -554,7 +685,48 @@ function Home() {
         style={{ '--width': '500px' }}
         light-dismiss
       >
-        <div className="gateway-selection">
+        <div className="gateway-selection">        
+          <div className="checkout-user-fields wa-stack wa-gap-s">
+            {!isAuthenticated && (
+              <wa-callout variant="info">
+                <wa-icon name="address-card" slot="icon"></wa-icon>
+                Rellena todos los campos para continuar al pago.
+              </wa-callout>
+            )}
+            <p className="gateway-instructions">Datos del comprador:</p>
+            <wa-input
+              label="Nombre completo"
+              value={checkoutName}
+              onChange={(e) => setCheckoutName(e.target.value)}
+              required
+            ></wa-input>
+
+            <wa-input
+              type="email"
+              label="Correo electronico"
+              value={checkoutEmail}
+              onChange={(e) => setCheckoutEmail(e.target.value)}
+              required
+            ></wa-input>
+
+            <wa-input
+              type="tel"
+              label="Telefono"
+              placeholder="+56 9 1234 5678"
+              value={checkoutPhone}
+              onChange={(e) => setCheckoutPhone(e.target.value)}
+              required
+            ></wa-input>
+
+            <wa-input
+              label="RUT"
+              placeholder="12.345.678-9"
+              value={checkoutRut}
+              onChange={(e) => setCheckoutRut(e.target.value)}
+              required
+            ></wa-input>
+          </div>
+
           <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
           
           {gateways.length > 0 ? (
@@ -591,7 +763,7 @@ function Home() {
           slot="footer"
           variant="brand" 
           onClick={handleConfirmCheckout}
-          disabled={checkoutLoading || !selectedGateway}
+          disabled={checkoutLoading || !isCheckoutReady}
           {...(checkoutLoading && { loading: true })}
         >
           {checkoutLoading ? 'Procesando...' : 'Continuar al Pago'}

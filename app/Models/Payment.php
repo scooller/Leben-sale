@@ -11,6 +11,7 @@ class Payment extends Model
 {
     protected $fillable = [
         'user_id',
+        'project_id',
         'gateway',
         'gateway_tx_id',
         'amount',
@@ -37,6 +38,14 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relación con el proyecto (para Transbank Mall - código único por proyecto)
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Proyecto::class);
     }
 
     /**

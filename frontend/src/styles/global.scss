@@ -13,9 +13,65 @@ html {
   height: 100%;
 }
 
-body {
-  font-family: var(--wa-font-sans, system-ui, -apple-system, sans-serif);
-  font-size: var(--wa-font-size-base, 1rem);
-  line-height: 1.5;
+body {  
   transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+//array margenes s,m,l,xl
+$spacing: (
+  '3xs': var(--wa-space-3xs),
+  '2xs': var(--wa-space-2xs),
+  'xs': var(--wa-space-xs),
+  's': var(--wa-space-s),
+  'm': var(--wa-space-m),
+  'l': var(--wa-space-l),
+  'xl': var(--wa-space-xl),
+  '2xl': var(--wa-space-2xl),
+  '3xl': var(--wa-space-3xl),
+  '4xl': var(--wa-space-4xl)
+);
+$directions: ('t', 'r', 'b', 'l', 'x', 'y', '');
+@each $size, $value in $spacing {
+  .wa-p-#{$size} {
+    padding: $value;
+  }
+  .wa-m-#{$size} {
+    margin: $value;
+  }
+  @each $dir in $directions {
+    .wa-p#{$dir}-#{$size} {
+      @if $dir == 't' {
+        padding-top: $value;
+      } @else if $dir == 'r' {
+        padding-right: $value;
+      } @else if $dir == 'b' {
+        padding-bottom: $value;
+      } @else if $dir == 'l' {
+        padding-left: $value;
+      } @else if $dir == 'x' {
+        padding-left: $value;
+        padding-right: $value;
+      } @else if $dir == 'y' {
+        padding-top: $value;
+        padding-bottom: $value;
+      }
+    }
+    .wa-m#{$dir}-#{$size} {
+      @if $dir == 't' {
+        margin-top: $value;
+      } @else if $dir == 'r' {
+        margin-right: $value;
+      } @else if $dir == 'b' {
+        margin-bottom: $value;
+      } @else if $dir == 'l' {
+        margin-left: $value;
+      } @else if $dir == 'x' {
+        margin-left: $value;
+        margin-right: $value;
+      } @else if $dir == 'y' {
+        margin-top: $value;
+        margin-bottom: $value;
+      }
+    }
+  }
 }

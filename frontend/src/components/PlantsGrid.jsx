@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const DEFAULT_PLANT_IMAGE = 'https://sale.ileben.cl/wp-content/uploads/2022/11/portada_bold_terraza.jpg';
 
@@ -17,6 +19,47 @@ function PlantsGrid({
 }) {
   const [selectedPlant, setSelectedPlant] = useState(null);
   const dialogRef = useRef(null);
+  const gridContainerRef = useRef(null);
+
+  // GSAP ScrollTrigger para animar cards cuando entran al viewport
+  useEffect(() => {
+    if (loading || plants.length === 0 || !gridContainerRef.current) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Esperar a que wa-card esté definido
+    customElements.whenDefined('wa-card').then(() => {
+      const ctx = gsap.context(() => {
+        const cards = gsap.utils.toArray('.plant-card', gridContainerRef.current);
+        
+        if (cards.length === 0) return;
+        
+        cards.forEach((card, index) => {
+          // console.log('Animando card:', card);
+          gsap.to(card, {
+            opacity: 1,
+            rotationX: 0,
+            duration: 0.5,
+            // delay: index * 0.1,
+            ease: 'Power2.in',
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 85%',
+              end: 'top 50%',
+              toggleActions: 'play none none none',
+              markers: true
+            }
+          });
+        });
+      }, gridContainerRef);
+
+      return () => ctx.revert();
+    });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, [plants, loading]);
 
   const buildPaginationItems = () => {
     if (totalPages <= 7) {
@@ -57,7 +100,7 @@ function PlantsGrid({
 
   const handleCheckoutFromDialog = () => {
     if (!selectedPlant) return;
-    // Cerrar el diálogo
+    // Cerrar el diálogopar
     if (dialogRef.current) {
       dialogRef.current.open = false;
     }
@@ -133,157 +176,164 @@ function PlantsGrid({
   // Grid de plantas
   return (
     <>
-      {typeof totalPlants === 'number' && (
-        <div className="plants-count">Total: {totalPlants} planta{totalPlants === 1 ? '' : 's'}</div>
-      )}
-      <div className="plants-grid wa-grid">
-        {plants.map((plant) => (
-          <wa-card key={plant.id} className="plant-card" appearance="filled">
-            <img slot="media" src={plant.imagen || DEFAULT_PLANT_IMAGE} alt={plant.nombre} className="plant-image" />
+      <div className='wa-stack'>
+        {typeof totalPlants === 'number' && (
+          <div className="plants-count">Total: {totalPlants} planta{totalPlants === 1 ? '' : 's'}</div>
+        )}
+        <div className="plants-grid wa-grid" ref={gridContainerRef}>
+          {plants.map((plant, index) => (
+            <wa-card key={plant.id} className="plant-card" appearance="filled">
+                <img slot="media" src={plant.imagen || DEFAULT_PLANT_IMAGE} alt={plant.nombre} className="plant-image" />
 
-            <div slot="header" className="plant-header-wrapper">
-              <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
-                <span>{plant.proyectoNombre}</span>
-                <span>Planta {plant.nombre}</span>               
-              </div>              
-            </div>
-            {plant.categoria && (
-                <wa-badge variant="brand" slot="header-actions">{plant.categoria}</wa-badge>
-            )}
-            <div className="plant-body">
-                <div className="wa-split">
-                    <div className="wa-cluster wa-gap-xs wa-align-items-center">              
-                        <wa-icon name="location-dot" style={{ fontSize: '1em' }}></wa-icon>
-                        <span>{plant.proyectoComuna}</span>
-                    </div>                
-                    {/* Tags para información adicional */}
-                    <div className="wa-cluster wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
-                        {plant.orientacion && (
-                        <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                            <wa-icon name="compass" slot="header"></wa-icon>
-                            <span>Orient. {plant.orientacion}</span>
-                        </wa-card>
-                        )}
-                        {plant.piso && (
-                        <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                            <wa-icon name="building" slot="header"></wa-icon>                     
-                            <span>Piso {plant.piso}</span>
-                        </wa-card>
-                        )}
-                        {plant.superficie_util && (
-                        <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                            <wa-icon name="ruler" slot="header"></wa-icon>
-                            <span>Sup. {plant.superficie_util} m²</span>
-                        </wa-card>
-                        )}
-                    </div>
-                </div>           
-            </div>            
-            {/* Ubicación destacada */}
-            {plant.proyectoComuna && (
-            <div slot="footer" className="plant-price-wrapper">
-                {/* Precios destacados en el header */}
-                {(plant.precioBase || plant.precioLista) && (
-                    <div className="plant-price-header">
-                    {(0 < plant.precioLista) && (plant.precioLista !== plant.precioBase) && (
-                        <div className="price-original">
-                        <span className="price-label-small">Precio lista: </span>
-                        <span className="price wa-font-weight-bold">
-                            <s>UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</s>
-                        </span>
-                        </div>
-                    )}
-                    {(0 < plant.precioBase) && (
-                        <div className="price-final">
-                        {plant.precioBase < plant.precioLista && (
-                            <span className="price-label-discount">Precio sale: </span>
-                        )}
-                        <span className="price-sale wa-font-weight-bold wa-heading-xl">
-                            UF {(plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        </span>
-                        </div>
-                    )}
-                    </div>
+                <div slot="header" className="plant-header-wrapper">
+                  <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
+                    <span>{plant.proyectoNombre}</span>
+                    <span>Planta {plant.nombre}</span>               
+                  </div>              
+                </div>
+                {plant.categoria && (
+                    <wa-badge variant="brand" slot="header-actions">{plant.categoria}</wa-badge>
                 )}
-            </div>
-            )}
-            {/* Acciones */}
-            <div slot="footer-actions" className="wa-cluster wa-gap-s">
-              <wa-button-group label="Alignment">
-                <wa-button size="small" onClick={() => openPlantDetail(plant)}>
-                  <wa-icon name="building-circle-exclamation" slot="start"></wa-icon>
-                  Ver Detalles
-                </wa-button>
-                <wa-button 
-                  size="small" 
-                  variant="brand" 
-                  disabled={checkoutLoading} 
-                  {...(checkoutLoading && { loading: true })} 
-                  onClick={() => onQuickCheckout(plant)}
-                >
-                  {checkoutLoading ? 'Cargando...' : <><wa-icon name="comments-dollar" slot="start"></wa-icon>Cotizar</>}
-                </wa-button>
-              </wa-button-group>
-            </div>
-          </wa-card>
-        ))}
+                <div className="plant-body">
+                    <div className="wa-split">
+                        <div className="wa-cluster wa-gap-xs wa-align-items-center">              
+                            <wa-icon name="location-dot" style={{ fontSize: '1em' }}></wa-icon>
+                            <span>{plant.proyectoComuna}</span>
+                        </div>                
+                        {/* Tags para información adicional */}
+                        <div className="wa-cluster wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
+                            {plant.orientacion && (
+                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
+                                <wa-icon name="compass" slot="header"></wa-icon>
+                                <span>Orient. {plant.orientacion}</span>
+                            </wa-card>
+                            )}
+                            {plant.piso && (
+                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
+                                <wa-icon name="building" slot="header"></wa-icon>                     
+                                <span>Piso {plant.piso}</span>
+                            </wa-card>
+                            )}
+                            {plant.superficie_util && (
+                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
+                                <wa-icon name="ruler" slot="header"></wa-icon>
+                                <span>Sup. {plant.superficie_util} m²</span>
+                            </wa-card>
+                            )}
+                        </div>
+                    </div>           
+                </div>            
+                {/* Ubicación destacada */}
+                {plant.proyectoComuna && (
+                <div slot="footer" className="plant-price-wrapper">
+                    {/* Precios destacados en el header */}
+                    {(plant.precioBase || plant.precioLista) && (
+                        <div className="plant-price-header">
+                        {(0 < plant.precioLista) && (plant.precioLista !== plant.precioBase) && (
+                            <div className="price-original">
+                            <span className="price-label-small">Precio lista: </span>
+                            <span className="price wa-font-weight-bold">
+                                <s>UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</s>
+                            </span>
+                            </div>
+                        )}
+                        {(0 < plant.precioBase) && (
+                            <div className="price-final">
+                            {plant.precioBase < plant.precioLista && (
+                                <span className="price-label-discount">Precio sale: </span>
+                            )}
+                            <span className="price-sale wa-font-weight-bold wa-heading-xl">
+                                UF {(plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                            </div>
+                        )}
+                        </div>
+                    )}
+                </div>
+                )}
+                {/* Acciones */}
+                <div slot="footer-actions" className="wa-cluster wa-gap-s">
+                  <wa-button-group label="Alignment">
+                    <wa-button size="small" onClick={() => openPlantDetail(plant)}>
+                      <wa-icon name="building-circle-exclamation" slot="start"></wa-icon>
+                      Ver Detalles
+                    </wa-button>
+                    <wa-button 
+                      size="small" 
+                      variant="brand" 
+                      disabled={checkoutLoading} 
+                      {...(checkoutLoading && { loading: true })} 
+                      onClick={() => onQuickCheckout(plant)}
+                    >
+                      {checkoutLoading ? 'Cargando...' : <><wa-icon name="comments-dollar" slot="start"></wa-icon>Cotizar</>}
+                    </wa-button>
+                  </wa-button-group>
+                </div>
+              </wa-card>
+          ))}
+        </div>
       </div>
 
       {/* Diálogo - Detalles de Planta */}
       <wa-dialog
         ref={dialogRef}
         label={selectedPlant?.nombre || 'Detalle de Planta'}
-        style={{ '--width': '600px' }}
+        style={{ '--width': '720px' }}
         light-dismiss
       >
         {selectedPlant && (
           <>
-            <img src={selectedPlant.imagen || DEFAULT_PLANT_IMAGE} alt={selectedPlant.nombre} className="detail-img" />
+            <div className="wa-grid wa-gap-l" style={{ '--min-column-size': '32ch', padding: '1.25rem 1.5rem 0.75rem' }}>
+              <img
+                src={selectedPlant.imagen || DEFAULT_PLANT_IMAGE}
+                alt={selectedPlant.nombre}
+                style={{ width: '100%', height: '100%', maxHeight: '380px', objectFit: 'cover', borderRadius: '0.75rem' }}
+              />
 
-            <div className="detail-content">
+              <div className="wa-stack wa-gap-m">
               {selectedPlant.proyectoNombre && (
-                <div className="detail-row">
-                  <strong>Proyecto:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Proyecto</strong>
                   <span>{selectedPlant.proyectoNombre}</span>
                 </div>
               )}
               {selectedPlant.proyectoComuna && (
-                <div className="detail-row">
-                  <strong>Ubicación:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Ubicación</strong>
                   <span>{selectedPlant.proyectoComuna}</span>
                 </div>
               )}
               {selectedPlant.proyectoDescripcion && (
-                <div className="detail-row proyecto-desc-row">
-                  <strong>Descripción del Proyecto:</strong>
+                <div className="wa-stack wa-gap-xs">
+                  <strong>Descripción del Proyecto</strong>
                   <span>{selectedPlant.proyectoDescripcion}</span>
                 </div>
               )}
-              <div className="detail-row">
-                <strong>Nombre:</strong>
+              <div className="wa-split wa-align-items-center">
+                <strong>Nombre</strong>
                 <span>{selectedPlant.nombre}</span>
               </div>
               {selectedPlant.categoria && (
-                <div className="detail-row">
-                  <strong>Categoría:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Categoría</strong>
                   <wa-badge variant="brand">{selectedPlant.categoria}</wa-badge>
                 </div>
               )}
               {selectedPlant.programa && (
-                <div className="detail-row">
-                  <strong>Programa:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Programa</strong>
                   <span>{selectedPlant.programa}</span>
                 </div>
               )}
               {selectedPlant.orientacion && (
-                <div className="detail-row">
-                  <strong>Orientación:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Orientación</strong>
                   <wa-tag variant="primary">{selectedPlant.orientacion}</wa-tag>
                 </div>
               )}
               {selectedPlant.piso && (
-                <div className="detail-row">
-                  <strong>Piso:</strong>
+                <div className="wa-split wa-align-items-center">
+                  <strong>Piso</strong>
                   <wa-tag variant="primary">{selectedPlant.piso}</wa-tag>
                 </div>
               )}
@@ -292,18 +342,11 @@ function PlantsGrid({
                 || selectedPlant.superficie_util !== null && selectedPlant.superficie_util !== undefined
                 || selectedPlant.superficie_terraza !== null && selectedPlant.superficie_terraza !== undefined
                 || selectedPlant.superficie_vendible !== null && selectedPlant.superficie_vendible !== undefined) && (
-                <div className="detail-row">
-                  <strong>Superficies:</strong>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '8px 16px',
-                      marginTop: '8px',
-                    }}
-                  >
+                <div className="wa-stack wa-gap-s">
+                  <strong>Superficies</strong>
+                  <div className="wa-grid wa-gap-s" style={{ '--min-column-size': '18ch' }}>
                     {selectedPlant.superficie_total_principal !== null && selectedPlant.superficie_total_principal !== undefined && (
-                      <div>
+                      <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
                           <wa-icon name="house" style={{ fontSize: '0.9em' }}></wa-icon>
                           <span>Total principal</span>
@@ -312,7 +355,7 @@ function PlantsGrid({
                       </div>
                     )}
                     {selectedPlant.superficie_interior !== null && selectedPlant.superficie_interior !== undefined && (
-                      <div>
+                      <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
                           <wa-icon name="door-open" style={{ fontSize: '0.9em' }}></wa-icon>
                           <span>Interior</span>
@@ -321,7 +364,7 @@ function PlantsGrid({
                       </div>
                     )}
                     {selectedPlant.superficie_util !== null && selectedPlant.superficie_util !== undefined && (
-                      <div>
+                      <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
                           <wa-icon name="ruler" style={{ fontSize: '0.9em' }}></wa-icon>
                           <span>Útil</span>
@@ -330,7 +373,7 @@ function PlantsGrid({
                       </div>
                     )}
                     {selectedPlant.superficie_terraza !== null && selectedPlant.superficie_terraza !== undefined && (
-                      <div>
+                      <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
                           <wa-icon name="umbrella-beach" style={{ fontSize: '0.9em' }}></wa-icon>
                           <span>Terraza</span>
@@ -339,7 +382,7 @@ function PlantsGrid({
                       </div>
                     )}
                     {selectedPlant.superficie_vendible !== null && selectedPlant.superficie_vendible !== undefined && (
-                      <div>
+                      <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
                           <wa-icon name="layer-group" style={{ fontSize: '0.9em' }}></wa-icon>
                           <span>Vendible</span>
@@ -351,26 +394,27 @@ function PlantsGrid({
                 </div>
               )}
               {(selectedPlant.precioBase || selectedPlant.precioLista) && (
-                <div className="detail-row price-row">
-                  <strong>Precio:</strong>
-                  <div className="price-details">
+                <div className="wa-stack wa-gap-xs">
+                  <strong>Precio</strong>
+                  <div className="wa-stack wa-gap-2xs">
                     {selectedPlant.precioLista && selectedPlant.precioBase && selectedPlant.precioLista !== selectedPlant.precioBase && (
-                      <div className="price-original-detail">
-                        <span className="price-label-small">Precio lista:</span>
-                        <span className="price-crossed">
+                      <div className="wa-cluster wa-gap-xs">
+                        <span>Precio lista:</span>
+                        <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
                           UF {selectedPlant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </span>
                       </div>
                     )}
-                    <span className="price-highlight">
+                    <span className="wa-heading-xl wa-font-weight-bold">
                       UF {(selectedPlant.precioBase || selectedPlant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                     {selectedPlant.precioBase && selectedPlant.precioLista && selectedPlant.precioBase < selectedPlant.precioLista && (
-                      <span className="discount-badge">¡Con descuento!</span>
+                      <wa-badge variant="success">¡Con descuento!</wa-badge>
                     )}
                   </div>
                 </div>
               )}
+              </div>
             </div>
 
             <wa-button 

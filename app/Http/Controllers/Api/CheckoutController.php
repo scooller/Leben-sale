@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CheckoutInitiateRequest;
 use App\Models\Plant;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 class CheckoutController extends Controller
@@ -13,13 +14,17 @@ class CheckoutController extends Controller
      * Iniciar sesión de pago
      * Retorna la URL de redirección a la pasarela de pago
      */
-    public function initiate(Request $request)
+    public function initiate(CheckoutInitiateRequest $request): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'plant_id' => 'required|integer',
-                'quantity' => 'required|integer|min:1',
-                'gateway' => 'required|in:transbank,mercadopago',
+            $validated = $request->validated();
+
+            $user = $request->user();
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'rut' => $validated['rut'],
             ]);
 
             // Obtener la planta
@@ -32,14 +37,15 @@ class CheckoutController extends Controller
             // Iniciar transacción según la pasarela
             if ($validated['gateway'] === 'transbank') {
                 return $this->initiateTransbank($plant, $amount, $description, $validated['quantity']);
-            } else {
-                return $this->initiateMercadoPago($plant, $amount, $description, $validated['quantity']);
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Validación fallida',
-                'errors' => $e->errors(),
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+
+            return $this->initiateMercadoPago(
+                $plant,
+                $amount,
+                $description,
+                $validated['quantity'],
+                $validated['email'],
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al iniciar el checkout',
@@ -51,7 +57,7 @@ class CheckoutController extends Controller
     /**
      * Iniciar pago con Transbank
      */
-    private function initiateTransbank(Plant $plant, float $amount, string $description, int $quantity)
+    private function initiateTransbank(Plant $plant, float $amount, string $description, int $quantity): JsonResponse
     {
         try {
             $transbankEnv = config('services.transbank.environment', 'integration');
@@ -102,7 +108,7 @@ class CheckoutController extends Controller
     /**
      * Iniciar pago con Mercado Pago
      */
-    private function initiateMercadoPago(Plant $plant, float $amount, string $description, int $quantity)
+    private function initiateMercadoPago(Plant $plant, float $amount, string $description, int $quantity, string $payerEmail): JsonResponse
     {
         try {
             // Verificar configuración
@@ -117,6 +123,7 @@ class CheckoutController extends Controller
                 'description' => $description,
                 'external_reference' => 'PLANT-'.$plant->id.'-'.time(),
                 'currency' => 'CLP',
+                'payer_email' => $payerEmail,
             ]);
 
             return response()->json([
@@ -138,7 +145,7 @@ class CheckoutController extends Controller
      * Simular checkout cuando no hay credenciales reales configuradas
      * Para propósitos de desarrollo/demostración
      */
-    private function simulateCheckout(string $gateway, Plant $plant, float $amount, string $description)
+    private function simulateCheckout(string $gateway, Plant $plant, float $amount, string $description): JsonResponse
     {
         if ($gateway === 'transbank') {
             $redirectUrl = route('payment.transbank.return');
@@ -159,7 +166,7 @@ class CheckoutController extends Controller
     /**
      * Obtener pasarelas disponibles
      */
-    public function availableGateways()
+    public function availableGateways(): JsonResponse
     {
         $gateways = [];
 

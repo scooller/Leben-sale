@@ -1,4 +1,4 @@
-<x-filament::card class="col-span-1 sm:col-span-2">
+<x-filament::card>
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <div>
@@ -23,7 +23,7 @@
             </div>
             <div class="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-3">
                 <p class="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">Última Sync</p>
-                <p class="mt-1 text-sm font-semibold text-purple-900 dark:text-purple-100 break-words">{{ $this->lastSyncTime }}</p>
+                <p class="mt-1 text-sm font-semibold text-purple-900 dark:text-purple-100 wrap-break-word">{{ $this->lastSyncTime }}</p>
             </div>
         </div>
 
@@ -33,6 +33,7 @@
                 wire:click="syncPlants"
                 wire:loading.attr="disabled"
                 wire:target="syncPlants"
+                @disabled($this->totalProyectos === 0)
                 class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:focus:ring-offset-gray-900"
             >
                 <svg
@@ -60,10 +61,23 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
 
-                <span wire:loading.remove wire:target="syncPlants">Sincronizar Ahora</span>
+                <span wire:loading.remove wire:target="syncPlants">
+                    @if ($this->totalProyectos === 0)
+                        Importa Proyectos primero
+                    @else
+                        Sincronizar Ahora
+                    @endif
+                </span>
                 <span wire:loading.add wire:target="syncPlants" class="hidden">Sincronizando...</span>
             </button>
         </div>
+
+        @if ($this->totalProyectos === 0)
+            <div class="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-3 text-sm text-yellow-700 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800">
+                <p class="font-semibold mb-1">⚠️ No hay proyectos importados</p>
+                <p>Debes importar proyectos desde Salesforce antes de poder sincronizar plantas. Dirígete a la sección de <strong>Proyectos</strong> para sincronizarlos.</p>
+            </div>
+        @endif
 
         <!-- Información adicional -->
         <div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-3 text-xs text-gray-600 dark:text-gray-400">

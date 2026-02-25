@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Enums\PaymentStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -25,9 +26,11 @@ class PaymentForm
                 TextInput::make('currency')
                     ->required()
                     ->default('CLP'),
-                TextInput::make('status')
+                Select::make('status')
+                    ->options(PaymentStatus::toSelectArray())
+                    ->searchable()
                     ->required()
-                    ->default('pending'),
+                    ->default(PaymentStatus::PENDING->value),
                 Textarea::make('metadata')
                     ->columnSpanFull(),
                 DateTimePicker::make('completed_at'),

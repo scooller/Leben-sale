@@ -10,7 +10,11 @@ class SyncProjectsWidget extends Widget
 {
     protected string $view = 'filament.widgets.sync-projects-widget';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 4;
+
+    protected int|string|array $columnSpan = [
+        'md' => 1,
+    ];
 
     public ?string $lastSyncTime = null;
 

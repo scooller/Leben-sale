@@ -21,6 +21,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'user_type',
+        'phone',
+        'rut',
         'password',
     ];
 
@@ -53,5 +56,21 @@ class User extends Authenticatable
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Verificar si el usuario es administrador
+     */
+    public function isAdmin(): bool
+    {
+        return $this->user_type === 'admin';
+    }
+
+    /**
+     * Verificar si el usuario es cliente
+     */
+    public function isCustomer(): bool
+    {
+        return $this->user_type === 'customer';
     }
 }

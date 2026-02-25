@@ -3,10 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\SiteSetting;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
+use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -36,6 +39,16 @@ class SiteSettings extends Page implements HasForms
     protected static ?int $navigationSort = 99;
 
     protected string $view = 'filament.pages.site-settings';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
 
     public ?array $data = [];
 
@@ -74,46 +87,45 @@ class SiteSettings extends Page implements HasForms
                                     ->columns(1),
                             ]),
 
+                        Tabs\Tab::make('Banner')
+                            ->icon('heroicon-m-photo')
+                            ->schema([
+                                Section::make('Banner Promocional')
+                                    ->description('Configura un banner que se mostrará antes del hero section en el frontend')
+                                    ->schema([
+                                        CuratorPicker::make('banner_image_id')
+                                            ->label('Imagen del Banner')
+                                            ->helperText('Tamaño recomendado: 1920x400px o proporcional. Formatos: JPG, PNG'),
+
+                                        TextInput::make('banner_link')
+                                            ->label('URL del Banner')
+                                            ->url()
+                                            ->placeholder('https://ejemplo.com')
+                                            ->helperText('El link al que dirigirá al hacer click en el banner. Dejar vacío para no tener link.'),
+                                    ])
+                                    ->columns(1),
+                            ]),
+
                         Tabs\Tab::make('Branding')
                             ->icon('heroicon-o-photo')
                             ->schema([
                                 Section::make('Logos e Íconos')
                                     ->description('Sube las imágenes de tu marca')
                                     ->schema([
-                                        FileUpload::make('logo')
+                                        CuratorPicker::make('logo_id')
                                             ->label('Logo Principal')
-                                            ->disk('branding')
-                                            ->directory('.')
-                                            ->image()
-                                            ->visibility('public')
-                                            ->imageEditor()
                                             ->helperText('Recomendado: PNG con fondo transparente'),
 
-                                        FileUpload::make('logo_dark')
+                                        CuratorPicker::make('logo_dark_id')
                                             ->label('Logo Modo Oscuro')
-                                            ->disk('branding')
-                                            ->directory('.')
-                                            ->image()
-                                            ->visibility('public')
-                                            ->imageEditor()
                                             ->helperText('Versión del logo para fondos oscuros'),
 
-                                        FileUpload::make('icon')
+                                        CuratorPicker::make('icon_id')
                                             ->label('Ícono/Isotipo')
-                                            ->disk('branding')
-                                            ->directory('.')
-                                            ->image()
-                                            ->visibility('public')
-                                            ->imageEditor()
                                             ->helperText('Ícono cuadrado, mínimo 512x512px'),
 
-                                        FileUpload::make('favicon')
+                                        CuratorPicker::make('favicon_id')
                                             ->label('Favicon')
-                                            ->disk('branding')
-                                            ->directory('.')
-                                            ->image()
-                                            ->visibility('public')
-                                            ->acceptedFileTypes(['image/x-icon', 'image/png'])
                                             ->helperText('ICO o PNG, 32x32px o 64x64px'),
                                     ])
                                     ->columns(2),
@@ -122,29 +134,187 @@ class SiteSettings extends Page implements HasForms
                         Tabs\Tab::make('Colores')
                             ->icon('heroicon-o-swatch')
                             ->schema([
-                                Section::make('Tema de Colores')
-                                    ->description('Define la paleta de colores del sitio')
+                                Section::make('Configuración de Tema y Paleta')
+                                    ->description('Los temas y paletas definen el estilo base del sitio')
                                     ->schema([
-                                        ColorPicker::make('primary_color')
-                                            ->label('Color Primario')
+                                        Select::make('webawesome_theme')
+                                            ->label('Tema Web Awesome')
+                                            ->options([
+                                                'default' => 'Default',
+                                                'awesome' => 'Awesome',
+                                                'shoelace' => 'Shoelace',
+                                                'active' => 'Active',
+                                                'brutalist' => 'Brutalist',
+                                                'glossy' => 'Glossy',
+                                                'matter' => 'Matter',
+                                                'mellow' => 'Mellow',
+                                                'playful' => 'Playful',
+                                                'premium' => 'Premium',
+                                                'tailspin' => 'Tailspin',
+                                            ])
+                                            ->helperText('Define el estilo base y colores del sitio')
                                             ->required(),
 
-                                        ColorPicker::make('secondary_color')
-                                            ->label('Color Secundario')
-                                            ->required(),
-
-                                        ColorPicker::make('accent_color')
-                                            ->label('Color de Acento'),
-
-                                        ColorPicker::make('background_color')
-                                            ->label('Color de Fondo')
-                                            ->required(),
-
-                                        ColorPicker::make('text_color')
-                                            ->label('Color de Texto')
+                                        Select::make('webawesome_palette')
+                                            ->label('Paleta de Colores')
+                                            ->options([
+                                                'default' => 'Default',
+                                                'bright' => 'Bright',
+                                                'shoelace' => 'Shoelace',
+                                                'rudimentary' => 'Rudimentary (Pro)',
+                                                'elegant' => 'Elegant (Pro)',
+                                                'mild' => 'Mild (Pro)',
+                                                'natural' => 'Natural (Pro)',
+                                                'anodized' => 'Anodized (Pro)',
+                                                'vogue' => 'Vogue (Pro)',
+                                            ])
+                                            ->helperText('Define los tonos y matices específicos de los colores')
                                             ->required(),
                                     ])
                                     ->columns(2),
+
+                                Section::make('Colores Semánticos')
+                                    ->description('Selecciona el color específico para cada grupo semántico. Esto aplicará clases CSS como wa-brand-blue, wa-success-green, etc.')
+                                    ->schema([
+                                        Select::make('semantic_brand_color')
+                                            ->label('Color Brand (Marca)')
+                                            ->options([
+                                                'red' => 'Red',
+                                                'orange' => 'Orange',
+                                                'yellow' => 'Yellow',
+                                                'green' => 'Green',
+                                                'cyan' => 'Cyan',
+                                                'blue' => 'Blue',
+                                                'indigo' => 'Indigo',
+                                                'purple' => 'Purple',
+                                                'pink' => 'Pink',
+                                                'gray' => 'Gray',
+                                            ])
+                                            ->default('blue')
+                                            ->required()
+                                            ->helperText('Color principal de tu marca'),
+
+                                        Select::make('semantic_neutral_color')
+                                            ->label('Color Neutral')
+                                            ->options([
+                                                'red' => 'Red',
+                                                'orange' => 'Orange',
+                                                'yellow' => 'Yellow',
+                                                'green' => 'Green',
+                                                'cyan' => 'Cyan',
+                                                'blue' => 'Blue',
+                                                'indigo' => 'Indigo',
+                                                'purple' => 'Purple',
+                                                'pink' => 'Pink',
+                                                'gray' => 'Gray',
+                                            ])
+                                            ->default('gray')
+                                            ->required()
+                                            ->helperText('Color para elementos neutrales'),
+
+                                        Select::make('semantic_success_color')
+                                            ->label('Color Success (Éxito)')
+                                            ->options([
+                                                'red' => 'Red',
+                                                'orange' => 'Orange',
+                                                'yellow' => 'Yellow',
+                                                'green' => 'Green',
+                                                'cyan' => 'Cyan',
+                                                'blue' => 'Blue',
+                                                'indigo' => 'Indigo',
+                                                'purple' => 'Purple',
+                                                'pink' => 'Pink',
+                                                'gray' => 'Gray',
+                                            ])
+                                            ->default('green')
+                                            ->required()
+                                            ->helperText('Color para mensajes de éxito'),
+
+                                        Select::make('semantic_warning_color')
+                                            ->label('Color Warning (Advertencia)')
+                                            ->options([
+                                                'red' => 'Red',
+                                                'orange' => 'Orange',
+                                                'yellow' => 'Yellow',
+                                                'green' => 'Green',
+                                                'cyan' => 'Cyan',
+                                                'blue' => 'Blue',
+                                                'indigo' => 'Indigo',
+                                                'purple' => 'Purple',
+                                                'pink' => 'Pink',
+                                                'gray' => 'Gray',
+                                            ])
+                                            ->default('yellow')
+                                            ->required()
+                                            ->helperText('Color para advertencias'),
+
+                                        Select::make('semantic_danger_color')
+                                            ->label('Color Danger (Peligro)')
+                                            ->options([
+                                                'red' => 'Red',
+                                                'orange' => 'Orange',
+                                                'yellow' => 'Yellow',
+                                                'green' => 'Green',
+                                                'cyan' => 'Cyan',
+                                                'blue' => 'Blue',
+                                                'indigo' => 'Indigo',
+                                                'purple' => 'Purple',
+                                                'pink' => 'Pink',
+                                                'gray' => 'Gray',
+                                            ])
+                                            ->default('red')
+                                            ->required()
+                                            ->helperText('Color para errores y peligros'),
+                                    ])
+                                    ->columns(2),
+
+                                Section::make('Familia de Iconos')
+                                    ->description('Selecciona el estilo de los iconos de Font Awesome / Web Awesome')
+                                    ->schema([
+                                        Select::make('icon_family')
+                                            ->label('Familia de Iconos')
+                                            ->options([
+                                                'classic' => 'Classic',
+                                                'sharp' => 'Sharp',
+                                                'duotone' => 'Duotone',
+                                                'sharp-duotone' => 'Sharp Duotone',
+                                            ])
+                                            ->default('classic')
+                                            ->required()
+                                            ->helperText('Define el estilo visual de los iconos (se aplica mediante data-font-family en el HTML)'),
+                                    ])
+                                    ->columns(1),
+                            ]),
+
+                        Tabs\Tab::make('Tipografía')
+                            ->icon('heroicon-o-document-text')
+                            ->schema([
+                                Section::make('Google Fonts')
+                                    ->description('Pega la URL del stylesheet de Google Fonts para cargar las fuentes automáticamente')
+                                    ->schema([
+                                        Textarea::make('google_fonts_stylesheet')
+                                            ->label('URL del Stylesheet de Google Fonts')
+                                            ->placeholder('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap')
+                                            ->rows(3)
+                                            ->helperText('Copia la URL completa desde Google Fonts. Esto cargará las fuentes con todos sus pesos y variantes.')
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->columns(1),
+
+                                Section::make('Configuración de Fuentes')
+                                    ->description('Especifica los nombres de las fuentes a usar en el sitio')
+                                    ->schema([
+                                        TextInput::make('font_family_body')
+                                            ->label('Fuente del Cuerpo')
+                                            ->placeholder('Ej: "Inter", sans-serif')
+                                            ->helperText('Fuente para el texto general. Mapea a --wa-font-family-body'),
+
+                                        TextInput::make('font_family_heading')
+                                            ->label('Fuente de Encabezados')
+                                            ->placeholder('Ej: "Poppins", sans-serif')
+                                            ->helperText('Fuente para títulos y encabezados. Mapea a --wa-font-family-heading'),
+                                    ])
+                                    ->columns(1),
                             ]),
 
                         Tabs\Tab::make('SEO')
@@ -292,11 +462,58 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('El sitio mostrará un mensaje de mantenimiento')
                                             ->live(),
 
-                                        Textarea::make('maintenance_message')
-                                            ->label('Mensaje de Mantenimiento')
-                                            ->rows(3)
-                                            ->default('Estamos realizando mejoras. Volveremos pronto.')
+                                        Toggle::make('maintenance_use_html')
+                                            ->label('Editar como HTML')
+                                            ->helperText('Activa para editar el mensaje directamente en HTML')
+                                            ->default(false)
+                                            ->live()
                                             ->visible(fn ($get) => $get('maintenance_mode')),
+
+                                        RichEditor::make('maintenance_message')
+                                            ->label('Mensaje de Mantenimiento')
+                                            ->default('Estamos realizando mejoras. Volveremos pronto.')
+                                            ->helperText('Usa el botón 📎 (Attach Curator Media) en la barra para insertar imágenes del File Manager. Puedes usar formato, negritas, listas y enlaces.')
+                                            ->toolbarButtons([
+                                                'attachCuratorMedia',
+                                                'blockquote',
+                                                'bold',
+                                                'bulletList',
+                                                'codeBlock',
+                                                'h2',
+                                                'h3',
+                                                'italic',
+                                                'link',
+                                                'orderedList',
+                                                'redo',
+                                                'strike',
+                                                'undo',
+                                            ])
+                                            ->plugins([
+                                                AttachCuratorMediaPlugin::make(),
+                                            ])
+                                            ->visible(fn ($get) => $get('maintenance_mode') && ! $get('maintenance_use_html'))
+                                            ->dehydrated(fn ($get) => ! $get('maintenance_use_html'))
+                                            ->columnSpanFull(),
+
+                                        Textarea::make('maintenance_message_html')
+                                            ->label('Mensaje de Mantenimiento (HTML)')
+                                            ->helperText('Código HTML directo. Puedes usar <img>, <a>, <strong>, <p>, listas, etc.')
+                                            ->rows(10)
+                                            ->afterStateHydrated(function (Textarea $component, $state, $get) {
+                                                // Cargar el valor desde maintenance_message cuando se abre
+                                                $message = $get('maintenance_message');
+                                                if ($message) {
+                                                    $component->state($message);
+                                                }
+                                            })
+                                            ->dehydrateStateUsing(function ($state, $set) {
+                                                // Guardar el HTML en maintenance_message
+                                                $set('maintenance_message', $state);
+
+                                                return null; // No guardar en maintenance_message_html
+                                            })
+                                            ->visible(fn ($get) => $get('maintenance_mode') && $get('maintenance_use_html'))
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(1),
                             ]),

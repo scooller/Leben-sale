@@ -36,21 +36,6 @@ class SiteConfigService {
   }
 
   /**
-   * Aplicar tema al documento
-   * @param {Object} theme - Objeto con los colores del tema
-   */
-  applyTheme(theme) {
-    if (!theme) return;
-
-    const root = document.documentElement;
-    if (theme.primary_color) root.style.setProperty('--color-primary', theme.primary_color);
-    if (theme.secondary_color) root.style.setProperty('--color-secondary', theme.secondary_color);
-    if (theme.accent_color) root.style.setProperty('--color-accent', theme.accent_color);
-    if (theme.background_color) root.style.setProperty('--color-background', theme.background_color);
-    if (theme.text_color) root.style.setProperty('--color-text', theme.text_color);
-  }
-
-  /**
    * Inyectar CSS personalizado
    * @param {string} css - CSS personalizado
    */

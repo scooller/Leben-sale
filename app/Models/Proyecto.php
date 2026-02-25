@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Proyecto extends Model
 {
@@ -14,6 +16,7 @@ class Proyecto extends Model
     protected $fillable = [
         'salesforce_id',
         'name',
+        'slug',
         'descripcion',
         'direccion',
         'comuna',
@@ -28,6 +31,7 @@ class Proyecto extends Model
         'fecha_entrega',
         'etapa',
         'horario_atencion',
+        // Descuentos de mercado
         'dscto_m_x_prod_principal_porc',
         'dscto_m_x_prod_principal_uf',
         'dscto_m_x_bodega_porc',
@@ -37,6 +41,7 @@ class Proyecto extends Model
         'dscto_max_otros_porc',
         'dscto_max_otros_prod_uf',
         'dscto_maximo_aporte_leben',
+        // Configuración de financiamiento
         'n_anos_1',
         'n_anos_2',
         'n_anos_3',
@@ -45,6 +50,8 @@ class Proyecto extends Model
         'valor_reserva_exigido_min_peso',
         'tasa',
         'entrega_inmediata',
+        // Transbank Mall
+        'transbank_commerce_code',
     ];
 
     protected $casts = [
@@ -65,8 +72,43 @@ class Proyecto extends Model
     ];
 
     /**
-     * Relación con Plantas
+     * Boot del modelo
      */
+    protected static function booted(): void
+    {
+        // Generar slug automáticamente si no existe
+        static::creating(function (self $model) {
+            if (! $model->slug) {
+                $model->slug = Str::slug($model->name);
+            }
+        });
+
+        static::updating(function (self $model) {
+            if ($model->isDirty('name') && ! $model->isDirty('slug')) {
+                $model->slug = Str::slug($model->name);
+            }
+        });
+    }
+
+    /**
+     * Obtener el código de comercio Transbank para este proyecto
+     * Busca en la configuración bajo la clave del slug
+     */
+    public function getTransbankCommerceCodeAttribute(): ?string
+    {
+        $codes = config('payments.gateways.transbank.commerce_codes', []);
+
+        return $codes[$this->slug] ?? null;
+    }
+
+    /**
+     * Relación con Pagos
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'project_id');
+    }
+
     public function plantas()
     {
         return $this->hasMany(Plant::class, 'salesforce_proyecto_id', 'salesforce_id');
