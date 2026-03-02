@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\ReservationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Plant extends Model
 {
@@ -71,5 +74,32 @@ class Plant extends Model
     public function scopeByProgramaPiso($query, string $programa, string $piso)
     {
         return $query->where('programa', $programa)->where('piso', $piso);
+    }
+
+    /**
+     * Relacion con reservas
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(PlantReservation::class);
+    }
+
+    /**
+     * Obtener reserva activa actual (si existe)
+     */
+    public function activeReservation(): HasOne
+    {
+        return $this->hasOne(PlantReservation::class)
+            ->where('status', ReservationStatus::ACTIVE)
+            ->where('expires_at', '>', now())
+            ->latest();
+    }
+
+    /**
+     * Verificar si la planta esta reservada actualmente
+     */
+    public function isReserved(): bool
+    {
+        return $this->activeReservation()->exists();
     }
 }

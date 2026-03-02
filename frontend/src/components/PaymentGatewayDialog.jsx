@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { authService } from '../services/auth';
+import ReservationService from '../services/reservation';
 
 /**
  * Diálogo para seleccionar pasarela de pago y completar datos del comprador
+ * Reserva la planta al abrir, libera al cerrar sin compra
  */
-function PaymentGatewayDialog({ 
-  open, 
-  onClose, 
-  plant, 
-  gateways, 
-  loading, 
+function PaymentGatewayDialog({
+  open,
+  onClose,
+  plant,
+  gateways,
+  loading,
   isAuthenticated,
-  onConfirm 
+  onConfirm
 }) {
   const dialogRef = useRef(null);
   const [selectedGateway, setSelectedGateway] = useState('');
@@ -19,6 +21,12 @@ function PaymentGatewayDialog({
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
   const [checkoutRut, setCheckoutRut] = useState('');
+
+  // Reservation state
+  const [reservationToken, setReservationToken] = useState(null);
+  const [reservationLoading, setReservationLoading] = useState(false);
+  const [reservationError, setReservationError] = useState(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
 
   // Validación de email
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
@@ -60,7 +68,7 @@ function PaymentGatewayDialog({
   const isEmailValid = checkoutEmail ? isValidEmail(checkoutEmail) : false;
   const isPhoneValid = checkoutPhone ? isValidPhone(checkoutPhone) : false;
   const isRutValid = checkoutRut ? isValidRut(checkoutRut) : false;
-  
+
   const isCheckoutReady = Boolean(
     isAuthenticated
     && selectedGateway
@@ -71,6 +79,8 @@ function PaymentGatewayDialog({
     && isPhoneValid
     && checkoutRut
     && isRutValid
+    && reservationToken
+    && !reservationError
   );
 
   const reservaExigidaPeso = (
@@ -87,12 +97,70 @@ function PaymentGatewayDialog({
     ? `$ ${reservaAsNumber.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`
     : 'Por confirmar';
 
+  const formatCountdown = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
   // Sincronizar estado abierto con el diálogo
   useEffect(() => {
     if (dialogRef.current) {
       dialogRef.current.open = open;
     }
   }, [open]);
+
+  // Reserve plant when dialog opens
+  useEffect(() => {
+    if (!open || !plant || !isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+    const doReserve = async () => {
+      setReservationLoading(true);
+      setReservationError(null);
+      try {
+        const reservation = await ReservationService.reserve(plant.id);
+        if (!cancelled) {
+          setReservationToken(reservation.session_token);
+          setRemainingSeconds(reservation.remaining_seconds);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setReservationError(err.userMessage || 'No se pudo reservar esta planta.');
+        }
+      } finally {
+        if (!cancelled) {
+          setReservationLoading(false);
+        }
+      }
+    };
+
+    doReserve();
+    return () => { cancelled = true; };
+  }, [open, plant, isAuthenticated]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (remainingSeconds <= 0 || !reservationToken) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setReservationError('Tu reserva ha expirado. Cierra este dialogo e intenta nuevamente.');
+          setReservationToken(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [reservationToken, remainingSeconds > 0]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -101,6 +169,13 @@ function PaymentGatewayDialog({
     }
 
     const handleHide = () => {
+      // Release reservation when dialog closes without purchase
+      if (reservationToken) {
+        ReservationService.release(reservationToken);
+        setReservationToken(null);
+      }
+      setReservationError(null);
+      setRemainingSeconds(0);
       onClose();
     };
 
@@ -109,7 +184,7 @@ function PaymentGatewayDialog({
     return () => {
       dialog.removeEventListener('wa-hide', handleHide);
     };
-  }, [onClose]);
+  }, [onClose, reservationToken]);
 
   // Cargar datos del usuario cuando se abre el diálogo
   useEffect(() => {
@@ -131,6 +206,7 @@ function PaymentGatewayDialog({
     onConfirm({
       plantId: plant?.id,
       gateway: selectedGateway,
+      sessionToken: reservationToken,
       userData: {
         name: checkoutName,
         email: checkoutEmail,
@@ -147,8 +223,30 @@ function PaymentGatewayDialog({
       style={{ '--width': '500px' }}
       light-dismiss
     >
-      <div className="gateway-selection">        
+      <div className="gateway-selection">
         <div className="checkout-user-fields wa-stack wa-gap-s">
+          {/* Reservation status */}
+          {reservationLoading && (
+            <wa-callout variant="info">
+              <wa-spinner slot="icon"></wa-spinner>
+              Reservando planta...
+            </wa-callout>
+          )}
+
+          {reservationError && (
+            <wa-callout variant="danger">
+              <wa-icon name="circle-exclamation" slot="icon"></wa-icon>
+              {reservationError}
+            </wa-callout>
+          )}
+
+          {reservationToken && remainingSeconds > 0 && (
+            <wa-callout variant="warning">
+              <wa-icon name="clock" slot="icon"></wa-icon>
+              Planta reservada por <strong>{formatCountdown(remainingSeconds)}</strong>
+            </wa-callout>
+          )}
+
           {!isAuthenticated && (
             <wa-callout variant="info">
               <wa-icon name="address-card" slot="icon"></wa-icon>
@@ -202,7 +300,7 @@ function PaymentGatewayDialog({
         </div>
 
         <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
-        
+
         {gateways.length > 0 ? (
           <wa-radio-group
             value={selectedGateway}
@@ -225,20 +323,20 @@ function PaymentGatewayDialog({
         )}
       </div>
 
-      <wa-button 
+      <wa-button
         slot="footer"
         variant="neutral"
-        data-dialog="close" 
+        data-dialog="close"
         disabled={loading}
       >
         Cancelar
       </wa-button>
-      <wa-button 
+      <wa-button
         slot="footer"
-        variant="brand" 
+        variant="brand"
         onClick={handleConfirm}
-        disabled={loading || !isCheckoutReady}
-        {...(loading && { loading: true })}
+        disabled={loading || !isCheckoutReady || reservationLoading}
+        {...((loading || reservationLoading) && { loading: true })}
       >
         {loading ? 'Procesando...' : 'Continuar al Pago'}
       </wa-button>

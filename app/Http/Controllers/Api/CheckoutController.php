@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutInitiateRequest;
 use App\Models\Plant;
+use App\Services\PlantReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 class CheckoutController extends Controller
 {
+    public function __construct(
+        private readonly PlantReservationService $reservationService,
+    ) {}
+
     /**
      * Iniciar sesión de pago
      * Retorna la URL de redirección a la pasarela de pago
@@ -18,6 +23,14 @@ class CheckoutController extends Controller
     {
         try {
             $validated = $request->validated();
+
+            // Validar reserva si se proporciona session_token
+            if (! empty($validated['session_token'])) {
+                $this->reservationService->validateReservationForCheckout(
+                    (int) $validated['plant_id'],
+                    $validated['session_token'],
+                );
+            }
 
             $user = $request->user();
             $user->update([

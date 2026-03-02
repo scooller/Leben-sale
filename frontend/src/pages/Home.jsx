@@ -127,6 +127,7 @@ function Home() {
           proyectoDescripcion: plant.proyecto?.descripcion,
           proyectoDireccion: plant.proyecto?.direccion,
           proyectoComuna: plant.proyecto?.comuna,
+          isReserved: !!plant.active_reservation,
         }));
         
         setPlants(mappedPlants);
@@ -255,7 +256,7 @@ function Home() {
   };
 
   // Confirmar checkout con pasarela seleccionada
-  const handleConfirmCheckout = async ({ plantId, gateway, userData }) => {
+  const handleConfirmCheckout = async ({ plantId, gateway, sessionToken, userData }) => {
     if (!isAuthenticated) {
       setCheckoutError({
         type: 'auth',
@@ -269,7 +270,7 @@ function Home() {
     try {
       setCheckoutLoading(true);
       setCheckoutError(null);
-      const response = await CheckoutService.initiate(plantId, 1, gateway, userData);
+      const response = await CheckoutService.initiate(plantId, 1, gateway, userData, sessionToken);
 
       const currentUser = authService.getCurrentUser();
       if (currentUser) {

@@ -40,6 +40,7 @@ class CheckoutInitiateRequest extends FormRequest
                 'max:12',
                 Rule::unique('users', 'rut')->ignore($this->user()?->id),
             ],
+            'session_token' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -56,6 +57,7 @@ class CheckoutInitiateRequest extends FormRequest
             'email' => 'correo electronico',
             'phone' => 'telefono',
             'rut' => 'RUT',
+            'session_token' => 'token de reserva',
         ];
     }
 }

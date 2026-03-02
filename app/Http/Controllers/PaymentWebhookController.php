@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Facades\PaymentGateway;
 use App\Models\Payment;
+use App\Services\PlantReservationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class PaymentWebhookController extends Controller
 {
+    public function __construct(
+        private readonly PlantReservationService $reservationService,
+    ) {}
     /**
      * Manejar retorno de Transbank (POST)
      *
@@ -63,6 +67,12 @@ class PaymentWebhookController extends Controller
                     'buy_order' => $response['buy_order'],
                 ]);
 
+                // Completar la reserva de la planta
+                $plantId = $this->extractPlantIdFromBuyOrder($response['buy_order']);
+                if ($plantId) {
+                    $this->reservationService->completeForPlant($plantId);
+                }
+
                 return redirect()->route('payment.success', ['payment' => $payment->id])
                     ->with('success', 'Pago completado exitosamente');
             } else {
@@ -79,6 +89,12 @@ class PaymentWebhookController extends Controller
                     'payment_id' => $payment->id,
                     'response_code' => $response['response_code'],
                 ]);
+
+                // Liberar la reserva de la planta
+                $plantId = $this->extractPlantIdFromBuyOrder($response['buy_order']);
+                if ($plantId) {
+                    $this->reservationService->releaseForPlant($plantId, 'payment_rejected');
+                }
 
                 return redirect()->route('payment.failed', ['payment' => $payment->id])
                     ->with('error', 'Pago rechazado por el banco');
@@ -153,6 +169,16 @@ class PaymentWebhookController extends Controller
                     'mp_payment_id' => $paymentId,
                     'status' => $newStatus->value,
                 ]);
+
+                // Resolver reserva segun resultado del pago
+                $plantId = $this->extractPlantIdFromExternalReference($paymentInfo['external_reference'] ?? '');
+                if ($plantId) {
+                    if ($newStatus->isCompleted()) {
+                        $this->reservationService->completeForPlant($plantId);
+                    } elseif ($newStatus->isFailed()) {
+                        $this->reservationService->releaseForPlant($plantId, 'payment_failed');
+                    }
+                }
 
                 return response()->json(['success' => true]);
             }
@@ -233,5 +259,31 @@ class PaymentWebhookController extends Controller
             'refunded' => \App\Enums\PaymentStatus::REFUNDED,
             default => \App\Enums\PaymentStatus::PENDING,
         };
+    }
+
+    /**
+     * Extraer plant_id del buy_order de Transbank
+     * Formato: ORDER-PLANT-{id}-{timestamp}
+     */
+    private function extractPlantIdFromBuyOrder(string $buyOrder): ?int
+    {
+        if (preg_match('/ORDER-PLANT-(\d+)-/', $buyOrder, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Extraer plant_id del external_reference de Mercado Pago
+     * Formato: PLANT-{id}-{timestamp}
+     */
+    private function extractPlantIdFromExternalReference(string $ref): ?int
+    {
+        if (preg_match('/PLANT-(\d+)-/', $ref, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 }

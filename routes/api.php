@@ -35,6 +35,9 @@ Route::prefix('v1')->group(function () {
 
     // Pasarelas disponibles
     Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
+
+    // Estado de reserva de planta (público para badges en frontend)
+    Route::get('/reservations/plant/{plantId}', [App\Http\Controllers\Api\PlantReservationController::class, 'status']);
 });
 
 // Rutas protegidas (requieren autenticación)
@@ -47,6 +50,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Checkout
     Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'initiate']);
+
+    // Reservas
+    Route::post('/reservations', [App\Http\Controllers\Api\PlantReservationController::class, 'reserve']);
+    Route::delete('/reservations/{sessionToken}', [App\Http\Controllers\Api\PlantReservationController::class, 'release']);
 
     // Pagos
     Route::post('/payments', [App\Http\Controllers\Api\PaymentController::class, 'create']);

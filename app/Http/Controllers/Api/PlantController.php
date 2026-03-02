@@ -15,7 +15,7 @@ class PlantController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Plant::query()
-            ->with('proyecto')
+            ->with(['proyecto', 'activeReservation'])
             ->whereHas('proyecto') // Solo plantas con proyecto asociado
             ->where('is_active', true); // Solo plantas activas
 
@@ -113,7 +113,7 @@ class PlantController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $plant = Plant::with('proyecto')->findOrFail($id);
+        $plant = Plant::with(['proyecto', 'activeReservation'])->findOrFail($id);
 
         return response()->json($plant);
     }

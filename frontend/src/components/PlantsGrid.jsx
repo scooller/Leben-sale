@@ -192,7 +192,12 @@ function PlantsGrid({
                   </div>              
                 </div>
                 {plant.categoria && (
-                    <wa-badge variant="brand" slot="header-actions">{plant.categoria}</wa-badge>
+                    <div slot="header-actions" className="wa-cluster wa-gap-xs">
+                      <wa-badge variant="brand">{plant.categoria}</wa-badge>
+                      {plant.isReserved && (
+                        <wa-badge variant="warning">Reservado</wa-badge>
+                      )}
+                    </div>
                 )}
                 <div className="plant-body">
                     <div className="wa-split">
@@ -258,14 +263,19 @@ function PlantsGrid({
                       <wa-icon name="building-circle-exclamation" slot="start"></wa-icon>
                       Ver Detalles
                     </wa-button>
-                    <wa-button 
-                      size="small" 
-                      variant="brand" 
-                      disabled={checkoutLoading} 
-                      {...(checkoutLoading && { loading: true })} 
+                    <wa-button
+                      size="small"
+                      variant="brand"
+                      disabled={checkoutLoading || plant.isReserved}
+                      {...(checkoutLoading && { loading: true })}
                       onClick={() => onQuickCheckout(plant)}
                     >
-                      {checkoutLoading ? 'Cargando...' : <><wa-icon name="comments-dollar" slot="start"></wa-icon>Cotizar</>}
+                      {plant.isReserved
+                        ? 'Reservado'
+                        : checkoutLoading
+                          ? 'Cargando...'
+                          : <><wa-icon name="comments-dollar" slot="start"></wa-icon>Cotizar</>
+                      }
                     </wa-button>
                   </wa-button-group>
                 </div>

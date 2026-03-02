@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Payment\PaymentGatewayManager;
+use App\Services\PlantReservationService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Alias para facilitar uso
         $this->app->alias('payment.gateway', PaymentGatewayManager::class);
+
+        // Registrar Plant Reservation Service como singleton
+        $this->app->singleton(PlantReservationService::class);
     }
 
     /**
