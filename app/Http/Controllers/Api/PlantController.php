@@ -20,12 +20,28 @@ class PlantController extends Controller
             ->where('is_active', true); // Solo plantas activas
 
         $projectValues = $this->normalizeInputValues($request->input('salesforce_proyecto_id'));
+        $projectIdValues = $this->normalizeInputValues($request->input('proyecto_id', $request->input('project_id')));
         $dormValues = $this->normalizeInputValues($request->input('programa'));
         $banosValues = $this->normalizeInputValues($request->input('programa2'));
+        $available = $this->normalizeBoolean($request->input('disponible', $request->input('available')));
 
         // Filtros
         if (count($projectValues) > 0) {
             $query->whereIn('salesforce_proyecto_id', $projectValues);
+        }
+
+        if (count($projectIdValues) > 0) {
+            $query->whereHas('proyecto', function ($projectQuery) use ($projectIdValues) {
+                $projectQuery->whereIn('id', $projectIdValues);
+            });
+        }
+
+        if ($available !== null) {
+            if ($available) {
+                $query->whereDoesntHave('activeReservation');
+            } else {
+                $query->whereHas('activeReservation');
+            }
         }
 
         if (count($dormValues) > 0 || count($banosValues) > 0) {
@@ -106,6 +122,31 @@ class PlantController extends Controller
         }
 
         return [trim((string) $value)];
+    }
+
+    private function normalizeBoolean(mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value)) {
+            return $value === 1;
+        }
+
+        if (is_string($value)) {
+            $normalizedValue = strtolower(trim($value));
+
+            if (in_array($normalizedValue, ['1', 'true', 'yes', 'si'], true)) {
+                return true;
+            }
+
+            if (in_array($normalizedValue, ['0', 'false', 'no'], true)) {
+                return false;
+            }
+        }
+
+        return null;
     }
 
     /**

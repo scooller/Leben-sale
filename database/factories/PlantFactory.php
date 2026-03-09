@@ -27,7 +27,6 @@ class PlantFactory extends Factory
             'piso' => fake()->numberBetween(1, 20),
             'precio_base' => fake()->randomFloat(2, 3000, 10000),
             'precio_lista' => fake()->randomFloat(2, 3200, 10500),
-            'precio_venta' => fake()->randomFloat(2, 3000, 10000),
             'superficie_total_principal' => fake()->randomFloat(2, 40, 150),
             'superficie_interior' => fake()->randomFloat(2, 35, 120),
             'superficie_util' => fake()->randomFloat(2, 30, 100),

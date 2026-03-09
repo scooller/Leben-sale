@@ -92,7 +92,283 @@ frontend/
 - ✅ **Database** - Tabla `curator` para metadata de archivos
 - ✅ **Editor** - CropperJS para redimensionar
 
-## 🚀 Instalación
+## � API REST
+
+Base URL: `/api/v1`
+
+### Autenticación
+
+#### POST `/api/v1/login`
+Autenticación de usuario.
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+#### POST `/api/v1/register`
+Registro de nuevo usuario.
+```json
+{
+  "name": "Usuario",
+  "email": "user@example.com",
+  "password": "password",
+  "password_confirmation": "password"
+}
+```
+
+#### POST `/api/v1/logout`
+Cerrar sesión (requiere autenticación).
+
+### Proyectos
+
+#### GET `/api/v1/proyectos`
+Lista de proyectos disponibles.
+
+**Query Parameters:**
+- `perPage` - Registros por página (default: 15)
+- `page` - Número de página
+
+**Respuesta:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Proyecto Torre Central",
+      "descripcion": "...",
+      "direccion": "Av. Principal 123",
+      "comuna": "Santiago",
+      "region": "Metropolitana",
+      "etapa": "En Construcción",
+      "fecha_entrega": "2026-12-31"
+    }
+  ],
+  "total": 10,
+  "per_page": 15,
+  "current_page": 1
+}
+```
+
+#### GET `/api/v1/proyectos/{id}`
+Detalle de un proyecto específico.
+
+### Plantas
+
+#### GET `/api/v1/plants`
+Lista de plantas con filtros avanzados.
+
+**Query Parameters:**
+- `proyecto_id` o `project_id` - Filtrar por ID de proyecto (local)
+- `salesforce_proyecto_id` - Filtrar por ID Salesforce del proyecto
+- `disponible` o `available` - Disponibilidad (`1`, `true`, `yes`, `si` para disponibles | `0`, `false`, `no` para no disponibles)
+- `programa` - Dormitorios (`1`, `2`, `3`, `4`, `ST`)
+- `programa2` - Baños (`1`, `2`, `3`)
+- `min_precio` - Precio mínimo
+- `max_precio` - Precio máximo
+- `perPage` - Registros por página (default: 12)
+- `page` - Número de página
+
+**Ejemplos:**
+```bash
+# Plantas disponibles de un proyecto
+GET /api/v1/plants?proyecto_id=3&disponible=1
+
+# Plantas con 2 dormitorios y 2 baños
+GET /api/v1/plants?programa=2&programa2=2
+
+# Plantas en rango de precio
+GET /api/v1/plants?min_precio=5000&max_precio=10000
+
+# Plantas no disponibles (reservadas)
+GET /api/v1/plants?disponible=0
+```
+
+**Respuesta:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "salesforce_product_id": "01t5e000001AbcDEF",
+      "salesforce_proyecto_id": "a015e000001XyZABC",
+      "name": "101",
+      "product_code": "PLANT-1001",
+      "orientacion": "Norte",
+      "programa": "2 dormitorios",
+      "programa2": "2 baños",
+      "piso": "10",
+      "precio_base": "5000.00",
+      "precio_lista": "5500.00",
+      "superficie_total_principal": "75.50",
+      "superficie_interior": "68.30",
+      "superficie_util": "65.20",
+      "superficie_terraza": "12.50",
+      "superficie_vendible": "73.80",
+      "opportunity_id": "0065e000001OpXYZ",
+      "is_active": true,
+      "last_synced_at": "2026-03-09T15:30:00.000000Z",
+      "created_at": "2026-03-01T10:00:00.000000Z",
+      "updated_at": "2026-03-09T15:30:00.000000Z",
+      "proyecto": {
+        "id": 3,
+        "salesforce_id": "a015e000001XyZABC",
+        "name": "Proyecto Torre Central",
+        "descripcion": "Moderno edificio en el centro de Santiago",
+        "direccion": "Av. Principal 123",
+        "comuna": "Santiago",
+        "region": "Metropolitana",
+        "etapa": "En Construcción",
+        "fecha_entrega": "2026-12-31",
+        "valor_reserva_exigido_defecto_peso": "500000.00"
+      },
+      "active_reservation": null
+    }
+  ],
+  "total": 45,
+  "per_page": 12,
+  "current_page": 1,
+  "last_page": 4,
+  "from": 1,
+  "to": 12
+}
+```
+
+#### GET `/api/v1/plants/{id}`
+Detalle de una planta específica.
+
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "salesforce_product_id": "01t5e000001AbcDEF",
+  "salesforce_proyecto_id": "a015e000001XyZABC",
+  "name": "101",
+  "product_code": "PLANT-1001",
+  "orientacion": "Norte",
+  "programa": "2 dormitorios",
+  "programa2": "2 baños",
+  "piso": "10",
+  "precio_base": "5000.00",
+  "precio_lista": "5500.00",
+  "superficie_total_principal": "75.50",
+  "superficie_interior": "68.30",
+  "superficie_util": "65.20",
+  "superficie_terraza": "12.50",
+  "superficie_vendible": "73.80",
+  "opportunity_id": "0065e000001OpXYZ",
+  "is_active": true,
+  "last_synced_at": "2026-03-09T15:30:00.000000Z",
+  "created_at": "2026-03-01T10:00:00.000000Z",
+  "updated_at": "2026-03-09T15:30:00.000000Z",
+  "proyecto": {
+    "id": 3,
+    "salesforce_id": "a015e000001XyZABC",
+    "name": "Proyecto Torre Central",
+    "descripcion": "Moderno edificio en el centro de Santiago",
+    "direccion": "Av. Principal 123",
+    "comuna": "Santiago",
+    "provincia": "Santiago",
+    "region": "Metropolitana",
+    "email": "ventas@torrecentral.cl",
+    "telefono": "+56 2 2345 6789",
+    "etapa": "En Construcción",
+    "fecha_inicio_ventas": "2025-06-01",
+    "fecha_entrega": "2026-12-31",
+    "valor_reserva_exigido_defecto_peso": "500000.00",
+    "valor_reserva_exigido_min_peso": "300000.00"
+  },
+  "active_reservation": null
+}
+```
+
+### Configuración
+
+#### GET `/api/v1/site-config`
+Configuración global del sitio (pública).
+
+**Respuesta:**
+```json
+{
+  "site_name": "iLeben",
+  "theme": "default",
+  "primary_color": "#0066cc",
+  "logo_url": "https://...",
+  "maintenance_mode": false
+}
+```
+
+### Pasarelas de Pago
+
+#### GET `/api/v1/payment-gateways`
+Lista de pasarelas de pago disponibles.
+
+**Respuesta:**
+```json
+[
+  {
+    "key": "transbank",
+    "name": "Transbank",
+    "enabled": true
+  },
+  {
+    "key": "mercadopago",
+    "name": "Mercado Pago",
+    "enabled": true
+  }
+]
+```
+
+### Reservas (Requiere autenticación)
+
+#### POST `/api/v1/reservations`
+Reservar una planta temporalmente.
+
+**Body:**
+```json
+{
+  "plant_id": 1,
+  "session_token": "unique-session-token"
+}
+```
+
+#### DELETE `/api/v1/reservations/{sessionToken}`
+Liberar una reserva.
+
+#### GET `/api/v1/reservations/plant/{plantId}`
+Verificar estado de reserva de una planta.
+
+### Pagos (Requiere autenticación)
+
+#### POST `/api/v1/checkout`
+Iniciar proceso de checkout.
+
+**Body:**
+```json
+{
+  "plant_id": 1,
+  "gateway": "transbank",
+  "session_token": "unique-session-token"
+}
+```
+
+#### GET `/api/v1/payments`
+Lista de pagos del usuario autenticado.
+
+#### GET `/api/v1/payments/{id}`
+Detalle de un pago específico.
+
+### Autenticación de API
+
+Las rutas protegidas requieren el header:
+```
+Authorization: Bearer {token}
+```
+
+El token se obtiene en la respuesta de `/api/v1/login`.
+
+## �🚀 Instalación
 
 ### Requisitos
 - PHP 8.4+
@@ -256,5 +532,5 @@ Todos los derechos reservados - iLeben © 2026
 
 ---
 
-**Última actualización:** 25 Feb 2026  
+**Última actualización:** 9 Mar 2026  
 **Versión:** 1.0.0

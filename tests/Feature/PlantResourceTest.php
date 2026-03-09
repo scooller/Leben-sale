@@ -67,14 +67,14 @@ class PlantResourceTest extends TestCase
     {
         $plant = Plant::factory()->create([
             'name' => 'Test Plant',
-            'precio_venta' => 5000.00,
+            'precio_base' => 5000.00,
             'superficie_total_principal' => 75.50,
         ]);
 
         $this->assertDatabaseHas('plants', [
             'id' => $plant->id,
             'name' => 'Test Plant',
-            'precio_venta' => 5000.00,
+            'precio_base' => 5000.00,
             'superficie_total_principal' => 75.50,
         ]);
     }

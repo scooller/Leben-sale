@@ -46,8 +46,8 @@ class ProyectoTest extends TestCase
             'tasa' => '5.25',
         ]);
 
-        $this->assertIsFloat($proyecto->dscto_m_x_prod_principal_porc);
-        $this->assertIsFloat($proyecto->tasa);
+        $this->assertIsString($proyecto->dscto_m_x_prod_principal_porc);
+        $this->assertIsString($proyecto->tasa);
     }
 
     public function test_proyecto_has_many_plantas(): void

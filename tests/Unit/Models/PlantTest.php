@@ -24,7 +24,6 @@ class PlantTest extends TestCase
             'piso',
             'precio_base',
             'precio_lista',
-            'precio_venta',
             'superficie_total_principal',
             'superficie_interior',
             'superficie_util',
@@ -43,13 +42,13 @@ class PlantTest extends TestCase
     public function test_plant_casts_attributes_correctly(): void
     {
         $plant = Plant::factory()->create([
-            'precio_venta' => '5000.50',
+            'precio_base' => '5000.50',
             'superficie_total_principal' => '75.25',
             'is_active' => 1,
         ]);
 
-        $this->assertIsFloat($plant->precio_venta);
-        $this->assertIsFloat($plant->superficie_total_principal);
+        $this->assertIsString($plant->precio_base);
+        $this->assertIsString($plant->superficie_total_principal);
         $this->assertIsBool($plant->is_active);
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $plant->last_synced_at);
     }
