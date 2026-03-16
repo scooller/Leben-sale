@@ -23,22 +23,34 @@ class EraseAllPlantsAction
             ->modalSubmitActionLabel('Sí, borrar todas')
             ->modalCancelActionLabel('Cancelar')
             ->action(function () {
-                try {
-                    $count = Plant::count();
-                    Plant::truncate();
+                $result = self::execute();
 
-                    Notification::make()
-                        ->title('✅ Éxito')
-                        ->body("Se eliminaron {$count} plantas correctamente")
-                        ->success()
-                        ->send();
-                } catch (\Exception $e) {
-                    Notification::make()
-                        ->title('❌ Error')
-                        ->body('Error al borrar plantas: '.$e->getMessage())
-                        ->danger()
-                        ->send();
-                }
+                Notification::make()
+                    ->title($result['success'] ? '✅ Éxito' : '❌ Error')
+                    ->body($result['message'])
+                    ->{$result['success'] ? 'success' : 'danger'}()
+                    ->send();
             });
+    }
+
+    public static function execute(): array
+    {
+        try {
+            $count = Plant::count();
+
+            Plant::query()->delete();
+
+            return [
+                'success' => true,
+                'message' => "Se eliminaron {$count} plantas correctamente",
+                'count' => $count,
+            ];
+        } catch (\Throwable $throwable) {
+            return [
+                'success' => false,
+                'message' => 'Error al borrar plantas: '.$throwable->getMessage(),
+                'count' => 0,
+            ];
+        }
     }
 }

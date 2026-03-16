@@ -30,6 +30,8 @@ class PlantTest extends TestCase
             'opportunity_id',
             'superficie_terraza',
             'superficie_vendible',
+            'cover_image_id',
+            'interior_image_id',
             'is_active',
             'last_synced_at',
         ];

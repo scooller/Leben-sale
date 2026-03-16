@@ -27,6 +27,7 @@ class PaymentStatusChartWidget extends ChartWidget
             PaymentStatus::PENDING_APPROVAL,
         ];
 
+        $data = [];
         $labels = [];
         $colors = [];
 

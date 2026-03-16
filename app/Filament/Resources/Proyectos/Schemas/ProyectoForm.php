@@ -30,6 +30,17 @@ class ProyectoForm
                             ->disabled()
                             ->rows(3),
 
+                        Select::make('tipo')
+                            ->label('Tipo de Proyecto')
+                            ->multiple()
+                            ->options([
+                                'invest' => 'invest',
+                                'broker' => 'broker',
+                                'icon' => 'icon',
+                            ])
+                            ->searchable()
+                            ->preload(),
+
                         TextInput::make('direccion')
                             ->label('Dirección')
                             ->disabled(),
@@ -83,6 +94,10 @@ class ProyectoForm
                         TextInput::make('horario_atencion')
                             ->label('Horario de Atención')
                             ->disabled(),
+
+                        Toggle::make('is_active')
+                            ->label('Activo')
+                            ->required(),
                     ])
                     ->columns(2),
 

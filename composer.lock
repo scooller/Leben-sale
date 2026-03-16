@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d32a0eb6ad436dc48450b8f562fffaa5",
+    "content-hash": "095521e49aa3d732a22ed238662dd469",
     "packages": [
         {
             "name": "achyutn/filament-log-viewer",
@@ -327,6 +327,76 @@
                 }
             ],
             "time": "2026-01-28T17:14:11+00:00"
+        },
+        {
+            "name": "binarybuilds/filament-command-runner",
+            "version": "v1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/binarybuilds/filament-command-runner.git",
+                "reference": "6b0fb6305f0df95b36bfdb3141f7cccba49dc9d3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/binarybuilds/filament-command-runner/zipball/6b0fb6305f0df95b36bfdb3141f7cccba49dc9d3",
+                "reference": "6b0fb6305f0df95b36bfdb3141f7cccba49dc9d3",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^4.0|^5.0",
+                "php": "^8.2",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^8.0",
+                "nunomaduro/larastan": "^3.7",
+                "orchestra/testbench": "^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "BinaryBuilds\\CommandRunner\\CommandRunnerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "BinaryBuilds\\CommandRunner\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Srinath Reddy Dudi",
+                    "email": "srinathreddydudi@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "filament-command-runner is a Filament plugin that allows users to run artisan and shell commands directly from the Filament admin panel. All commands are executed in the background so users don't have to wait for them to finish. They can return later to view the output or optionally terminate a running command midway.",
+            "homepage": "https://github.com/binarybuilds/filament-command-runner",
+            "keywords": [
+                "artisan",
+                "binarybuilds",
+                "command runner",
+                "filament",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/binarybuilds/filament-command-runner/issues",
+                "source": "https://github.com/binarybuilds/filament-command-runner"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/srinathreddydudi",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-21T04:49:56+00:00"
         },
         {
             "name": "blade-ui-kit/blade-heroicons",

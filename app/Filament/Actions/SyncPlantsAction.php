@@ -69,9 +69,34 @@ class SyncPlantsAction
                     continue;
                 }
 
-                $plant = Plant::updateOrCreate(
-                    ['salesforce_product_id' => $plantData['id']],
-                    [
+                $existingPlant = Plant::where('salesforce_product_id', $plantData['id'])->first();
+
+                if ($existingPlant) {
+                    // Update sin product_code (preservar el existente)
+                    $existingPlant->update([
+                        'salesforce_proyecto_id' => $plantData['proyecto_id'],
+                        'name' => $plantData['name'],
+                        'orientacion' => $plantData['orientacion'],
+                        'programa' => $plantData['programa'],
+                        'programa2' => $plantData['programa2'],
+                        'piso' => $plantData['piso'],
+                        'precio_base' => $plantData['precio_base'],
+                        'precio_lista' => $plantData['precio_lista'],
+                        'superficie_total_principal' => $plantData['superficie_total_principal'],
+                        'superficie_interior' => $plantData['superficie_interior'],
+                        'superficie_util' => $plantData['superficie_util'],
+                        'opportunity_id' => $plantData['opportunity_id'],
+                        'superficie_terraza' => $plantData['superficie_terraza'],
+                        'superficie_vendible' => $plantData['superficie_vendible'],
+                        'is_active' => true,
+                        'last_synced_at' => Carbon::now(),
+                    ]);
+                    $plant = $existingPlant;
+                    $updated++;
+                } else {
+                    // Create con product_code
+                    $plant = Plant::create([
+                        'salesforce_product_id' => $plantData['id'],
                         'salesforce_proyecto_id' => $plantData['proyecto_id'],
                         'name' => $plantData['name'],
                         'product_code' => $plantData['product_code'],
@@ -89,13 +114,8 @@ class SyncPlantsAction
                         'superficie_vendible' => $plantData['superficie_vendible'],
                         'is_active' => true,
                         'last_synced_at' => Carbon::now(),
-                    ]
-                );
-
-                if ($plant->wasRecentlyCreated) {
+                    ]);
                     $synced++;
-                } else {
-                    $updated++;
                 }
             }
 

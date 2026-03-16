@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Plants\Schemas;
 
 use App\Models\Proyecto;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -21,12 +22,12 @@ class PlantForm
                     ->disabled(),
                 TextInput::make('name')
                     ->label('Nombre')
-                    ->required()
-                    ->disabled(),
+                    // ->disabled()
+                    ->required(),
                 TextInput::make('product_code')
                     ->label('Código de Producto')
-                    ->required()
-                    ->disabled(),
+                    // ->disabled()
+                    ->required(),
                 Select::make('salesforce_proyecto_id')
                     ->label('Proyecto')
                     ->options(Proyecto::pluck('name', 'salesforce_id'))
@@ -82,6 +83,12 @@ class PlantForm
                 TextInput::make('opportunity_id')
                     ->label('Opportunity ID')
                     ->disabled(),
+                CuratorPicker::make('cover_image_id')
+                    ->label('Imagen de Portada')
+                    ->helperText('Imagen principal para mostrar la planta.'),
+                CuratorPicker::make('interior_image_id')
+                    ->label('Imagen Interior')
+                    ->helperText('Imagen interior o de detalle de la planta.'),
                 Toggle::make('is_active')
                     ->label('Activo')
                     ->required(),

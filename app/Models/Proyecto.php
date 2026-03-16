@@ -17,6 +17,7 @@ class Proyecto extends Model
         'salesforce_id',
         'name',
         'slug',
+        'tipo',
         'descripcion',
         'direccion',
         'comuna',
@@ -31,6 +32,7 @@ class Proyecto extends Model
         'fecha_entrega',
         'etapa',
         'horario_atencion',
+        'is_active',
         // Descuentos de mercado
         'dscto_m_x_prod_principal_porc',
         'dscto_m_x_prod_principal_uf',
@@ -56,6 +58,7 @@ class Proyecto extends Model
 
     protected $casts = [
         'fecha_inicio_ventas' => 'date',
+        'tipo' => 'array',
         'dscto_m_x_prod_principal_porc' => 'decimal:2',
         'dscto_m_x_prod_principal_uf' => 'decimal:2',
         'dscto_m_x_bodega_porc' => 'decimal:2',
@@ -69,6 +72,7 @@ class Proyecto extends Model
         'valor_reserva_exigido_min_peso' => 'decimal:2',
         'tasa' => 'decimal:6',
         'entrega_inmediata' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -119,7 +123,7 @@ class Proyecto extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('activo', true);
+        return $query->where('is_active', true);
     }
 
     /**
@@ -144,5 +148,16 @@ class Proyecto extends Model
     public function scopeByComuna($query, string $comuna)
     {
         return $query->where('comuna', $comuna);
+    }
+
+    /**
+     * Alcance: obtener proyectos por tipo
+     */
+    public function scopeByTipo($query, string $tipo)
+    {
+        return $query->where(function ($subQuery) use ($tipo) {
+            $subQuery->whereJsonContains('tipo', $tipo)
+                ->orWhere('tipo', $tipo);
+        });
     }
 }

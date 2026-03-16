@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Proyectos\Tables;
 
+use App\Models\Proyecto;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -102,6 +103,13 @@ class ProyectosTable
             SelectFilter::make('region')
                 ->label('Región')
                 ->multiple()
+                ->options(
+                    Proyecto::query()
+                        ->distinct()
+                        ->whereNotNull('region')
+                        ->pluck('region', 'region')
+                        ->toArray()
+                )
                 ->searchable()
                 ->preload(),
 

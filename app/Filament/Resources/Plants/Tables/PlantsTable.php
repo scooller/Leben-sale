@@ -10,7 +10,6 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -43,11 +42,9 @@ class PlantsTable
                 //     ->sortable(),
                 TextColumn::make('piso')
                     ->label('Piso')
-                    ->searchable()
                     ->sortable(),
                 TextColumn::make('orientacion')
-                    ->label('Orientación')
-                    ->searchable(),
+                    ->label('Orientación'),
                 TextColumn::make('precio_base')
                     ->label('Precio Base')
                     ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
@@ -69,8 +66,7 @@ class PlantsTable
                     ->boolean(),
                 TextColumn::make('last_synced_at')
                     ->label('Sincronizado')
-                    ->dateTime()
-                    ->sortable(),
+                    ->dateTime(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -81,18 +77,28 @@ class PlantsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Filter::make('activos')
-                    ->query(fn ($query) => $query->where('is_active', true))
-                    ->toggle(),
+                SelectFilter::make('is_active')
+                    ->label('Estado')
+                    ->options([
+                        1 => 'Activo',
+                        0 => 'Inactivo',
+                    ])
+                    ->default(null),
                 SelectFilter::make('proyecto')
                     ->label('Proyecto')
                     ->relationship('proyecto', 'name')
                     ->searchable()
                     ->preload(),
-                Filter::make('programa')
-                    ->query(fn ($query, string $value) => $query->where('programa', $value)),
-                Filter::make('piso')
-                    ->query(fn ($query, string $value) => $query->where('piso', $value)),
+                SelectFilter::make('programa')
+                    ->label('Programa')
+                    ->options(
+                        Plant::query()
+                            ->distinct()
+                            ->whereNotNull('programa')
+                            ->pluck('programa', 'programa')
+                            ->toArray()
+                    )
+                    ->searchable(),
             ])
             ->recordActions([
                 Action::make('toggleActive')

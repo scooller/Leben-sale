@@ -5,6 +5,7 @@ namespace App\Filament\Actions;
 use App\Models\Proyecto;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
 
 class EraseAllProjectsAction
 {
@@ -22,7 +23,11 @@ class EraseAllProjectsAction
             ->action(function () {
                 try {
                     $count = Proyecto::count();
+
+                    // Deshabilitar FK checks para poder truncate
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0;');
                     Proyecto::truncate();
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
                     Notification::make()
                         ->title('✅ Éxito')
@@ -30,9 +35,12 @@ class EraseAllProjectsAction
                         ->success()
                         ->send();
                 } catch (\Exception $e) {
+                    // Asegurar que FK checks estén habilitadas en caso de error
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
                     Notification::make()
                         ->title('❌ Error')
-                        ->body('Error al borrar plantas: '.$e->getMessage())
+                        ->body('Error al borrar proyectos: '.$e->getMessage())
                         ->danger()
                         ->send();
                 }

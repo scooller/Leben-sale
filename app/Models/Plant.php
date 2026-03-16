@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\ReservationStatus;
+use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -29,6 +31,8 @@ class Plant extends Model
         'opportunity_id',
         'superficie_terraza',
         'superficie_vendible',
+        'cover_image_id',
+        'interior_image_id',
         'is_active',
         'last_synced_at',
     ];
@@ -51,6 +55,16 @@ class Plant extends Model
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class, 'salesforce_proyecto_id', 'salesforce_id');
+    }
+
+    public function coverImageMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'cover_image_id');
+    }
+
+    public function interiorImageMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'interior_image_id');
     }
 
     /**

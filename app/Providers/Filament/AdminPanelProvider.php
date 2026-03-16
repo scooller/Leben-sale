@@ -13,6 +13,7 @@ use App\Filament\Widgets\SyncPlantsWidget;
 use App\Filament\Widgets\SyncProjectsWidget;
 use App\Filament\Widgets\UsersChartWidget;
 use App\Models\SiteSetting;
+use BinaryBuilds\CommandRunner\CommandRunnerPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -25,6 +26,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -68,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->databaseNotifications()
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->brandName($settings?->site_name ?? 'iLeben')
@@ -94,19 +97,25 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Archivos')
                     ->pluralLabel('Archivos')
                     ->navigationIcon('heroicon-o-photo')
-                    ->navigationGroup('Sistema')
-                    ->navigationSort(98),
+                    ->navigationGroup('Contenido')
+                    ->navigationSort(1),
                 ActivityLogPlugin::make()
                     ->label('Logs')
                     ->pluralLabel('Logs')
-                    ->navigationGroup('Sistema')
-                    ->navigationSort(99),
+                    ->navigationGroup('Monitoreo')
+                    ->navigationSort(1),
                 FilamentLogViewer::make()
-                    ->authorize(fn (): bool => auth()->user()?->isAdmin() ?? false)
-                    ->navigationGroup('Sistema')
+                    ->authorize(fn (): bool => Auth::user()?->isAdmin() ?? false)
+                    ->navigationGroup('Monitoreo')
                     ->navigationIcon('heroicon-o-document-text')
                     ->navigationLabel('Log Viewer')
-                    ->navigationSort(100),
+                    ->navigationSort(2),
+                CommandRunnerPlugin::make()
+                    ->authorize(fn (): bool => Auth::user()?->isAdmin() ?? false)
+                    ->navigationGroup('Herramientas')
+                    ->navigationLabel('Command Runner')
+                    ->navigationIcon('heroicon-o-command-line')
+                    ->navigationSort(1),
             ])
             ->middleware([
                 EncryptCookies::class,

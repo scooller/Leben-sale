@@ -41,9 +41,9 @@ class SiteSettings extends Page implements HasForms
 
     protected static ?string $title = 'Configuración del Sitio';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Sistema';
+    protected static string|UnitEnum|null $navigationGroup = 'Configuración';
 
-    protected static ?int $navigationSort = 99;
+    protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.pages.site-settings';
 
@@ -103,9 +103,9 @@ class SiteSettings extends Page implements HasForms
                                             ->maxLength(500),
 
                                         TextInput::make('site_url')
-                                            ->label('URL del Sitio')
+                                            ->label('URL del Sitio General')
                                             ->url()
-                                            ->placeholder('https://ejemplo.com'),
+                                            ->placeholder('https://ileben.cl'),
                                     ])
                                     ->columns(1),
                             ]),
@@ -123,7 +123,7 @@ class SiteSettings extends Page implements HasForms
                                         TextInput::make('banner_link')
                                             ->label('URL del Banner')
                                             ->url()
-                                            ->placeholder('https://ejemplo.com')
+                                            ->placeholder('https://ileben.cl')
                                             ->helperText('El link al que dirigirá al hacer click en el banner. Dejar vacío para no tener link.'),
                                     ])
                                     ->columns(1),
