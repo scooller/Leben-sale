@@ -4,13 +4,22 @@ namespace Tests\Feature\Api;
 
 use App\Models\Plant;
 use App\Models\Proyecto;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ProyectoApiFiltersTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Sanctum::actingAs(User::factory()->create());
+    }
 
     public function test_it_filters_proyectos_by_region(): void
     {

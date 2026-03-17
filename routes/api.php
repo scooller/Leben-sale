@@ -41,12 +41,12 @@ Route::prefix('v1')->group(function () {
                 '/site-config' => ['get' => ['tags' => ['Config'], 'operationId' => 'getSiteConfig', 'summary' => 'Configuración pública del sitio', 'security' => [], 'responses' => ['200' => ['description' => 'Configuración del sitio']]]],
                 '/login' => ['post' => ['tags' => ['Auth'], 'operationId' => 'login', 'summary' => 'Login de usuario', 'security' => [], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['200' => ['description' => 'Autenticado'], '422' => ['description' => 'Error de validación']]]],
                 '/register' => ['post' => ['tags' => ['Auth'], 'operationId' => 'register', 'summary' => 'Registro de usuario', 'security' => [], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['201' => ['description' => 'Usuario creado'], '422' => ['description' => 'Error de validación']]]],
-                '/proyectos' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'listProyectos', 'summary' => 'Listado de proyectos', 'security' => [], 'responses' => ['200' => ['description' => 'Listado paginado']]]],
-                '/proyectos/{id}' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'getProyecto', 'summary' => 'Detalle de proyecto', 'security' => [], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de proyecto'], '404' => ['description' => 'No encontrado']]]],
-                '/plantas' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'listPlantas', 'summary' => 'Listado de plantas', 'security' => [], 'responses' => ['200' => ['description' => 'Listado paginado']]]],
-                '/plantas/{id}' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'getPlanta', 'summary' => 'Detalle de planta', 'security' => [], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de planta'], '404' => ['description' => 'No encontrado']]]],
-                '/payment-gateways' => ['get' => ['tags' => ['Pagos'], 'operationId' => 'listPaymentGateways', 'summary' => 'Pasarelas de pago disponibles', 'security' => [], 'responses' => ['200' => ['description' => 'Listado de pasarelas']]]],
-                '/reservations/plant/{plantId}' => ['get' => ['tags' => ['Reservas'], 'operationId' => 'getPlantReservationStatus', 'summary' => 'Estado de reserva de planta', 'security' => [], 'parameters' => [['$ref' => '#/components/parameters/PlantId']], 'responses' => ['200' => ['description' => 'Estado de reserva']]]],
+                '/proyectos' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'listProyectos', 'summary' => 'Listado de proyectos', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
+                '/proyectos/{id}' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'getProyecto', 'summary' => 'Detalle de proyecto', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de proyecto'], '401' => ['description' => 'No autenticado'], '404' => ['description' => 'No encontrado']]]],
+                '/plantas' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'listPlantas', 'summary' => 'Listado de plantas', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
+                '/plantas/{id}' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'getPlanta', 'summary' => 'Detalle de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de planta'], '401' => ['description' => 'No autenticado'], '404' => ['description' => 'No encontrado']]]],
+                '/payment-gateways' => ['get' => ['tags' => ['Pagos'], 'operationId' => 'listPaymentGateways', 'summary' => 'Pasarelas de pago disponibles', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado de pasarelas'], '401' => ['description' => 'No autenticado']]]],
+                '/reservations/plant/{plantId}' => ['get' => ['tags' => ['Reservas'], 'operationId' => 'getPlantReservationStatus', 'summary' => 'Estado de reserva de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/PlantId']], 'responses' => ['200' => ['description' => 'Estado de reserva'], '401' => ['description' => 'No autenticado']]]],
                 '/me' => ['get' => ['tags' => ['Auth'], 'operationId' => 'getAuthenticatedUser', 'summary' => 'Usuario autenticado', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Usuario autenticado'], '401' => ['description' => 'No autenticado'], '403' => ['description' => 'Origen no autorizado']]]],
                 '/logout' => ['post' => ['tags' => ['Auth'], 'operationId' => 'logout', 'summary' => 'Cerrar sesión', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Sesión cerrada'], '401' => ['description' => 'No autenticado']]]],
                 '/checkout' => ['post' => ['tags' => ['Checkout'], 'operationId' => 'checkout', 'summary' => 'Iniciar checkout', 'security' => [['bearerAuth' => []]], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['200' => ['description' => 'Checkout iniciado'], '422' => ['description' => 'Error de validación']]]],
@@ -100,19 +100,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
-    // Proyectos públicos
-    Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);
-    Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
-
-    // Plantas disponibles
-    Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
-    Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
-
-    // Pasarelas disponibles
-    Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
-
-    // Estado de reserva de planta (público para badges en frontend)
-    Route::get('/reservations/plant/{plantId}', [App\Http\Controllers\Api\PlantReservationController::class, 'status']);
+    // Endpoints públicos mínimos
 });
 
 // Rutas protegidas (requieren autenticación)
@@ -126,7 +114,19 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(functio
     // Checkout
     Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'initiate']);
 
+    // Proyectos
+    Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);
+    Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
+
+    // Plantas
+    Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
+    Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
+
+    // Pasarelas disponibles
+    Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
+
     // Reservas
+    Route::get('/reservations/plant/{plantId}', [App\Http\Controllers\Api\PlantReservationController::class, 'status']);
     Route::post('/reservations', [App\Http\Controllers\Api\PlantReservationController::class, 'reserve']);
     Route::delete('/reservations/{sessionToken}', [App\Http\Controllers\Api\PlantReservationController::class, 'release']);
 

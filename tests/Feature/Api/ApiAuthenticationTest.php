@@ -9,6 +9,17 @@ class ApiAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_proyectos_endpoint_returns_401_when_unauthenticated(): void
+    {
+        $response = $this->get('/api/v1/proyectos');
+
+        $response
+            ->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
+    }
+
     public function test_me_endpoint_returns_401_when_unauthenticated(): void
     {
         $response = $this->get('/api/v1/me');
