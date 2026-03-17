@@ -21,6 +21,7 @@ class SiteSetting extends Model
         'icon_id',
         'webawesome_theme',
         'webawesome_palette',
+        'brand_color',
         'semantic_brand_color',
         'semantic_neutral_color',
         'semantic_success_color',
@@ -113,6 +114,7 @@ class SiteSetting extends Model
                 'site_name' => 'iLeben',
                 'webawesome_theme' => 'mellow',
                 'webawesome_palette' => 'natural',
+                'brand_color' => '#eb0029',
             ]
         );
     }
@@ -160,6 +162,7 @@ class SiteSetting extends Model
             'icon' => $settings->iconMedia?->url ?? null,
             'webawesome_theme' => $settings->webawesome_theme ?? 'mellow',
             'webawesome_palette' => $settings->webawesome_palette ?? 'natural',
+            'brand_color' => $settings->brand_color ?? '#eb0029',
             'semantic_brand_color' => $settings->semantic_brand_color ?? 'blue',
             'semantic_neutral_color' => $settings->semantic_neutral_color ?? 'gray',
             'semantic_success_color' => $settings->semantic_success_color ?? 'green',

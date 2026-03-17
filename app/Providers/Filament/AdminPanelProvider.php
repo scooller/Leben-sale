@@ -14,12 +14,14 @@ use App\Filament\Widgets\SyncProjectsWidget;
 use App\Filament\Widgets\UsersChartWidget;
 use App\Models\SiteSetting;
 use BinaryBuilds\CommandRunner\CommandRunnerPlugin;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -29,20 +31,13 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Throwable;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        // Solo obtener configuración si la tabla ya existe (después de migraciones)
-        $settings = null;
-        if (Schema::hasTable('site_settings')) {
-            $settings = SiteSetting::current();
-            // Cargar las relaciones de media
-            if ($settings) {
-                $settings->load(['faviconMedia', 'logoMedia']);
-            }
-        }
+        $settings = $this->resolveSiteSettings();
 
         $defaultWidgets = [
             AccountWidget::class,
@@ -66,12 +61,18 @@ class AdminPanelProvider extends PanelProvider
             $widgets = $defaultWidgets;
         }
 
+        $fontStylesheetUrl = filled($settings?->google_fonts_stylesheet)
+            ? (string) $settings->google_fonts_stylesheet
+            : null;
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->databaseNotifications()
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->font($settings?->font_family_body, $fontStylesheetUrl, LocalFontProvider::class)
+            ->serifFont($settings?->font_family_heading, $fontStylesheetUrl, LocalFontProvider::class)
             ->login()
             ->brandName($settings?->site_name ?? 'iLeben')
             ->favicon($settings?->faviconMedia?->url)
@@ -84,6 +85,23 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => '#343a40',
                 'info' => '#000000',
                 'success' => '#000000',
+                'red' => Color::Red,
+                'orange' => Color::Orange,
+                'amber' => Color::Amber,
+                'yellow' => Color::Yellow,
+                'lime' => Color::Lime,
+                'green' => Color::Green,
+                'emerald' => Color::Emerald,
+                'teal' => Color::Teal,
+                'cyan' => Color::Cyan,
+                'sky' => Color::Sky,
+                'blue' => Color::Blue,
+                'indigo' => Color::Indigo,
+                'violet' => Color::Violet,
+                'purple' => Color::Purple,
+                'fuchsia' => Color::Fuchsia,
+                'pink' => Color::Pink,
+                'rose' => Color::Rose,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -131,5 +149,21 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    private function resolveSiteSettings(): ?SiteSetting
+    {
+        try {
+            if (! Schema::hasTable('site_settings')) {
+                return null;
+            }
+
+            $settings = SiteSetting::current();
+            $settings->load(['faviconMedia', 'logoMedia']);
+
+            return $settings;
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

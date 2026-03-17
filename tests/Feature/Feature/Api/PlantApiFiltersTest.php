@@ -23,7 +23,7 @@ class PlantApiFiltersTest extends TestCase
 
         $plantInOtherProject = $this->createPlant($otherProject->salesforce_id, true);
 
-        $response = $this->getJson('/api/v1/plants?proyecto_id='.$targetProject->id);
+        $response = $this->getJson('/api/v1/plantas?proyecto_id='.$targetProject->id);
 
         $response->assertOk();
         $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
@@ -47,19 +47,73 @@ class PlantApiFiltersTest extends TestCase
             'expires_at' => now()->addMinutes(30),
         ]);
 
-        $availableResponse = $this->getJson('/api/v1/plants?proyecto_id='.$project->id.'&disponible=1');
+        $availableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=1');
         $availableResponse->assertOk();
         $availablePlantIds = collect($availableResponse->json('data'))->pluck('id')->all();
 
         $this->assertContains($availablePlant->id, $availablePlantIds);
         $this->assertNotContains($reservedPlant->id, $availablePlantIds);
 
-        $unavailableResponse = $this->getJson('/api/v1/plants?proyecto_id='.$project->id.'&disponible=0');
+        $unavailableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=0');
         $unavailableResponse->assertOk();
         $unavailablePlantIds = collect($unavailableResponse->json('data'))->pluck('id')->all();
 
         $this->assertContains($reservedPlant->id, $unavailablePlantIds);
         $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
+    }
+
+    public function test_it_excludes_plants_from_inactive_projects(): void
+    {
+        $activeProject = Proyecto::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $inactiveProject = Proyecto::factory()->create([
+            'is_active' => false,
+        ]);
+
+        $activePlant = $this->createPlant($activeProject->salesforce_id, true);
+        $inactiveProjectPlant = $this->createPlant($inactiveProject->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($activePlant->id, $responsePlantIds);
+        $this->assertNotContains($inactiveProjectPlant->id, $responsePlantIds);
+    }
+
+    public function test_it_returns_limited_proyecto_fields_in_plantas_response(): void
+    {
+        $project = Proyecto::factory()->create([
+            'name' => 'Proyecto API',
+            'direccion' => 'Av. Siempre Viva 123',
+            'comuna' => 'Santiago',
+            'pagina_web' => 'https://proyecto.test',
+            'region' => 'Metropolitana',
+            'email' => 'hidden@example.com',
+        ]);
+
+        $this->createPlant($project->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id);
+
+        $response->assertOk();
+
+        $proyectoPayload = $response->json('data.0.proyecto');
+
+        $this->assertSame([
+            'id',
+            'name',
+            'direccion',
+            'comuna',
+            'pagina_web',
+        ], array_keys($proyectoPayload));
+
+        $this->assertSame('Proyecto API', $proyectoPayload['name']);
+        $this->assertArrayNotHasKey('region', $proyectoPayload);
+        $this->assertArrayNotHasKey('email', $proyectoPayload);
     }
 
     private function createPlant(string $salesforceProyectoId, bool $isActive): Plant

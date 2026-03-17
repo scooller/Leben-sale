@@ -30,8 +30,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
 
     // Plantas disponibles
-    Route::get('/plants', [App\Http\Controllers\Api\PlantController::class, 'index']);
-    Route::get('/plants/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
+    Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
+    Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
 
     // Pasarelas disponibles
     Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
@@ -41,7 +41,7 @@ Route::prefix('v1')->group(function () {
 });
 
 // Rutas protegidas (requieren autenticación)
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(function () {
     // Usuario autenticado
     Route::get('/me', function (Request $request) {
         return $request->user();

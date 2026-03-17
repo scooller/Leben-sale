@@ -4,6 +4,40 @@ Todos los cambios relevantes de este proyecto serán documentados en este archiv
 
 ## [Unreleased] - Próximas Versiones
 
+### ✨ Actualizado
+
+#### Reenfoque del sistema: de flujo comercial a mantenedor operativo
+- El sistema deja de estar orientado únicamente al flujo de ventas y pasa a cubrir administración operativa de proyectos y plantas
+- El backoffice Filament se consolida como interfaz principal de mantenimiento, revisión y control de datos
+- Salesforce se mantiene como sistema maestro para la sincronización de entidades comerciales relevantes
+
+#### Sincronización y mantenedor de proyectos
+- Se agregó la columna `is_active` a `proyectos` para alinear el esquema local con la sincronización desde Salesforce
+- Se agregó la columna `tipo` a `proyectos` con almacenamiento JSON
+- `tipo` ahora funciona como multiselect con opciones iniciales `invest`, `broker`, `icon`
+- `SyncProjectsAction` ahora normaliza y persiste `tipo` como arreglo válido
+- La sincronización de proyectos evita sobreescribir `tipo` cuando Salesforce no lo envía
+- Se corrigió el alcance `scopeActive()` para usar `is_active`
+
+#### Sincronización y mantenedor de plantas
+- Se integraron imágenes de portada e interior para plantas usando Filament Curator
+- Se agregaron relaciones de medios en el modelo `Plant`
+- La API de plantas ahora expone las relaciones de imágenes para consumo frontend
+- La sincronización de plantas preserva `product_code` cuando el registro ya existe localmente
+
+#### Panel administrativo y operación
+- Se reorganizó la navegación del panel en grupos semánticos para mejorar operación diaria
+- Se instaló y configuró el plugin Command Runner para administración
+- Se corrigieron filtros en tablas de plantas y proyectos, incluyendo el filtro de región en proyectos
+- Se habilitaron `databaseNotifications()` en Filament para soportar notificaciones persistidas de exportaciones ejecutadas por cola
+
+#### Estabilidad y testing
+- Se aisló el entorno de pruebas con SQLite en `database/testing.sqlite`
+- Se agregó `APP_KEY` al entorno de testing para asegurar ejecución completa de la suite
+- Se reparó la acción de borrado masivo de plantas para usar borrado compatible con relaciones (`delete()` en lugar de `truncate()`)
+- Se actualizaron y agregaron pruebas para sincronización de proyectos, borrado de plantas y widgets
+- Suite completa validada: 44 tests, 107 assertions
+
 ### 📋 Planificado para v1.1.0
 
 #### ⚠️ Cambio Crítico: Transbank Simple → Transbank Mall

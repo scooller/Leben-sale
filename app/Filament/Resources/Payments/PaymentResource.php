@@ -38,6 +38,11 @@ class PaymentResource extends Resource
         return (string) Payment::query()->count();
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'lime';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PaymentForm::configure($schema);

@@ -32,6 +32,11 @@ class PlantResource extends Resource
         return static::getModel()::count();
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'cyan';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PlantForm::configure($schema);

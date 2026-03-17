@@ -31,6 +31,16 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'blue';
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->isAdmin() ?? false;

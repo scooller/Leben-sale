@@ -1,6 +1,6 @@
-# iLeben - Plataforma de Venta de Proyectos
+# iLeben - Plataforma backend-first para administración de proyectos y plantas
 
-Backend-first SPA con Laravel 12, Filament 5, React 19 y Web Awesome.
+Aplicación backend-first construida con Laravel 12, Filament 5, React 19 y Web Awesome. El sistema opera como mantenedor administrativo de proyectos y plantas, con sincronización periódica contra Salesforce como sistema maestro para entidades comerciales y operacionales.
 
 ## 📋 Stack Tecnológico
 
@@ -59,11 +59,17 @@ frontend/
 
 ## 📦 Características Principales
 
+### Operación y Sincronización
+- ✅ **Cobertura funcional** - Administra proyectos, plantas, pagos, configuración global y activos multimedia desde el panel Filament
+- ✅ **Integración con Salesforce** - Proyectos y plantas se sincronizan desde Salesforce hacia el modelo local mediante servicios y acciones dedicadas
+- ✅ **Preservación de datos locales** - La sincronización evita sobrescribir atributos locales sensibles cuando el dato debe mantenerse en la base local
+- ✅ **Procesamiento asíncrono** - Exportaciones y notificaciones soportadas sobre cola `database` con notificaciones persistidas en Filament
+
 ### Panel Administrativo (Filament)
 - ✅ **Autenticación** - Laravel Sanctum + sessions
-- ✅ **Proyectos** - CRUD con Transbank commerce code por proyecto
+- ✅ **Proyectos** - CRUD administrativo, filtros operativos, `tipo` multiselección y commerce code por proyecto
 - ✅ **Usuarios** - Gestión de cuentas
-- ✅ **Plantas** - Catálogo de plantas con sincronización
+- ✅ **Plantas** - Catálogo sincronizado con imágenes de portada e interior vía Curator
 - ✅ **Pagos** - Registro de transacciones
 - ✅ **Configuración Global** - SiteSettings (9+ tabs)
   - General, Banner, Branding, Colores, Tipografía
@@ -73,10 +79,11 @@ frontend/
 - ✅ **Modo Mantenimiento** - RichEditor + HTML mode + Web Awesome dialog
 
 ### Integración Salesforce
-- ✅ **SOQL Queries** - Consultas a fuerza de ventas
-- ✅ **Caching** - Cache de resultados SOQL (configurable por TTL)
-- ✅ **Sincronización** - Jobs para sincronizar datos
-- ✅ **Logging** - Auditoría de operaciones
+- ✅ **SOQL Queries** - Consultas a objetos y campos de Salesforce mediante `omniphx/forrest`
+- ✅ **Caching** - Cache de resultados SOQL con TTL configurable para reducir carga sobre la API externa
+- ✅ **Sincronización** - Acciones y procesos para actualizar proyectos y plantas en el modelo local
+- ✅ **Normalización de datos** - Mapeo local de `is_active`, `tipo` y otros atributos requeridos por el panel administrativo
+- ✅ **Logging** - Registro y trazabilidad de operaciones de sincronización
 
 ### Frontend React
 - ✅ **Home Page** - Hero section + banner promocional
@@ -88,9 +95,19 @@ frontend/
 ### Gestión de Medios (Curator)
 - ✅ **Centralizado** - Single File Manager en `/admin/media`
 - ✅ **Integrado** - Logo, favicon, banner, maintenance images
+- ✅ **Plantas con imágenes** - Campos de portada e interior integrados al mantenedor de plantas
 - ✅ **RichEditor** - Attachments vía AttachCuratorMediaPlugin
 - ✅ **Database** - Tabla `curator` para metadata de archivos
 - ✅ **Editor** - CropperJS para redimensionar
+
+## 🔄 Últimos Cambios Relevantes
+
+- Sincronización de proyectos alineada con el esquema local mediante soporte para `is_active` y `tipo`
+- Campo `tipo` persistido como arreglo JSON y expuesto en Filament como multiselect con valores `invest`, `broker`, `icon`
+- Corrección de filtros operativos en los listados de proyectos y plantas
+- Incorporación de imágenes de portada e interior para plantas usando Filament Curator
+- Activación de `databaseNotifications()` en Filament para notificaciones de exportaciones en cola
+- Aislamiento del entorno de testing con SQLite y validación de suite completa
 
 ## � API REST
 
@@ -156,7 +173,7 @@ Detalle de un proyecto específico.
 
 ### Plantas
 
-#### GET `/api/v1/plants`
+#### GET `/api/v1/plantas`
 Lista de plantas con filtros avanzados.
 
 **Query Parameters:**
@@ -173,16 +190,16 @@ Lista de plantas con filtros avanzados.
 **Ejemplos:**
 ```bash
 # Plantas disponibles de un proyecto
-GET /api/v1/plants?proyecto_id=3&disponible=1
+GET /api/v1/plantas?proyecto_id=3&disponible=1
 
 # Plantas con 2 dormitorios y 2 baños
-GET /api/v1/plants?programa=2&programa2=2
+GET /api/v1/plantas?programa=2&programa2=2
 
 # Plantas en rango de precio
-GET /api/v1/plants?min_precio=5000&max_precio=10000
+GET /api/v1/plantas?min_precio=5000&max_precio=10000
 
 # Plantas no disponibles (reservadas)
-GET /api/v1/plants?disponible=0
+GET /api/v1/plantas?disponible=0
 ```
 
 **Respuesta:**
@@ -235,7 +252,7 @@ GET /api/v1/plants?disponible=0
 }
 ```
 
-#### GET `/api/v1/plants/{id}`
+#### GET `/api/v1/plantas/{id}`
 Detalle de una planta específica.
 
 **Respuesta:**

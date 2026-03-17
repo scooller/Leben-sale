@@ -6,3 +6,14 @@
 @source '../../../../vendor/awcodes/filament-curator/src/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../vendor/awcodes/filament-curator/resources/**/*';
+
+@layer base {
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--serif-font-family), var(--font-family), ui-sans-serif, system-ui, sans-serif;
+	}
+}

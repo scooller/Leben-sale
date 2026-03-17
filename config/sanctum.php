@@ -36,6 +36,8 @@ return [
 
     'guard' => ['web'],
 
+    'model' => App\Models\PersonalAccessToken::class,
+
     /*
     |--------------------------------------------------------------------------
     | Expiration Minutes

@@ -14,6 +14,10 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 
+/*
+colores disponibles para badge:
+ red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,
+*/
 class PlantsTable
 {
     public static function configure(Table $table): Table
@@ -26,6 +30,8 @@ class PlantsTable
                     ->sortable(),
                 TextColumn::make('proyecto.name')
                     ->label('Proyecto')
+                    ->badge()
+                    ->color('indigo')
                     ->searchable()
                     ->sortable(),
                 // TextColumn::make('product_code')
@@ -47,10 +53,14 @@ class PlantsTable
                     ->label('Orientación'),
                 TextColumn::make('precio_base')
                     ->label('Precio Base')
+                    ->badge()
+                    ->color('indigo')
                     ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 TextColumn::make('precio_lista')
                     ->label('Precio Lista')
+                    ->badge()
+                    ->color('sky')
                     ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 // TextColumn::make('superficie_util')
@@ -63,9 +73,13 @@ class PlantsTable
                 //     ->sortable(),
                 IconColumn::make('is_active')
                     ->label('Activo')
-                    ->boolean(),
+                    ->boolean()
+                    ->color(fn (bool $state): string => $state ? 'green' : 'red')
+                    ->sortable(),
                 TextColumn::make('last_synced_at')
                     ->label('Sincronizado')
+                    ->badge()
+                    ->color('teal')
                     ->dateTime(),
                 TextColumn::make('created_at')
                     ->dateTime()

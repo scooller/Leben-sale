@@ -34,9 +34,11 @@ class ProyectoForm
                             ->label('Tipo de Proyecto')
                             ->multiple()
                             ->options([
-                                'invest' => 'invest',
-                                'broker' => 'broker',
-                                'icon' => 'icon',
+                                'best' => 'Best',
+                                'broker' => 'Broker',
+                                'home' => 'Home',
+                                'icon' => 'Icon',
+                                'invest' => 'Invest',
                             ])
                             ->searchable()
                             ->preload(),

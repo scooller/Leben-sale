@@ -167,7 +167,7 @@ class SyncProjectsActionTest extends TestCase
                         'etapa' => 'Preventa',
                         'horario_atencion' => 'Lunes a Viernes',
                         'is_active' => true,
-                        'tipo' => ['invest', 'broker', 'invalid'],
+                        'tipo' => ['best', 'broker', 'home', 'icon', 'invest'],
                         'dscto_m_x_prod_principal_porc' => 10.0,
                         'dscto_m_x_prod_principal_uf' => 50.0,
                         'dscto_m_x_bodega_porc' => 5.0,
@@ -194,7 +194,7 @@ class SyncProjectsActionTest extends TestCase
         $this->assertTrue($result['success']);
 
         $project = Proyecto::query()->where('salesforce_id', 'SF-TIPO-001')->firstOrFail();
-        $this->assertSame(['invest', 'broker'], $project->tipo);
+        $this->assertSame(['best', 'broker', 'home', 'icon', 'invest'], $project->tipo);
     }
 
     public function test_sync_projects_does_not_overwrite_tipo_when_missing_in_payload(): void

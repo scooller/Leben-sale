@@ -142,7 +142,7 @@ class SyncProjectsAction
             return null;
         }
 
-        $allowed = ['invest', 'broker', 'icon'];
+        $allowed = ['best', 'broker', 'home', 'icon', 'invest'];
 
         $values = is_array($tipo)
             ? $tipo

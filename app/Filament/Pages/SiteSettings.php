@@ -14,6 +14,7 @@ use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -211,6 +212,13 @@ class SiteSettings extends Page implements HasForms
                                             ])
                                             ->helperText('Define los tonos y matices específicos de los colores')
                                             ->required(),
+
+                                        // agregar color principal de la marca para aplicar a botones, enlaces y elementos destacados
+                                        ColorPicker::make('brand_color')
+                                            ->label('Color Principal de la Marca')
+                                            ->default('#eb0029')
+                                            ->required()
+                                            ->helperText('Color principal de tu marca, aplicado a botones, enlaces y elementos destacados'),
                                     ])
                                     ->columns(2),
 

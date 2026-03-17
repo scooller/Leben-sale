@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plant;
+use App\Models\Proyecto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,9 @@ class PlantController extends Controller
     {
         $query = Plant::query()
             ->with(['proyecto', 'activeReservation', 'coverImageMedia', 'interiorImageMedia'])
-            ->whereHas('proyecto') // Solo plantas con proyecto asociado
+            ->whereHas('proyecto', function ($projectQuery) {
+                $projectQuery->where('is_active', true);
+            }) // Solo plantas con proyecto activo asociado
             ->where('is_active', true); // Solo plantas activas
 
         $projectValues = $this->normalizeInputValues($request->input('salesforce_proyecto_id'));
@@ -89,7 +92,12 @@ class PlantController extends Controller
 
         // Obtener perPage del request o usar 12 por defecto
         $perPage = $request->get('perPage', 12);
-        $plants = $query->paginate($perPage);
+        $plants = $query->paginate($perPage)->through(function (Plant $plant): array {
+            $payload = $plant->toArray();
+            $payload['proyecto'] = $this->projectPayload($plant->proyecto);
+
+            return $payload;
+        });
 
         return response()->json($plants);
     }
@@ -154,9 +162,39 @@ class PlantController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $plant = Plant::with(['proyecto', 'activeReservation', 'coverImageMedia', 'interiorImageMedia'])->findOrFail($id);
+        $plant = Plant::query()
+            ->with(['proyecto', 'activeReservation', 'coverImageMedia', 'interiorImageMedia'])
+            ->whereHas('proyecto', function ($projectQuery) {
+                $projectQuery->where('is_active', true);
+            })
+            ->findOrFail($id);
 
-        return response()->json($plant);
+        $payload = $plant->toArray();
+        $payload['proyecto'] = $this->projectPayload($plant->proyecto);
+
+        return response()->json($payload);
+    }
+
+    private function projectPayload(?Proyecto $proyecto): ?array
+    {
+        if (! $proyecto) {
+            return null;
+        }
+
+        return [
+            'id' => $proyecto->id,
+            'name' => $proyecto->name,
+            'tipo' => $proyecto->tipo,
+            'direccion' => $proyecto->direccion,
+            'comuna' => $proyecto->comuna,
+            'provincia' => $proyecto->provincia,
+            'region' => $proyecto->region,
+            'pagina_web' => $proyecto->pagina_web,
+            'etapa' => $proyecto->etapa,
+            'horario_atencion' => $proyecto->horario_atencion,
+            'entrega_inmediata' => $proyecto->entrega_inmediata,
+            'is_active' => $proyecto->is_active,
+        ];
     }
 
     /**

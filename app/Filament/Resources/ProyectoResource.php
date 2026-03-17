@@ -31,6 +31,11 @@ class ProyectoResource extends Resource
         return static::getModel()::count();
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'sky';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ProyectoForm::configure($schema);

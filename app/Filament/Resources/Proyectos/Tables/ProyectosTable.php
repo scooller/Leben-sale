@@ -6,10 +6,16 @@ use App\Models\Proyecto;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+
+/*
+colores disponibles para badge:
+ red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,
+*/
 
 class ProyectosTable
 {
@@ -36,41 +42,79 @@ class ProyectosTable
                 ->searchable()
                 ->sortable(),
 
+            // Postventa,Permiso de edificación,Inicio de obra,Entrega,Construcción,Obra gruesa,Terminaciones
             TextColumn::make('etapa')
                 ->label('Etapa')
-                ->searchable()
-                ->sortable(),
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    'Postventa' => 'emerald',
+                    'Permiso de edificación' => 'orange',
+                    'Inicio de obra' => 'amber',
+                    'Entrega' => 'sky',
+                    'Construcción' => 'indigo',
+                    'Obra gruesa' => 'rose',
+                    'Terminaciones' => 'violet',
+                    default => 'gray',
+                })
+                ->sortable()
+                ->searchable(),
 
             TextColumn::make('comuna')
                 ->label('Comuna')
+                ->sortable()
                 ->searchable(),
 
             TextColumn::make('region')
                 ->label('Región')
                 ->searchable(),
 
-            TextColumn::make('razon_social')
-                ->label('Razón Social')
-                ->searchable(),
+            // TextColumn::make('razon_social')
+            //     ->label('Razón Social')
+            //     ->searchable(),
 
             TextColumn::make('rut')
                 ->label('RUT'),
 
-            TextColumn::make('dscto_m_x_prod_principal_porc')
-                ->label('Dscto Principal (%)')
-                ->numeric(decimalPlaces: 2),
+            // tipo
+            TextColumn::make('tipo')
+                ->label('Tipo')
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    'best' => 'emerald',
+                    'broker' => 'blue',
+                    'home' => 'amber',
+                    'icon' => 'cyan',
+                    'invest' => 'violet',
+                    default => 'gray',
+                })
+                ->sortable()
+                ->searchable(),
 
-            TextColumn::make('dscto_maximo_aporte_leben')
-                ->label('Dscto Max Leben (%)')
-                ->numeric(decimalPlaces: 2),
+            // TextColumn::make('dscto_m_x_prod_principal_porc')
+            //     ->label('Dscto Principal (%)')
+            //     ->numeric(decimalPlaces: 2),
 
-            TextColumn::make('tasa')
-                ->label('Tasa (%)')
-                ->numeric(decimalPlaces: 6),
+            // TextColumn::make('dscto_maximo_aporte_leben')
+            //     ->label('Dscto Max Leben (%)')
+            //     ->numeric(decimalPlaces: 2),
+
+            // TextColumn::make('tasa')
+            //     ->label('Tasa (%)')
+            //     ->numeric(decimalPlaces: 6),
 
             IconColumn::make('entrega_inmediata')
                 ->label('Entrega Inmediata')
-                ->boolean(),
+                ->boolean()
+                ->trueIcon(Heroicon::OutlinedFire)
+                ->falseIcon(Heroicon::OutlinedMoon)
+                ->color(fn (bool $state): string => $state ? 'amber' : 'gray'),
+
+            // active
+            IconColumn::make('is_active')
+                ->label('Activo')
+                ->boolean()
+                ->color(fn (bool $state): string => $state ? 'green' : 'red')
+                ->sortable(),
 
             TextColumn::make('created_at')
                 ->label('Creado')
@@ -93,10 +137,13 @@ class ProyectosTable
                 ->label('Etapa')
                 ->multiple()
                 ->options([
+                    'Postventa' => 'Postventa',
+                    'Permiso de edificación' => 'Permiso de edificación',
                     'Inicio de obra' => 'Inicio de obra',
-                    'En construcción' => 'En construcción',
-                    'Terminado' => 'Terminado',
-                    'Vendido' => 'Vendido',
+                    'Entrega' => 'Entrega',
+                    'Construcción' => 'Construcción',
+                    'Obra gruesa' => 'Obra gruesa',
+                    'Terminaciones' => 'Terminaciones',
                 ])
                 ->searchable(),
 
@@ -110,6 +157,20 @@ class ProyectosTable
                         ->pluck('region', 'region')
                         ->toArray()
                 )
+                ->searchable()
+                ->preload(),
+
+            // tipo
+            SelectFilter::make('tipo')
+                ->label('Tipo')
+                ->multiple()
+                ->options([
+                    'best' => 'Best',
+                    'broker' => 'Broker',
+                    'home' => 'Home',
+                    'icon' => 'Icon',
+                    'invest' => 'Invest',
+                ])
                 ->searchable()
                 ->preload(),
 
