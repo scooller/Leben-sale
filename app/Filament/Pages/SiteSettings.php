@@ -4,6 +4,8 @@ namespace App\Filament\Pages;
 
 use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
 use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
+use App\Filament\Widgets\ApiMonitoringWidget;
+use App\Filament\Widgets\ApiUsageChartWidget;
 use App\Filament\Widgets\PaymentsChartWidget;
 use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
@@ -54,6 +56,8 @@ class SiteSettings extends Page implements HasForms
     protected static function dashboardWidgetOptions(): array
     {
         return [
+            ApiMonitoringWidget::class => 'API (Monitoreo)',
+            ApiUsageChartWidget::class => 'API (Uso 7 días)',
             UsersChartWidget::class => 'Usuarios (Gráfico)',
             ActivityChartWidget::class => 'Actividad (Gráfico)',
             LatestActivityWidget::class => 'Actividad (Últimos)',

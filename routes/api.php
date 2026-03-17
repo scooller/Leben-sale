@@ -46,7 +46,7 @@ Route::prefix('v1')->group(function () {
                 '/plantas' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'listPlantas', 'summary' => 'Listado de plantas', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
                 '/plantas/{id}' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'getPlanta', 'summary' => 'Detalle de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de planta'], '401' => ['description' => 'No autenticado'], '404' => ['description' => 'No encontrado']]]],
                 '/payment-gateways' => ['get' => ['tags' => ['Pagos'], 'operationId' => 'listPaymentGateways', 'summary' => 'Pasarelas de pago disponibles', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado de pasarelas'], '401' => ['description' => 'No autenticado']]]],
-                '/reservations/plant/{plantId}' => ['get' => ['tags' => ['Reservas'], 'operationId' => 'getPlantReservationStatus', 'summary' => 'Estado de reserva de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/PlantId']], 'responses' => ['200' => ['description' => 'Estado de reserva'], '401' => ['description' => 'No autenticado']]]],
+                '/reservations/planta/{plantId}' => ['get' => ['tags' => ['Reservas'], 'operationId' => 'getPlantReservationStatus', 'summary' => 'Estado de reserva de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/PlantId']], 'responses' => ['200' => ['description' => 'Estado de reserva'], '401' => ['description' => 'No autenticado']]]],
                 '/me' => ['get' => ['tags' => ['Auth'], 'operationId' => 'getAuthenticatedUser', 'summary' => 'Usuario autenticado', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Usuario autenticado'], '401' => ['description' => 'No autenticado'], '403' => ['description' => 'Origen no autorizado']]]],
                 '/logout' => ['post' => ['tags' => ['Auth'], 'operationId' => 'logout', 'summary' => 'Cerrar sesión', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Sesión cerrada'], '401' => ['description' => 'No autenticado']]]],
                 '/checkout' => ['post' => ['tags' => ['Checkout'], 'operationId' => 'checkout', 'summary' => 'Iniciar checkout', 'security' => [['bearerAuth' => []]], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['200' => ['description' => 'Checkout iniciado'], '422' => ['description' => 'Error de validación']]]],
@@ -126,7 +126,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(functio
     Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
 
     // Reservas
-    Route::get('/reservations/plant/{plantId}', [App\Http\Controllers\Api\PlantReservationController::class, 'status']);
+    Route::get('/reservations/planta/{plantId}', [App\Http\Controllers\Api\PlantReservationController::class, 'status']);
     Route::post('/reservations', [App\Http\Controllers\Api\PlantReservationController::class, 'reserve']);
     Route::delete('/reservations/{sessionToken}', [App\Http\Controllers\Api\PlantReservationController::class, 'release']);
 

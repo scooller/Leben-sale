@@ -7,6 +7,8 @@ use AlizHarb\ActivityLog\ActivityLogPlugin;
 use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
 use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Widgets\ApiMonitoringWidget;
+use App\Filament\Widgets\ApiUsageChartWidget;
 use App\Filament\Widgets\PaymentsChartWidget;
 use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
@@ -41,6 +43,8 @@ class AdminPanelProvider extends PanelProvider
 
         $defaultWidgets = [
             AccountWidget::class,
+            ApiMonitoringWidget::class,
+            ApiUsageChartWidget::class,
             UsersChartWidget::class,
             ActivityChartWidget::class,
             LatestActivityWidget::class,
