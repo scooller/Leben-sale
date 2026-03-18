@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Plant;
 use App\Models\Proyecto;
+use Awcodes\Curator\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -93,10 +94,7 @@ class PlantController extends Controller
         // Obtener perPage del request o usar 12 por defecto
         $perPage = $request->get('perPage', 12);
         $plants = $query->paginate($perPage)->through(function (Plant $plant): array {
-            $payload = $plant->toArray();
-            $payload['proyecto'] = $this->projectPayload($plant->proyecto);
-
-            return $payload;
+            return $this->plantPayload($plant);
         });
 
         return response()->json($plants);
@@ -169,10 +167,38 @@ class PlantController extends Controller
             })
             ->findOrFail($id);
 
+        return response()->json($this->plantPayload($plant));
+    }
+
+    private function plantPayload(Plant $plant): array
+    {
         $payload = $plant->toArray();
+
+        unset($payload['cover_image_id'], $payload['interior_image_id']);
+
+        $payload['cover_image_media'] = $this->mediaPayload($plant->coverImageMedia);
+        $payload['interior_image_media'] = $this->mediaPayload($plant->interiorImageMedia);
+        $payload['cover_image_url'] = $plant->coverImageMedia?->url;
+        $payload['interior_image_url'] = $plant->interiorImageMedia?->url;
         $payload['proyecto'] = $this->projectPayload($plant->proyecto);
 
-        return response()->json($payload);
+        return $payload;
+    }
+
+    private function mediaPayload(?Media $media): ?array
+    {
+        if (! $media) {
+            return null;
+        }
+
+        return [
+            'type' => $media->type,
+            'title' => $media->title,
+            'url' => $media->url,
+            'thumbnail_url' => $media->thumbnail_url,
+            'medium_url' => $media->medium_url,
+            'large_url' => $media->large_url,
+        ];
     }
 
     private function projectPayload(?Proyecto $proyecto): ?array

@@ -173,11 +173,11 @@ Detalle de un proyecto específico.
 
 ### Plantas
 
-#### GET `/api/v1/plantas`
-Lista de plantas con filtros avanzados.
+#### GET `/api/v1/plantas?proyecto_id={id}`
+Lista de plantas filtradas por proyecto (consumo recomendado para frontend).
 
 **Query Parameters:**
-- `proyecto_id` o `project_id` - Filtrar por ID de proyecto (local)
+- `proyecto_id` o `project_id` - Filtrar por ID de proyecto (local). **Recomendado/esperado en consumo de catálogo.**
 - `salesforce_proyecto_id` - Filtrar por ID Salesforce del proyecto
 - `disponible` o `available` - Disponibilidad (`1`, `true`, `yes`, `si` para disponibles | `0`, `false`, `no` para no disponibles)
 - `programa` - Dormitorios (`1`, `2`, `3`, `4`, `ST`)
@@ -187,10 +187,17 @@ Lista de plantas con filtros avanzados.
 - `perPage` - Registros por página (default: 12)
 - `page` - Número de página
 
+Notas de payload:
+- La API incluye `cover_image_media` e `interior_image_media` con el objeto completo de Curator.
+- También expone `cover_image_url` e `interior_image_url` como atajos para consumir la URL principal.
+
+Nota de consumo:
+- Para listar plantas de un proyecto específico, usa siempre `/api/v1/plantas?proyecto_id=X`.
+
 **Ejemplos:**
 ```bash
 # Plantas disponibles de un proyecto
-GET /api/v1/plantas?proyecto_id=3&disponible=1
+GET /api/v1/plantas?proyecto_id=X&disponible=1
 
 # Plantas con 2 dormitorios y 2 baños
 GET /api/v1/plantas?programa=2&programa2=2
@@ -230,17 +237,37 @@ GET /api/v1/plantas?disponible=0
       "updated_at": "2026-03-09T15:30:00.000000Z",
       "proyecto": {
         "id": 3,
-        "salesforce_id": "a015e000001XyZABC",
         "name": "Proyecto Torre Central",
-        "descripcion": "Moderno edificio en el centro de Santiago",
+        "tipo": [],
         "direccion": "Av. Principal 123",
         "comuna": "Santiago",
+        "provincia": "Santiago",
         "region": "Metropolitana",
+        "pagina_web": "https://proyecto.test",
         "etapa": "En Construcción",
-        "fecha_entrega": "2026-12-31",
-        "valor_reserva_exigido_defecto_peso": "500000.00"
+        "horario_atencion": "Lunes a Viernes 9:00 - 18:00",
+        "entrega_inmediata": false,
+        "is_active": true
       },
-      "active_reservation": null
+      "active_reservation": null,
+      "cover_image_media": {
+        "type": "image/jpeg",
+        "title": "Modelo A1 - 101",
+        "url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+        "thumbnail_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=200&w=200&s=...",
+        "medium_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=640&w=640&s=...",
+        "large_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=contain&fm=webp&h=1024&w=1024&s=..."
+      },
+      "interior_image_media": {
+        "type": "image/jpeg",
+        "title": "Modelo A1 - 101",
+        "url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+        "thumbnail_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=200&w=200&s=...",
+        "medium_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=640&w=640&s=...",
+        "large_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=contain&fm=webp&h=1024&w=1024&s=..."
+      },
+      "cover_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+      "interior_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg"
     }
   ],
   "total": 45,
@@ -281,22 +308,37 @@ Detalle de una planta específica.
   "updated_at": "2026-03-09T15:30:00.000000Z",
   "proyecto": {
     "id": 3,
-    "salesforce_id": "a015e000001XyZABC",
     "name": "Proyecto Torre Central",
-    "descripcion": "Moderno edificio en el centro de Santiago",
+    "tipo": [],
     "direccion": "Av. Principal 123",
     "comuna": "Santiago",
     "provincia": "Santiago",
     "region": "Metropolitana",
-    "email": "ventas@torrecentral.cl",
-    "telefono": "+56 2 2345 6789",
+    "pagina_web": "https://proyecto.test",
     "etapa": "En Construcción",
-    "fecha_inicio_ventas": "2025-06-01",
-    "fecha_entrega": "2026-12-31",
-    "valor_reserva_exigido_defecto_peso": "500000.00",
-    "valor_reserva_exigido_min_peso": "300000.00"
+    "horario_atencion": "Lunes a Viernes 9:00 - 18:00",
+    "entrega_inmediata": false,
+    "is_active": true
   },
-  "active_reservation": null
+  "active_reservation": null,
+  "cover_image_media": {
+    "type": "image/jpeg",
+    "title": "Modelo A1 - 101",
+    "url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+    "thumbnail_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=200&w=200&s=...",
+    "medium_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=640&w=640&s=...",
+    "large_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=contain&fm=webp&h=1024&w=1024&s=..."
+  },
+  "interior_image_media": {
+    "type": "image/jpeg",
+    "title": "Modelo A1 - 101",
+    "url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+    "thumbnail_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=200&w=200&s=...",
+    "medium_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=crop&fm=webp&h=640&w=640&s=...",
+    "large_url": "/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg?fit=contain&fm=webp&h=1024&w=1024&s=..."
+  },
+  "cover_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
+  "interior_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg"
 }
 ```
 
@@ -510,6 +552,23 @@ tail -f storage/logs/laravel.log
 ```bash
 php artisan tinker
 # DB::listen(fn($query) => dump($query->sql, $query->bindings));
+```
+
+### Testing DB segura (sin tocar desarrollo)
+
+- Los tests usan una conexión dedicada: `sqlite_testing`.
+- Archivo de base de datos de tests: `database/testing.sqlite`.
+- `RefreshDatabase` borra y reconstruye solo esa base de tests.
+- No uses tu base de desarrollo para pruebas.
+
+Comandos recomendados:
+
+```bash
+# Crear archivo SQLite de tests (una vez)
+New-Item -Path database/testing.sqlite -ItemType File -Force
+
+# Ejecutar tests usando .env.testing/phpunit.xml
+php artisan test --compact
 ```
 
 ## 🎨 Customización
