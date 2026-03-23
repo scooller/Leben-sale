@@ -1,5 +1,7 @@
 import api from '../lib/api';
 
+const defaultAuthToken = import.meta.env.AUTH_TOKEN?.trim();
+
 export const authService = {
   /**
    * Registrar nuevo usuario
@@ -62,7 +64,7 @@ export const authService = {
    * Verificar si el usuario está autenticado
    */
   isAuthenticated() {
-    return !!localStorage.getItem('auth_token');
+    return Boolean(localStorage.getItem('auth_token') || defaultAuthToken);
   },
 
   /**

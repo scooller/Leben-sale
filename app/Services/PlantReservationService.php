@@ -7,23 +7,25 @@ namespace App\Services;
 use App\Enums\ReservationStatus;
 use App\Models\Plant;
 use App\Models\PlantReservation;
+use App\Models\SiteSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RuntimeException;
 
 class PlantReservationService
 {
-    /** Reservation duration in minutes */
-    private const RESERVATION_DURATION_MINUTES = 15;
+    private const DEFAULT_RESERVATION_DURATION_MINUTES = 15;
 
     /**
      * Reserve a plant for a user.
      * Uses DB transaction with pessimistic locking to prevent race conditions.
      *
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>  $metadata
      *
-     * @throws \InvalidArgumentException If plant does not exist or is not active
-     * @throws \RuntimeException If plant is already reserved by another user
+     * @throws InvalidArgumentException If plant does not exist or is not active
+     * @throws RuntimeException If plant is already reserved by another user
      */
     public function reserve(int $plantId, int $userId, array $metadata = []): PlantReservation
     {
@@ -31,7 +33,7 @@ class PlantReservationService
             $plant = Plant::lockForUpdate()->find($plantId);
 
             if (! $plant || ! $plant->is_active) {
-                throw new \InvalidArgumentException('La planta no existe o no esta disponible.');
+                throw new InvalidArgumentException('La planta no existe o no esta disponible.');
             }
 
             // Check for existing active reservation on this plant
@@ -45,7 +47,7 @@ class PlantReservationService
                 // If the same user already has the reservation, extend it
                 if ($existing->user_id === $userId) {
                     $existing->update([
-                        'expires_at' => now()->addMinutes(self::RESERVATION_DURATION_MINUTES),
+                        'expires_at' => now()->addMinutes($this->reservationDurationMinutes()),
                     ]);
 
                     Log::info('PlantReservation: Extended existing reservation', [
@@ -57,7 +59,7 @@ class PlantReservationService
                     return $existing->fresh();
                 }
 
-                throw new \RuntimeException('Esta planta ya esta reservada por otro usuario.');
+                throw new RuntimeException('Esta planta ya esta reservada por otro usuario.');
             }
 
             // Expire any stale active reservations for this plant
@@ -75,7 +77,7 @@ class PlantReservationService
                 'user_id' => $userId,
                 'session_token' => Str::uuid()->toString(),
                 'status' => ReservationStatus::ACTIVE,
-                'expires_at' => now()->addMinutes(self::RESERVATION_DURATION_MINUTES),
+                'expires_at' => now()->addMinutes($this->reservationDurationMinutes()),
                 'metadata' => $metadata,
             ]);
 
@@ -201,7 +203,7 @@ class PlantReservationService
     /**
      * Validate that a given session token owns the active reservation for a plant.
      *
-     * @throws \RuntimeException If no valid reservation exists
+     * @throws RuntimeException If no valid reservation exists
      */
     public function validateReservationForCheckout(int $plantId, string $sessionToken): PlantReservation
     {
@@ -212,7 +214,7 @@ class PlantReservationService
             ->first();
 
         if (! $reservation) {
-            throw new \RuntimeException('No tienes una reserva activa para esta planta. Por favor, intenta de nuevo.');
+            throw new RuntimeException('No tienes una reserva activa para esta planta. Por favor, intenta de nuevo.');
         }
 
         return $reservation;
@@ -238,5 +240,12 @@ class PlantReservationService
         }
 
         return $count;
+    }
+
+    private function reservationDurationMinutes(): int
+    {
+        $minutes = SiteSetting::get('gateway_reservation_timeout_minutes', self::DEFAULT_RESERVATION_DURATION_MINUTES);
+
+        return (int) max(1, min(120, (int) $minutes));
     }
 }

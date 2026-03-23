@@ -21,12 +21,35 @@ function PaymentGatewayDialog({
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
   const [checkoutRut, setCheckoutRut] = useState('');
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    rut: false,
+  });
 
   // Reservation state
   const [reservationToken, setReservationToken] = useState(null);
   const [reservationLoading, setReservationLoading] = useState(false);
   const [reservationError, setReservationError] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [validationToast, setValidationToast] = useState(null);
+
+  const formatRut = (value) => {
+    const cleaned = String(value ?? '')
+      .replace(/[^0-9kK]/g, '')
+      .toUpperCase()
+      .slice(0, 9);
+
+    if (cleaned.length <= 1) {
+      return cleaned;
+    }
+
+    const body = cleaned.slice(0, -1);
+    const dv = cleaned.slice(-1);
+
+    return `${body}-${dv}`;
+  };
 
   // Validación de email
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
@@ -39,7 +62,13 @@ function PaymentGatewayDialog({
 
   // Validación de RUT chileno
   const isValidRut = (value) => {
-    const cleaned = value.replace(/[^0-9kK]/g, '').toLowerCase();
+    const formatted = formatRut(value);
+
+    if (!/^\d{7,8}-[0-9K]$/.test(formatted)) {
+      return false;
+    }
+
+    const cleaned = formatted.replace('-', '').toLowerCase();
     if (cleaned.length < 8) {
       return false;
     }
@@ -68,6 +97,38 @@ function PaymentGatewayDialog({
   const isEmailValid = checkoutEmail ? isValidEmail(checkoutEmail) : false;
   const isPhoneValid = checkoutPhone ? isValidPhone(checkoutPhone) : false;
   const isRutValid = checkoutRut ? isValidRut(checkoutRut) : false;
+  const isNameValid = checkoutName.trim().length >= 3;
+
+  const setFieldTouched = (field) => {
+    setTouched((previous) => ({ ...previous, [field]: true }));
+  };
+
+  const handleRutChange = (event) => {
+    setFieldTouched('rut');
+    setCheckoutRut(formatRut(event.target.value));
+  };
+
+  const validationMessages = [];
+
+  if (!isNameValid) {
+    validationMessages.push('Ingresa tu nombre completo (minimo 3 caracteres).');
+  }
+
+  if (!isEmailValid) {
+    validationMessages.push('Correo electronico invalido.');
+  }
+
+  if (!isPhoneValid) {
+    validationMessages.push('Telefono invalido (8 a 15 digitos).');
+  }
+
+  if (!isRutValid) {
+    validationMessages.push('RUT invalido. Usa formato 12345678-9 (sin puntos).');
+  }
+
+  if (!selectedGateway) {
+    validationMessages.push('Selecciona una pasarela de pago.');
+  }
 
   const isCheckoutReady = Boolean(
     isAuthenticated
@@ -109,6 +170,18 @@ function PaymentGatewayDialog({
       dialogRef.current.open = open;
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!validationToast) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setValidationToast(null);
+    }, 3200);
+
+    return () => clearTimeout(timer);
+  }, [validationToast]);
 
   // Reserve plant when dialog opens
   useEffect(() => {
@@ -194,12 +267,31 @@ function PaymentGatewayDialog({
       setCheckoutName(currentUser?.name || '');
       setCheckoutEmail(currentUser?.email || '');
       setCheckoutPhone(currentUser?.phone || '');
-      setCheckoutRut(currentUser?.rut || '');
+      setCheckoutRut(formatRut(currentUser?.rut || ''));
+      setTouched({
+        name: false,
+        email: false,
+        phone: false,
+        rut: false,
+      });
+      setValidationToast(null);
     }
   }, [open, plant, gateways]);
 
   const handleConfirm = () => {
     if (!isCheckoutReady) {
+      setTouched({
+        name: true,
+        email: true,
+        phone: true,
+        rut: true,
+      });
+
+      setValidationToast({
+        variant: 'warning',
+        message: validationMessages[0] || 'Completa los campos requeridos antes de continuar.',
+      });
+
       return;
     }
 
@@ -211,7 +303,7 @@ function PaymentGatewayDialog({
         name: checkoutName,
         email: checkoutEmail,
         phone: checkoutPhone,
-        rut: checkoutRut,
+        rut: formatRut(checkoutRut),
       },
     });
   };
@@ -223,6 +315,22 @@ function PaymentGatewayDialog({
       style={{ '--width': '500px' }}
       light-dismiss
     >
+      {validationToast && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          zIndex: 10000,
+          minWidth: '300px',
+          maxWidth: '420px',
+        }}>
+          <wa-callout variant={validationToast.variant}>
+            <wa-icon name="triangle-exclamation" slot="icon"></wa-icon>
+            {validationToast.message}
+          </wa-callout>
+        </div>
+      )}
+
       <div className="gateway-selection">
         <div className="checkout-user-fields wa-stack wa-gap-s">
           {/* Reservation status */}
@@ -253,6 +361,7 @@ function PaymentGatewayDialog({
               Rellena todos los campos para continuar al pago.
             </wa-callout>
           )}
+
           <div className="wa-split wa-align-items-center">
             <strong>Proyecto</strong>
             <span>{plant?.proyecto?.name || plant?.proyectoNombre || 'Sin proyecto'}</span>
@@ -269,35 +378,70 @@ function PaymentGatewayDialog({
           <wa-input
             label="Nombre completo"
             value={checkoutName}
-            onChange={(e) => setCheckoutName(e.target.value)}
+            onChange={(e) => {
+              setFieldTouched('name');
+              setCheckoutName(e.target.value);
+            }}
+            onBlur={() => setFieldTouched('name')}
+            minlength="3"
             required
           ></wa-input>
+          {touched.name && !isNameValid && (
+            <small className="wa-caption-s">Debe tener al menos 3 caracteres.</small>
+          )}
 
           <wa-input
             type="email"
             label="Correo electronico"
             value={checkoutEmail}
-            onChange={(e) => setCheckoutEmail(e.target.value)}
+            onChange={(e) => {
+              setFieldTouched('email');
+              setCheckoutEmail(e.target.value);
+            }}
+            onBlur={() => setFieldTouched('email')}
+            autocomplete="email"
             required
           ></wa-input>
+          {touched.email && !isEmailValid && (
+            <small className="wa-caption-s">Ingresa un correo valido (ejemplo@correo.com).</small>
+          )}
 
           <wa-input
-            type="tel"
+            type="number"
             label="Telefono"
-            placeholder="+56 9 1234 5678"
+            placeholder="9 1234 5678"
             value={checkoutPhone}
-            onChange={(e) => setCheckoutPhone(e.target.value)}
+            onChange={(e) => {
+              setFieldTouched('phone');
+              setCheckoutPhone(e.target.value);
+            }}
+            onBlur={() => setFieldTouched('phone')}
+            autocomplete="tel"
             required
-          ></wa-input>
+          >
+            <div slot="start" className="wa-input-prefix">+56</div>
+          </wa-input>
+          {touched.phone && !isPhoneValid && (
+            <small className="wa-caption-s">Debe contener entre 8 y 15 digitos.</small>
+          )}
 
           <wa-input
             label="RUT"
-            placeholder="12.345.678-9"
+            placeholder="12345678-9"
             value={checkoutRut}
-            onChange={(e) => setCheckoutRut(e.target.value)}
+            onChange={handleRutChange}
+            onBlur={() => setFieldTouched('rut')}
+            pattern="^[0-9]{7,8}-[0-9K]$"
+            maxlength="10"
             required
           ></wa-input>
+          <small className="wa-caption-s">Formato: 12345678-9 (sin puntos).</small>
+          {touched.rut && !isRutValid && (
+            <small className="wa-caption-s">RUT invalido. Revisa digito verificador.</small>
+          )}
         </div>
+
+        <wa-divider></wa-divider>
 
         <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
 

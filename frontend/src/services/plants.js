@@ -7,7 +7,7 @@ class PlantsService {
    */
   async getAll(params = {}) {
     try {
-      const response = await api.get('/plants', { params });
+      const response = await api.get('/plantas', { params });
       return response.data;
     } catch (error) {
       logError('PlantsService.getAll', error);
@@ -33,8 +33,8 @@ class PlantsService {
       throw {
         ...parsed,
         context: 'getById',
-        userMessage: parsed.type === 'not_found' 
-          ? 'La planta solicitada no existe.' 
+        userMessage: parsed.type === 'not_found'
+          ? 'La planta solicitada no existe.'
           : 'No se pudo cargar la información de la planta.',
       };
     }

@@ -1,8 +1,5 @@
-import axios from 'axios';
 import api from '../lib/api';
 import { logError, parseError, ErrorTypes } from '../utils/errorHandler';
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
@@ -11,8 +8,30 @@ const isValidPhone = (value) => {
   return digits.length >= 8 && digits.length <= 15;
 };
 
+const formatRut = (value) => {
+  const cleaned = String(value ?? '')
+    .replace(/[^0-9kK]/g, '')
+    .toUpperCase()
+    .slice(0, 9);
+
+  if (cleaned.length <= 1) {
+    return cleaned;
+  }
+
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+
+  return `${body}-${dv}`;
+};
+
 const isValidRut = (value) => {
-  const cleaned = value.replace(/[^0-9kK]/g, '').toLowerCase();
+  const formatted = formatRut(value);
+
+  if (!/^\d{7,8}-[0-9K]$/.test(formatted)) {
+    return false;
+  }
+
+  const cleaned = formatted.replace('-', '').toLowerCase();
   if (cleaned.length < 8) {
     return false;
   }
@@ -44,7 +63,7 @@ class CheckoutService {
    */
   static async getAvailableGateways() {
     try {
-      const response = await axios.get(`${API_URL}/payment-gateways`);
+      const response = await api.get('/payment-gateways');
       return response.data.gateways || [];
     } catch (error) {
       logError('CheckoutService.getAvailableGateways', error);
@@ -64,7 +83,7 @@ class CheckoutService {
    * @param {string} gateway - Pasarela de pago ('transbank' o 'mercadopago')
    * @param {{name: string, email: string, phone: string, rut: string}} userData - Datos del usuario
    */
-  static async initiate(plantId, quantity = 1, gateway = 'transbank', userData = {}) {
+  static async initiate(plantId, quantity = 1, gateway = 'transbank', userData = {}, sessionToken = null) {
     try {
       // Validaciones básicas antes de hacer la petición
       if (!plantId || plantId <= 0) {
@@ -111,9 +130,11 @@ class CheckoutService {
         throw {
           type: ErrorTypes.VALIDATION,
           message: 'RUT invalido',
-          userMessage: 'Ingresa un RUT valido (ej: 12.345.678-9).',
+          userMessage: 'Ingresa un RUT valido sin puntos y con guion (ej: 12345678-9).',
         };
       }
+
+      const normalizedRut = formatRut(userData.rut);
 
       const response = await api.post('/checkout', {
         plant_id: plantId,
@@ -122,7 +143,8 @@ class CheckoutService {
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
-        rut: userData.rut,
+        rut: normalizedRut,
+        ...(sessionToken ? { session_token: sessionToken } : {}),
       });
 
       // Validar que la respuesta contenga redirect_url
@@ -145,7 +167,7 @@ class CheckoutService {
       // Si es un error de axios, parsearlo
       logError('CheckoutService.initiate', error);
       const parsed = parseError(error);
-      
+
       // Agregar contexto específico para errores de checkout
       let userMessage = parsed.message;
       if (parsed.type === ErrorTypes.VALIDATION && parsed.details) {

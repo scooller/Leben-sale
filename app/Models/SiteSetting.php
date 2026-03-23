@@ -53,6 +53,7 @@ class SiteSetting extends Model
         'gateway_transbank_enabled',
         'gateway_mercadopago_enabled',
         'gateway_manual_enabled',
+        'gateway_reservation_timeout_minutes',
         'gateway_transbank_config',
         'gateway_mercadopago_config',
         'gateway_manual_config',
@@ -68,6 +69,7 @@ class SiteSetting extends Model
         'gateway_transbank_enabled' => 'boolean',
         'gateway_mercadopago_enabled' => 'boolean',
         'gateway_manual_enabled' => 'boolean',
+        'gateway_reservation_timeout_minutes' => 'integer',
         'extra_settings' => 'array',
         'gateway_transbank_config' => 'array',
         'gateway_mercadopago_config' => 'array',
@@ -209,6 +211,7 @@ class SiteSetting extends Model
                     'enabled' => $settings->gateway_manual_enabled,
                     'config' => $settings->gateway_manual_config ?? [],
                 ],
+                'reservation_timeout_minutes' => $settings->gateway_reservation_timeout_minutes ?? 15,
             ],
         ];
     }

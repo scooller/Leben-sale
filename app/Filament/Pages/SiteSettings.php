@@ -14,7 +14,6 @@ use App\Filament\Widgets\UsersChartWidget;
 use App\Models\SiteSetting;
 use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
@@ -32,19 +31,19 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Halt;
 use Filament\Support\Icons\Heroicon;
-use UnitEnum;
+use Illuminate\Support\Facades\Auth;
 
 class SiteSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
     protected static ?string $navigationLabel = 'Configuración del Sitio';
 
     protected static ?string $title = 'Configuración del Sitio';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Configuración';
+    protected static string|\UnitEnum|null $navigationGroup = 'Configuración';
 
     protected static ?int $navigationSort = 1;
 
@@ -70,12 +69,12 @@ class SiteSettings extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        return Auth::user()?->isAdmin() ?? false;
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        return Auth::user()?->isAdmin() ?? false;
     }
 
     public ?array $data = [];
@@ -500,6 +499,16 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Pago Manual')
                                             ->helperText('Transferencia bancaria, efectivo u otro método offline')
                                             ->default(true),
+
+                                        TextInput::make('gateway_reservation_timeout_minutes')
+                                            ->label('Tiempo de espera de reserva (minutos)')
+                                            ->helperText('Tiempo máximo que una planta queda reservada antes de liberarse automáticamente.')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->maxValue(120)
+                                            ->step(1)
+                                            ->default(15)
+                                            ->required(),
                                     ])
                                     ->columns(1),
                             ]),

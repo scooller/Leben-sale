@@ -75,4 +75,19 @@ enum ReservationStatus: string
             fn (self $status) => [$status->value => $status->label()]
         )->toArray();
     }
+
+    public static function fromValue(?string $value): ?self
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        foreach (self::cases() as $status) {
+            if ($status->value === $value) {
+                return $status;
+            }
+        }
+
+        return null;
+    }
 }

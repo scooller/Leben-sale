@@ -7,10 +7,13 @@ namespace App\Filament\Resources\Reservations\Tables;
 use App\Enums\ReservationStatus;
 use App\Services\PlantReservationService;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 
 class PlantReservationsTable
 {
@@ -30,17 +33,17 @@ class PlantReservationsTable
                     ->label('Estado')
                     ->badge()
                     ->color(function (ReservationStatus|string|null $state): string {
-                        $status = $state instanceof ReservationStatus ? $state : ($state ? ReservationStatus::from($state) : null);
+                        $status = $state instanceof ReservationStatus ? $state : ReservationStatus::fromValue($state);
 
                         return $status?->color() ?? 'gray';
                     })
                     ->icon(function (ReservationStatus|string|null $state): string {
-                        $status = $state instanceof ReservationStatus ? $state : ($state ? ReservationStatus::from($state) : null);
+                        $status = $state instanceof ReservationStatus ? $state : ReservationStatus::fromValue($state);
 
                         return $status?->icon() ?? 'heroicon-o-question-mark-circle';
                     })
                     ->formatStateUsing(function (ReservationStatus|string|null $state): string {
-                        $status = $state instanceof ReservationStatus ? $state : ($state ? ReservationStatus::from($state) : null);
+                        $status = $state instanceof ReservationStatus ? $state : ReservationStatus::fromValue($state);
 
                         return $status?->label() ?? '-';
                     })
@@ -76,6 +79,32 @@ class PlantReservationsTable
                     ->visible(fn ($record) => $record->status === ReservationStatus::ACTIVE)
                     ->action(function ($record): void {
                         app(PlantReservationService::class)->releaseById($record->id, 'admin', 'Released from admin panel');
+                    }),
+            ])
+            ->toolbarActions([
+                BulkAction::make('releaseSelected')
+                    ->label('Liberar seleccionadas')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Liberar reservas seleccionadas')
+                    ->modalDescription('Solo se liberaran las reservas que esten activas.')
+                    ->action(function (Collection $records): void {
+                        $service = app(PlantReservationService::class);
+
+                        $releasedCount = $records
+                            ->filter(fn ($record) => $record->status === ReservationStatus::ACTIVE)
+                            ->reduce(function (int $carry, $record) use ($service): int {
+                                return $service->releaseById($record->id, 'admin', 'Bulk release from admin panel')
+                                    ? $carry + 1
+                                    : $carry;
+                            }, 0);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Reservas liberadas')
+                            ->body("Se liberaron {$releasedCount} reservas activas.")
+                            ->send();
                     }),
             ]);
     }
