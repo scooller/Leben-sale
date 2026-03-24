@@ -182,6 +182,10 @@ Lista de plantas filtradas por proyecto (consumo recomendado para frontend).
 - `disponible` o `available` - Disponibilidad (`1`, `true`, `yes`, `si` para disponibles | `0`, `false`, `no` para no disponibles)
 - `programa` - Dormitorios (`1`, `2`, `3`, `4`, `ST`)
 - `programa2` - Baños (`1`, `2`, `3`)
+- `piso` - Filtrar por piso (admite uno o varios valores)
+- `comuna` - Filtrar por comuna del proyecto asociado
+- `region` - Filtrar por región del proyecto asociado
+- `provincia` - Filtrar por provincia del proyecto asociado
 - `min_precio` - Precio mínimo
 - `max_precio` - Precio máximo
 - `perPage` - Registros por página (default: 12)
@@ -339,6 +343,33 @@ Detalle de una planta específica.
   },
   "cover_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg",
   "interior_image_url": "http://127.0.0.1:8000/curator/ad4cb644-57ef-4a77-ad9e-c68ad3d94b9e.jpg"
+}
+```
+
+#### GET `/api/v1/plantas/filtros-ubicacion`
+Devuelve catálogos de ubicación disponibles para construir filtros de frontend sin cálculos locales.
+
+**Respuesta:**
+```json
+{
+  "regions": [
+    "Metropolitana",
+    "Valparaiso"
+  ],
+  "comunas": [
+    "Providencia",
+    "Santiago",
+    "Vina del Mar"
+  ],
+  "comunas_by_region": {
+    "Metropolitana": [
+      "Providencia",
+      "Santiago"
+    ],
+    "Valparaiso": [
+      "Vina del Mar"
+    ]
+  }
 }
 ```
 

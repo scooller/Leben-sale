@@ -30,22 +30,32 @@ function Home() {
   const [plantForCheckout, setPlantForCheckout] = useState(null);
   const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
   const isAuthenticated = authService.isAuthenticated();
-  
+
   // Estados para filtros
   const [proyectos, setProyectos] = useState([]);
+  const [pisoOptions, setPisoOptions] = useState([]);
+  const [regionOptions, setRegionOptions] = useState([]);
+  const [comunaOptions, setComunaOptions] = useState([]);
+  const [comunasByRegion, setComunasByRegion] = useState({});
   const [selectedProyecto, setSelectedProyecto] = useState([]);
   const [selectedDormitorios, setSelectedDormitorios] = useState([]);
   const [selectedBanos, setSelectedBanos] = useState([]);
+  const [selectedPiso, setSelectedPiso] = useState('');
+  const [selectedComuna, setSelectedComuna] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPrecioMin, setSelectedPrecioMin] = useState('');
   const [selectedPrecioMax, setSelectedPrecioMax] = useState('');
-  
+
   // Estados temporales para filtros (antes de aplicar)
   const [tempProyecto, setTempProyecto] = useState([]);
   const [tempDormitorios, setTempDormitorios] = useState([]);
   const [tempBanos, setTempBanos] = useState([]);
+  const [tempPiso, setTempPiso] = useState('');
+  const [tempComuna, setTempComuna] = useState('');
+  const [tempRegion, setTempRegion] = useState('');
   const [tempPrecioMin, setTempPrecioMin] = useState('');
   const [tempPrecioMax, setTempPrecioMax] = useState('');
-  
+
   const heroRef = useRef(null);
 
   const normalizeMultiValue = (value) => {
@@ -62,9 +72,30 @@ function Home() {
 
   const getMultiSelectValue = (event) => normalizeMultiValue(event?.target?.value);
 
+  const getSingleSelectValue = (event) => {
+    const value = event?.target?.value;
+
+    if (Array.isArray(value)) {
+      return value[0] || '';
+    }
+
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return `${value}`;
+  };
+
+  const filteredComunaOptions = tempRegion
+    ? (comunasByRegion[tempRegion] || [])
+    : comunaOptions;
+
   const activeFilterCount = selectedProyecto.length
     + selectedDormitorios.length
     + selectedBanos.length
+    + (selectedPiso ? 1 : 0)
+    + (selectedComuna ? 1 : 0)
+    + (selectedRegion ? 1 : 0)
     + (selectedPrecioMin ? 1 : 0)
     + (selectedPrecioMax ? 1 : 0);
 
@@ -72,7 +103,10 @@ function Home() {
   useEffect(() => {
     const fetchProyectos = async () => {
       try {
-        const data = await proyectosService.getProyectos({ perPage: 100 });
+        const data = await proyectosService.getProyectos({
+          perPage: 100,
+          fields: 'id,salesforce_id,name,comuna,region',
+        });
         setProyectos(data.data || []);
       } catch (err) {
       }
@@ -80,46 +114,95 @@ function Home() {
     fetchProyectos();
   }, []);
 
+  useEffect(() => {
+    const fetchLocationFilters = async () => {
+      try {
+        const data = await PlantsService.getLocationFilters();
+        setRegionOptions(data.regions || []);
+        setComunaOptions(data.comunas || []);
+        setComunasByRegion(data.comunas_by_region || {});
+      } catch (err) {
+      }
+    };
+
+    fetchLocationFilters();
+  }, []);
+
+  useEffect(() => {
+    const fetchPisoOptions = async () => {
+      try {
+        const data = await PlantsService.getAll({ perPage: 500 });
+        const pisos = [...new Set((data.data || []).map((plant) => `${plant?.piso ?? ''}`.trim()).filter((value) => value !== ''))]
+          .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true }));
+
+        setPisoOptions(pisos);
+      } catch (err) {
+      }
+    };
+
+    fetchPisoOptions();
+  }, []);
+
+  useEffect(() => {
+    if (tempComuna && !filteredComunaOptions.includes(tempComuna)) {
+      setTempComuna('');
+    }
+  }, [tempComuna, filteredComunaOptions]);
+
   // Cargar plantas cuando cambian los filtros
   useEffect(() => {
     const loadPlants = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const filters = {
           page,
           perPage: 12,
         };
-        
+
         if (selectedProyecto.length > 0) {
           filters.salesforce_proyecto_id = selectedProyecto;
         }
-        
+
         if (selectedDormitorios.length > 0) {
           filters.programa = selectedDormitorios;
         }
-        
+
         if (selectedBanos.length > 0) {
           filters.programa2 = selectedBanos;
         }
-        
+
+        if (selectedPiso) {
+          filters.piso = selectedPiso;
+        }
+
+        if (selectedComuna) {
+          filters.comuna = selectedComuna;
+        }
+
+        if (selectedRegion) {
+          filters.region = selectedRegion;
+        }
+
         if (selectedPrecioMin) {
           filters.min_precio = selectedPrecioMin;
         }
-        
+
         if (selectedPrecioMax) {
           filters.max_precio = selectedPrecioMax;
         }
-        
+
         const data = await PlantsService.getAll(filters);
-        
+
         const totalCount = data.total ?? data.data?.length ?? 0;
-        
+
         const mappedPlants = (data.data || []).map(plant => ({
           ...plant,
           nombre: plant.name,
           categoria: plant.programa,
+          coverImage: plant.cover_image_url || plant.cover_image_media?.url || '',
+          interiorImage: plant.interior_image_url || plant.interior_image_media?.url || '',
           precioBase: Number(plant.precio_base) || 0,
           precioLista: Number(plant.precio_lista) || 0,
           reservaExigidaPeso: Number(plant.proyecto?.valor_reserva_exigido_defecto_peso) || 0,
@@ -129,7 +212,7 @@ function Home() {
           proyectoComuna: plant.proyecto?.comuna,
           isReserved: !!plant.active_reservation,
         }));
-        
+
         setPlants(mappedPlants);
         setTotalPages(data.last_page || 1);
         setTotalPlants(totalCount);
@@ -142,13 +225,23 @@ function Home() {
           canRetry: isRetryableError(err),
         };
         setError(errorInfo);
-      } finally {        
+      } finally {
         setLoading(false);
       }
     };
 
     loadPlants();
-  }, [page, selectedProyecto, selectedDormitorios, selectedBanos, selectedPrecioMin, selectedPrecioMax]);
+  }, [
+    page,
+    selectedProyecto,
+    selectedDormitorios,
+    selectedBanos,
+    selectedPiso,
+    selectedComuna,
+    selectedRegion,
+    selectedPrecioMin,
+    selectedPrecioMax,
+  ]);
 
   // Animaciones del Hero con GSAP
   useEffect(() => {
@@ -156,7 +249,7 @@ function Home() {
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
-      
+
       // Logo - flipInX (0ms)
       const logo = heroRef.current.querySelector('.hero-logo');
       if (logo) {
@@ -170,7 +263,7 @@ function Home() {
           ease: 'back.out(1.7)',
         }, 0);
       }
-      
+
       // Título y descripción - fadeInDown (500ms)
       tl.fromTo(['.hero-section h1', '.hero-section p'], {
         y: -50,
@@ -182,7 +275,7 @@ function Home() {
         ease: 'power2.out',
         stagger: 0.1
       }, 0.5);
-      
+
       // Header plantas - fadeIn (700ms)
       tl.fromTo('.plants-header', {
         opacity: 0,
@@ -191,7 +284,7 @@ function Home() {
         duration: 1,
         ease: 'power1.out'
       }, 0.7);
-      
+
       // Filtros - fadeIn (1000ms)
       tl.fromTo('.filters-details', {
         opacity: 0,
@@ -210,6 +303,9 @@ function Home() {
     setSelectedProyecto(tempProyecto);
     setSelectedDormitorios(tempDormitorios);
     setSelectedBanos(tempBanos);
+    setSelectedPiso(tempPiso);
+    setSelectedComuna(tempComuna);
+    setSelectedRegion(tempRegion);
     setSelectedPrecioMin(tempPrecioMin);
     setSelectedPrecioMax(tempPrecioMax);
     setPage(1); // Volver a la primera página al aplicar filtros
@@ -220,11 +316,17 @@ function Home() {
     setTempProyecto([]);
     setTempDormitorios([]);
     setTempBanos([]);
+    setTempPiso('');
+    setTempComuna('');
+    setTempRegion('');
     setTempPrecioMin('');
     setTempPrecioMax('');
     setSelectedProyecto([]);
     setSelectedDormitorios([]);
     setSelectedBanos([]);
+    setSelectedPiso('');
+    setSelectedComuna('');
+    setSelectedRegion('');
     setSelectedPrecioMin('');
     setSelectedPrecioMax('');
     setPage(1);
@@ -279,10 +381,10 @@ function Home() {
           ...userData,
         }));
       }
-      
+
       // Cerrar diálogo antes de redirigir
       setGatewayDialogOpen(false);
-      
+
       // Redirigir a la pasarela
       CheckoutService.redirect(response.redirect_url);
     } catch (err) {
@@ -410,7 +512,7 @@ function Home() {
       {/* Banner Promocional */}
       <BannerPromo banner={config?.banner} />
 
-      {/* Hero Section */}      
+      {/* Hero Section */}
       <div className="hero-section">
         {config?.logo && (
           <img src={config.logo} alt={config?.site_name} className="hero-logo" />
@@ -433,114 +535,186 @@ function Home() {
       </div>
 
       {/* Filtros */}
-      <wa-details summary="Filtros" className="filters-details wa-mb-m">
-          <div className="wa-stack wa-gap-m">
-            <div className="wa-cluster wa-gap-m filters-inputs">
-              <wa-select
-                label="Proyecto"
-                placeholder="Todos los proyectos"
-                value={tempProyecto}
-                onChange={(e) => {
-                  const value = getMultiSelectValue(e);
-                  setTempProyecto(value);
-                }}
-                multiple
-                clearable
-              >
-                {proyectos.map((proyecto) => (
-                  <wa-option key={proyecto.id} value={proyecto.salesforce_id}>
-                    {proyecto.name}
-                  </wa-option>
-                ))}
-              </wa-select>
+      <wa-details className="filters-details wa-mb-m">
+        <span slot="summary">
+            <wa-icon name="filter-circle-dollar"></wa-icon> Filtros
+        </span>
+            <wa-card
+            appearance="filled"
+            style={{ '--spacing': 'var(--wa-space-xs)', 'background-color': 'var(--wa-color-surface-lowered)' }}
+            >
+                <div className="wa-grid wa-gap-m filters-inputs" style={{ '--min-column-size': '14rem' }}>
+                    <wa-select
+                        label="Proyecto"
+                        placeholder="Todos los proyectos"
+                        size="small"
+                        value={tempProyecto}
+                        onChange={(e) => {
+                        const value = getMultiSelectValue(e);
+                        setTempProyecto(value);
+                        }}
+                        multiple
+                        clearable
+                    >
+                        {proyectos.map((proyecto) => (
+                        <wa-option key={proyecto.id} value={proyecto.salesforce_id}>
+                            {proyecto.name}
+                        </wa-option>
+                        ))}
+                    </wa-select>
 
-              <wa-select
-                label="Dormitorios"
-                placeholder="Todos"
-                value={tempDormitorios}
-                onChange={(e) => {
-                  const value = getMultiSelectValue(e);
-                  setTempDormitorios(value);
-                }}
-                multiple
-                clearable
-              >
-                <wa-option value="ST">Studio</wa-option>
-                <wa-option value="1D">1 Dormitorio</wa-option>
-                <wa-option value="2D">2 Dormitorios</wa-option>
-                <wa-option value="3D">3 Dormitorios</wa-option>
-                <wa-option value="4D">4 Dormitorios</wa-option>
-              </wa-select>
+                    <wa-select
+                        label="Dormitorios"
+                        placeholder="Todos"
+                        size="small"
+                        value={tempDormitorios}
+                        onChange={(e) => {
+                        const value = getMultiSelectValue(e);
+                        setTempDormitorios(value);
+                        }}
+                        with-clear
+                        multiple
+                        clearable
+                    >
+                        <wa-option value="ST">Studio</wa-option>
+                        <wa-option value="1D">1 Dormitorio</wa-option>
+                        <wa-option value="2D">2 Dormitorios</wa-option>
+                        <wa-option value="3D">3 Dormitorios</wa-option>
+                        <wa-option value="4D">4 Dormitorios</wa-option>
+                    </wa-select>
 
-              <wa-select
-                label="Baños"
-                placeholder="Todos"
-                value={tempBanos}
-                onChange={(e) => {
-                  const value = getMultiSelectValue(e);
-                  setTempBanos(value);
-                }}
-                multiple
-                clearable
-              >
-                <wa-option value="1B">1 Baño</wa-option>
-                <wa-option value="2B">2 Baños</wa-option>
-                <wa-option value="3B">3 Baños</wa-option>
-              </wa-select>
+                    <wa-select
+                        label="Baños"
+                        placeholder="Todos"
+                        size="small"
+                        value={tempBanos}
+                        onChange={(e) => {
+                        const value = getMultiSelectValue(e);
+                        setTempBanos(value);
+                        }}
+                        with-clear
+                        multiple
+                        clearable
+                    >
+                        <wa-option value="1B">1 Baño</wa-option>
+                        <wa-option value="2B">2 Baños</wa-option>
+                        <wa-option value="3B">3 Baños</wa-option>
+                    </wa-select>
 
-              <wa-input
-                type="number"
-                label="Precio Mínimo"
-                placeholder="Desde UF"
-                value={tempPrecioMin}
-                onChange={(e) => {
-                  const value = e.target.value || '';
-                  setTempPrecioMin(value);
-                }}
-                clearable
-              >
-                <wa-icon slot="start" name="dollar-sign"></wa-icon>
-              </wa-input>
+                    <wa-select
+                        with-clear
+                        label="Piso"
+                        placeholder="Todos"
+                        size="small"
+                        value={tempPiso}
+                        onChange={(e) => {
+                        const value = getSingleSelectValue(e);
+                        setTempPiso(value);
+                        }}
+                        multiple
+                        clearable
+                    >
+                        {pisoOptions.map((piso) => (
+                        <wa-option key={piso} value={piso}>
+                            Piso {piso}
+                        </wa-option>
+                        ))}
+                    </wa-select>
 
-              <wa-input
-                type="number"
-                label="Precio Máximo"
-                placeholder="Hasta UF"
-                value={tempPrecioMax}
-                onChange={(e) => {
-                  const value = e.target.value || '';
-                  setTempPrecioMax(value);
-                }}
-                clearable
-              >
-                <wa-icon slot="start" name="dollar-sign"></wa-icon>
-              </wa-input>
-            </div>
+                    <wa-select
+                        with-clear
+                        label="Comuna"
+                        size="small"
+                        placeholder={tempRegion ? 'Todas' : 'Primero selecciona una región'}
+                        value={tempComuna}
+                        onChange={(e) => {
+                        const value = getSingleSelectValue(e);
+                        setTempComuna(value);
+                        }}
+                        clearable
+                        disabled={!tempRegion}
+                    >
+                        {filteredComunaOptions.map((comuna) => (
+                        <wa-option key={comuna} value={comuna}>
+                            {comuna}
+                        </wa-option>
+                        ))}
+                    </wa-select>
 
-            <div className="wa-cluster wa-gap-s filters-actions">
-              <wa-button 
-                variant="brand"
-                onClick={handleApplyFilters}
-              >
-                <wa-icon slot="start" name="filter"></wa-icon>
-                Aplicar Filtros
-              </wa-button>
+                    <wa-select
+                        label="Región"
+                        placeholder="Todas"
+                        size="small"
+                        value={tempRegion}
+                        onChange={(e) => {
+                        const value = getSingleSelectValue(e);
+                        setTempRegion(value);
+                        setTempComuna('');
+                        }}
+                        clearable
+                    >
+                        {regionOptions.map((region) => (
+                        <wa-option key={region} value={region}>
+                            {region}
+                        </wa-option>
+                        ))}
+                    </wa-select>
 
-              {activeFilterCount > 0 && (
-                <wa-button 
-                  variant="neutral"
-                  onClick={handleClearFilters}
-                >
-                  <wa-icon slot="start" name="xmark"></wa-icon>
-                  Limpiar Filtros
-                </wa-button>
-              )}
-            </div>
-          </div>
+                    <wa-input
+                        type="number"
+                        label="Precio Mínimo"
+                        placeholder="Desde UF"
+                        value={tempPrecioMin}
+                        max='9999'
+                        size="small"
+                        onChange={(e) => {
+                            const value = e.target.value || '';
+                            setTempPrecioMin(value);
+                        }}
+                    >
+                        <wa-icon slot="start" name="dollar-sign"></wa-icon>
+                    </wa-input>
+
+                    <wa-input
+                        type="number"
+                        label="Precio Máximo"
+                        placeholder="Hasta UF"
+                        max='9999'
+                        size="small"
+                        value={tempPrecioMax}
+                        onChange={(e) => {
+                            const value = e.target.value || '';
+                            setTempPrecioMax(value);
+                        }}
+                    >
+                        <wa-icon slot="start" name="dollar-sign"></wa-icon>
+                    </wa-input>
+                </div>
+
+                <div className="wa-cluster wa-gap-s filters-actions wa-mt-l">
+                    <wa-button
+                        variant="brand"
+                        onClick={handleApplyFilters}
+                    >
+                        <wa-icon slot="start" name="filter"></wa-icon>
+                        Aplicar Filtros
+                    </wa-button>
+
+                    {activeFilterCount > 0 && (
+                        <wa-button
+                        variant="neutral"
+                        onClick={handleClearFilters}
+                        >
+                        <wa-icon slot="start" name="filter-circle-xmark"></wa-icon>
+                        Limpiar Filtros
+                        </wa-button>
+                    )}
+                </div>
+            </wa-card>
         </wa-details>
 
-      {/* Plantas Grid */}      
-      <PlantsGrid 
+      {/* Plantas Grid */}
+      <PlantsGrid
         plants={plants}
         loading={loading}
         checkoutLoading={checkoutLoading}
@@ -566,8 +740,8 @@ function Home() {
       />
 
       {/* Notificación de errores de checkout */}
-      <ErrorNotification 
-        error={checkoutError} 
+      <ErrorNotification
+        error={checkoutError}
         onClose={() => setCheckoutError(null)}
         duration={6000}
       />

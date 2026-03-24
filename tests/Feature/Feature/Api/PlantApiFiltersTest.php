@@ -72,6 +72,56 @@ class PlantApiFiltersTest extends TestCase
         $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
     }
 
+    public function test_it_filters_plants_by_comuna(): void
+    {
+        $projectInSantiago = Proyecto::factory()->create([
+            'comuna' => 'Santiago',
+            'is_active' => true,
+        ]);
+
+        $projectInProvidencia = Proyecto::factory()->create([
+            'comuna' => 'Providencia',
+            'is_active' => true,
+        ]);
+
+        $plantInSantiago = $this->createPlant($projectInSantiago->salesforce_id, true);
+        $plantInProvidencia = $this->createPlant($projectInProvidencia->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?comuna=Providencia');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($plantInProvidencia->id, $responsePlantIds);
+        $this->assertNotContains($plantInSantiago->id, $responsePlantIds);
+    }
+
+    public function test_it_returns_available_location_filters(): void
+    {
+        $projectInSantiago = Proyecto::factory()->create([
+            'comuna' => 'Santiago',
+            'region' => 'Metropolitana',
+            'is_active' => true,
+        ]);
+
+        $projectInProvidencia = Proyecto::factory()->create([
+            'comuna' => 'Providencia',
+            'region' => 'Metropolitana',
+            'is_active' => true,
+        ]);
+
+        $this->createPlant($projectInSantiago->salesforce_id, true);
+        $this->createPlant($projectInProvidencia->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas/filtros-ubicacion');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['regions' => ['Metropolitana']]);
+        $response->assertJsonFragment(['comunas' => ['Providencia', 'Santiago']]);
+        $response->assertJsonPath('comunas_by_region.Metropolitana.0', 'Providencia');
+        $response->assertJsonPath('comunas_by_region.Metropolitana.1', 'Santiago');
+    }
+
     public function test_it_excludes_plants_from_inactive_projects(): void
     {
         $activeProject = Proyecto::factory()->create([

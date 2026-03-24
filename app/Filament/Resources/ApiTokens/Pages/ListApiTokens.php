@@ -30,7 +30,13 @@ class ListApiTokens extends ListRecords
                 ->form([
                     Select::make('tokenable_id')
                         ->label('Usuario')
-                        ->options(User::query()->orderBy('name')->pluck('email', 'id')->all())
+                        ->options(
+                            User::query()
+                                ->where('user_type', 'admin')
+                                ->orderBy('name')
+                                ->pluck('email', 'id')
+                                ->all()
+                        )
                         ->searchable()
                         ->preload()
                         ->required(),
@@ -51,7 +57,9 @@ class ListApiTokens extends ListRecords
                         ->nullable(),
                 ])
                 ->action(function (array $data): void {
-                    $user = User::query()->findOrFail($data['tokenable_id']);
+                    $user = User::query()
+                        ->where('user_type', 'admin')
+                        ->findOrFail($data['tokenable_id']);
 
                     $newToken = $user->createToken(
                         $data['name'],

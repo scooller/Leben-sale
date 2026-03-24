@@ -482,7 +482,7 @@ function PaymentGatewayDialog({
         disabled={loading || !isCheckoutReady || reservationLoading}
         {...((loading || reservationLoading) && { loading: true })}
       >
-        {loading ? 'Procesando...' : 'Continuar al Pago'}
+        {loading ? 'Procesando...' : <><wa-icon name="money-bill-wave"></wa-icon> Continuar al Pago</>}
       </wa-button>
     </wa-dialog>
   );

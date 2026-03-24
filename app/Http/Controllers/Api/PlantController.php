@@ -27,6 +27,10 @@ class PlantController extends Controller
         $projectIdValues = $this->normalizeInputValues($request->input('proyecto_id', $request->input('project_id')));
         $dormValues = $this->normalizeInputValues($request->input('programa'));
         $banosValues = $this->normalizeInputValues($request->input('programa2'));
+        $pisoValues = $this->normalizeInputValues($request->input('piso'));
+        $comunaValues = $this->normalizeInputValues($request->input('comuna'));
+        $provinciaValues = $this->normalizeInputValues($request->input('provincia'));
+        $regionValues = $this->normalizeInputValues($request->input('region'));
         $available = $this->normalizeBoolean($request->input('disponible', $request->input('available')));
 
         // Filtros
@@ -79,6 +83,26 @@ class PlantController extends Controller
                             }
                         }
                     });
+                }
+            });
+        }
+
+        if (count($pisoValues) > 0) {
+            $query->whereIn('piso', $pisoValues);
+        }
+
+        if (count($comunaValues) > 0 || count($provinciaValues) > 0 || count($regionValues) > 0) {
+            $query->whereHas('proyecto', function ($projectQuery) use ($comunaValues, $provinciaValues, $regionValues) {
+                if (count($comunaValues) > 0) {
+                    $projectQuery->whereIn('comuna', $comunaValues);
+                }
+
+                if (count($provinciaValues) > 0) {
+                    $projectQuery->whereIn('provincia', $provinciaValues);
+                }
+
+                if (count($regionValues) > 0) {
+                    $projectQuery->whereIn('region', $regionValues);
                 }
             });
         }
@@ -168,6 +192,55 @@ class PlantController extends Controller
             ->findOrFail($id);
 
         return response()->json($this->plantPayload($plant));
+    }
+
+    public function locationFilters(): JsonResponse
+    {
+        $locations = Proyecto::query()
+            ->where('is_active', true)
+            ->whereHas('plantas', function ($plantsQuery) {
+                $plantsQuery->where('is_active', true);
+            })
+            ->get(['region', 'comuna']);
+
+        $regions = $locations
+            ->pluck('region')
+            ->map(static fn (mixed $region): string => trim((string) $region))
+            ->filter(static fn (string $region): bool => $region !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $comunas = $locations
+            ->pluck('comuna')
+            ->map(static fn (mixed $comuna): string => trim((string) $comuna))
+            ->filter(static fn (string $comuna): bool => $comuna !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $comunasByRegion = $locations
+            ->map(function (Proyecto $proyecto): array {
+                return [
+                    'region' => trim((string) $proyecto->region),
+                    'comuna' => trim((string) $proyecto->comuna),
+                ];
+            })
+            ->filter(static fn (array $entry): bool => $entry['region'] !== '' && $entry['comuna'] !== '')
+            ->groupBy('region')
+            ->map(function ($entries) {
+                return collect($entries)
+                    ->pluck('comuna')
+                    ->unique()
+                    ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values();
+            });
+
+        return response()->json([
+            'regions' => $regions,
+            'comunas' => $comunas,
+            'comunas_by_region' => $comunasByRegion,
+        ]);
     }
 
     private function plantPayload(Plant $plant): array

@@ -31,6 +31,8 @@ Route::prefix('v1')->group(function () {
             'tags' => [
                 ['name' => 'Config', 'description' => 'Configuración pública del sitio'],
                 ['name' => 'Auth', 'description' => 'Autenticación de usuarios'],
+                ['name' => 'login', 'description' => 'Login de usuario'],
+                ['name' => 'register', 'description' => 'Registro de usuario'],
                 ['name' => 'Proyectos', 'description' => 'Catálogo de proyectos'],
                 ['name' => 'Plantas', 'description' => 'Catálogo de plantas'],
                 ['name' => 'Reservas', 'description' => 'Reservas de plantas'],
@@ -44,6 +46,7 @@ Route::prefix('v1')->group(function () {
                 '/proyectos' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'listProyectos', 'summary' => 'Listado de proyectos', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
                 '/proyectos/{id}' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'getProyecto', 'summary' => 'Detalle de proyecto', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de proyecto'], '401' => ['description' => 'No autenticado'], '404' => ['description' => 'No encontrado']]]],
                 '/plantas' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'listPlantas', 'summary' => 'Listado de plantas', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
+                '/plantas/filtros-ubicacion' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'getPlantasFiltrosUbicacion', 'summary' => 'Catálogo de regiones y comunas disponibles', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Catálogo de filtros de ubicación'], '401' => ['description' => 'No autenticado']]]],
                 '/plantas/{id}' => ['get' => ['tags' => ['Plantas'], 'operationId' => 'getPlanta', 'summary' => 'Detalle de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de planta'], '401' => ['description' => 'No autenticado'], '404' => ['description' => 'No encontrado']]]],
                 '/payment-gateways' => ['get' => ['tags' => ['Pagos'], 'operationId' => 'listPaymentGateways', 'summary' => 'Pasarelas de pago disponibles', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado de pasarelas'], '401' => ['description' => 'No autenticado']]]],
                 '/reservations/planta/{plantId}' => ['get' => ['tags' => ['Reservas'], 'operationId' => 'getPlantReservationStatus', 'summary' => 'Estado de reserva de planta', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/PlantId']], 'responses' => ['200' => ['description' => 'Estado de reserva'], '401' => ['description' => 'No autenticado']]]],
@@ -120,6 +123,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(functio
 
     // Plantas
     Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
+    Route::get('/plantas/filtros-ubicacion', [App\Http\Controllers\Api\PlantController::class, 'locationFilters']);
     Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
 
     // Pasarelas disponibles

@@ -21,3 +21,8 @@
 //     width: 100%;
 //   }
 // }
+
+// fix global styles
+:root, *{
+    box-sizing: border-box;
+}

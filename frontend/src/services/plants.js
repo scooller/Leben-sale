@@ -39,6 +39,24 @@ class PlantsService {
       };
     }
   }
+
+  /**
+   * Obtener opciones de ubicación para filtros
+   */
+  async getLocationFilters() {
+    try {
+      const response = await api.get('/plantas/filtros-ubicacion');
+      return response.data;
+    } catch (error) {
+      logError('PlantsService.getLocationFilters', error);
+      const parsed = parseError(error);
+      throw {
+        ...parsed,
+        context: 'getLocationFilters',
+        userMessage: parsed.message || 'No se pudieron cargar los filtros de ubicacion.',
+      };
+    }
+  }
 }
 
 export default new PlantsService();

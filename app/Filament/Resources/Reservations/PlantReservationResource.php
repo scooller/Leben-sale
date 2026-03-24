@@ -6,10 +6,12 @@ namespace App\Filament\Resources\Reservations;
 
 use App\Filament\Resources\Reservations\Pages\ListPlantReservations;
 use App\Filament\Resources\Reservations\Pages\ViewPlantReservation;
+use App\Filament\Resources\Reservations\Schemas\PlantReservationInfolist;
 use App\Filament\Resources\Reservations\Tables\PlantReservationsTable;
 use App\Models\PlantReservation;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
@@ -45,6 +47,11 @@ class PlantReservationResource extends Resource
     public static function table(Table $table): Table
     {
         return PlantReservationsTable::configure($table);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return PlantReservationInfolist::configure($schema);
     }
 
     public static function getPages(): array

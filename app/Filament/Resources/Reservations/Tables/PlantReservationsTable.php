@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Reservations\Tables;
 
 use App\Enums\ReservationStatus;
+use App\Filament\Resources\Reservations\PlantReservationResource;
 use App\Services\PlantReservationService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -61,6 +62,7 @@ class PlantReservationsTable
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
+            ->recordUrl(fn ($record): string => PlantReservationResource::getUrl('view', ['record' => $record]))
             ->filters([
                 SelectFilter::make('status')
                     ->label('Estado')

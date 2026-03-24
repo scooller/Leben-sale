@@ -7,10 +7,10 @@ const DEFAULT_PLANT_IMAGE = 'https://sale.ileben.cl/wp-content/uploads/2022/11/p
 /**
  * Componente para el grid de plantas con tarjetas, skeleton, diálogo de detalles y paginación
  */
-function PlantsGrid({ 
-  plants, 
-  loading, 
-  checkoutLoading, 
+function PlantsGrid({
+  plants,
+  loading,
+  checkoutLoading,
   onQuickCheckout,
   totalPlants,
   page,
@@ -18,7 +18,9 @@ function PlantsGrid({
   onPageChange
 }) {
   const [selectedPlant, setSelectedPlant] = useState(null);
+  const [zoomImageSrc, setZoomImageSrc] = useState('');
   const dialogRef = useRef(null);
+  const zoomDialogRef = useRef(null);
   const gridContainerRef = useRef(null);
 
   // GSAP ScrollTrigger para animar cards cuando entran al viewport
@@ -31,15 +33,14 @@ function PlantsGrid({
     customElements.whenDefined('wa-card').then(() => {
       const ctx = gsap.context(() => {
         const cards = gsap.utils.toArray('.plant-card', gridContainerRef.current);
-        
+
         if (cards.length === 0) return;
-        
+
         cards.forEach((card, index) => {
           // console.log('Animando card:', card);
           gsap.to(card, {
             opacity: 1,
-            rotationX: 0,
-            duration: 0.5,
+            scale: 1,
             // delay: index * 0.1,
             ease: 'Power2.in',
             scrollTrigger: {
@@ -107,7 +108,17 @@ function PlantsGrid({
     // Llamar al checkout con la planta seleccionada
     onQuickCheckout(selectedPlant);
   };
-  
+
+  const openZoomImage = (imageSrc) => {
+    if (!imageSrc) return;
+
+    setZoomImageSrc(imageSrc);
+
+    if (zoomDialogRef.current) {
+      zoomDialogRef.current.open = true;
+    }
+  };
+
   // Skeleton de carga
   if (loading) {
 
@@ -183,13 +194,19 @@ function PlantsGrid({
         <div className="plants-grid wa-grid" ref={gridContainerRef}>
           {plants.map((plant, index) => (
             <wa-card key={plant.id} className="plant-card" appearance="filled">
-                <img slot="media" src={plant.imagen || DEFAULT_PLANT_IMAGE} alt={plant.nombre} className="plant-image" />
+                <img
+                  slot="media"
+                  src={plant.coverImage || plant.cover_image_url || plant.cover_image_media?.url || DEFAULT_PLANT_IMAGE}
+                  alt={plant.nombre}
+                  onClick={() => openPlantDetail(plant)}
+                  className="plant-image"
+                />
 
                 <div slot="header" className="plant-header-wrapper">
                   <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
-                    <span>{plant.proyectoNombre}</span>
-                    <span>Planta {plant.nombre}</span>               
-                  </div>              
+                    <span>{plant.proyectoNombre}</span> -
+                    <wa-badge appearance="filled-outlined" variant="neutral">Planta {plant.nombre}</wa-badge>
+                  </div>
                 </div>
                 {plant.categoria && (
                     <div slot="header-actions" className="wa-cluster wa-gap-xs">
@@ -201,10 +218,10 @@ function PlantsGrid({
                 )}
                 <div className="plant-body">
                     <div className="wa-split">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">              
+                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
                             <wa-icon name="location-dot" style={{ fontSize: '1em' }}></wa-icon>
                             <span>{plant.proyectoComuna}</span>
-                        </div>                
+                        </div>
                         {/* Tags para información adicional */}
                         <div className="wa-cluster wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
                             {plant.orientacion && (
@@ -215,7 +232,7 @@ function PlantsGrid({
                             )}
                             {plant.piso && (
                             <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                                <wa-icon name="building" slot="header"></wa-icon>                     
+                                <wa-icon name="building" slot="header"></wa-icon>
                                 <span>Piso {plant.piso}</span>
                             </wa-card>
                             )}
@@ -226,8 +243,8 @@ function PlantsGrid({
                             </wa-card>
                             )}
                         </div>
-                    </div>           
-                </div>            
+                    </div>
+                </div>
                 {/* Ubicación destacada */}
                 {plant.proyectoComuna && (
                 <div slot="footer" className="plant-price-wrapper">
@@ -287,66 +304,70 @@ function PlantsGrid({
       {/* Diálogo - Detalles de Planta */}
       <wa-dialog
         ref={dialogRef}
-        label={selectedPlant?.nombre || 'Detalle de Planta'}
         style={{ '--width': '720px' }}
         light-dismiss
       >
         {selectedPlant && (
           <>
+            <span slot="label"><wa-icon name="building-circle-exclamation"></wa-icon> Planta - {selectedPlant?.nombre || 'Detalle'}</span>
             <div className="wa-grid wa-gap-l" style={{ '--min-column-size': '32ch', padding: '1.25rem 1.5rem 0.75rem' }}>
               <img
-                src={selectedPlant.imagen || DEFAULT_PLANT_IMAGE}
+                src={selectedPlant.interiorImage || selectedPlant.interior_image_url || selectedPlant.interior_image_media?.url || DEFAULT_PLANT_IMAGE}
                 alt={selectedPlant.nombre}
-                style={{ width: '100%', height: '100%', maxHeight: '380px', objectFit: 'cover', borderRadius: '0.75rem' }}
+                onClick={() => openZoomImage(selectedPlant.interiorImage || selectedPlant.interior_image_url || selectedPlant.interior_image_media?.url || DEFAULT_PLANT_IMAGE)}
+                style={{ width: '100%', height: '100%', maxHeight: '380px', objectFit: 'cover', borderRadius: '0.75rem', cursor: 'zoom-in' }}
               />
 
               <div className="wa-stack wa-gap-m">
-              {selectedPlant.proyectoNombre && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Proyecto</strong>
-                  <span>{selectedPlant.proyectoNombre}</span>
+                <div className='wa-grid wa-gap-m' style={{ '--min-column-size': '14rem' }}>
+                    {selectedPlant.proyectoNombre && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Proyecto</strong>
+                        <span>{selectedPlant.proyectoNombre}</span>
+                        </div>
+                    )}
+                    {selectedPlant.proyectoComuna && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Ubicación</strong>
+                        <span>{selectedPlant.proyectoComuna}</span>
+                        </div>
+                    )}
+                    {selectedPlant.proyectoDescripcion && (
+                        <div className="wa-stack wa-gap-xs">
+                        <strong>Descripción del Proyecto</strong>
+                        <span>{selectedPlant.proyectoDescripcion}</span>
+                        </div>
+                    )}
+                    <div className="wa-split wa-align-items-center">
+                        <strong>Nombre</strong>
+                        <span>{selectedPlant.nombre}</span>
+                    </div>
+                    {selectedPlant.categoria && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Categoría</strong>
+                        <wa-badge variant="brand">{selectedPlant.categoria}</wa-badge>
+                        </div>
+                    )}
+                    {selectedPlant.programa && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Programa</strong>
+                        <span>{selectedPlant.programa}</span>
+                        </div>
+                    )}
+                    {selectedPlant.orientacion && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Orientación</strong>
+                        <wa-tag variant="primary">{selectedPlant.orientacion}</wa-tag>
+                        </div>
+                    )}
+                    {selectedPlant.piso && (
+                        <div className="wa-split wa-align-items-center">
+                        <strong>Piso</strong>
+                        <wa-tag variant="primary">{selectedPlant.piso}</wa-tag>
+                        </div>
+                    )}
                 </div>
-              )}
-              {selectedPlant.proyectoComuna && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Ubicación</strong>
-                  <span>{selectedPlant.proyectoComuna}</span>
-                </div>
-              )}
-              {selectedPlant.proyectoDescripcion && (
-                <div className="wa-stack wa-gap-xs">
-                  <strong>Descripción del Proyecto</strong>
-                  <span>{selectedPlant.proyectoDescripcion}</span>
-                </div>
-              )}
-              <div className="wa-split wa-align-items-center">
-                <strong>Nombre</strong>
-                <span>{selectedPlant.nombre}</span>
-              </div>
-              {selectedPlant.categoria && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Categoría</strong>
-                  <wa-badge variant="brand">{selectedPlant.categoria}</wa-badge>
-                </div>
-              )}
-              {selectedPlant.programa && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Programa</strong>
-                  <span>{selectedPlant.programa}</span>
-                </div>
-              )}
-              {selectedPlant.orientacion && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Orientación</strong>
-                  <wa-tag variant="primary">{selectedPlant.orientacion}</wa-tag>
-                </div>
-              )}
-              {selectedPlant.piso && (
-                <div className="wa-split wa-align-items-center">
-                  <strong>Piso</strong>
-                  <wa-tag variant="primary">{selectedPlant.piso}</wa-tag>
-                </div>
-              )}
+              <wa-divider></wa-divider>
               {(selectedPlant.superficie_total_principal !== null && selectedPlant.superficie_total_principal !== undefined
                 || selectedPlant.superficie_interior !== null && selectedPlant.superficie_interior !== undefined
                 || selectedPlant.superficie_util !== null && selectedPlant.superficie_util !== undefined
@@ -354,7 +375,7 @@ function PlantsGrid({
                 || selectedPlant.superficie_vendible !== null && selectedPlant.superficie_vendible !== undefined) && (
                 <div className="wa-stack wa-gap-s">
                   <strong>Superficies</strong>
-                  <div className="wa-grid wa-gap-s" style={{ '--min-column-size': '18ch' }}>
+                  <div className="wa-grid wa-gap-s" style={{ '--min-column-size': '12rem' }}>
                     {selectedPlant.superficie_total_principal !== null && selectedPlant.superficie_total_principal !== undefined && (
                       <div className="wa-stack wa-gap-2xs">
                         <div className="wa-cluster wa-gap-xs wa-align-items-center">
@@ -404,9 +425,11 @@ function PlantsGrid({
                 </div>
               )}
               {(selectedPlant.precioBase || selectedPlant.precioLista) && (
+                <>
+                <wa-divider></wa-divider>
                 <div className="wa-stack wa-gap-xs">
-                  <strong>Precio</strong>
-                  <div className="wa-stack wa-gap-2xs">
+                  <strong><wa-icon name="dollar-sign"></wa-icon> Precio</strong>
+                  <div className="wa-grid wa-gap-2xs">
                     {selectedPlant.precioLista && selectedPlant.precioBase && selectedPlant.precioLista !== selectedPlant.precioBase && (
                       <div className="wa-cluster wa-gap-xs">
                         <span>Precio lista:</span>
@@ -419,32 +442,52 @@ function PlantsGrid({
                       UF {(selectedPlant.precioBase || selectedPlant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                     {selectedPlant.precioBase && selectedPlant.precioLista && selectedPlant.precioBase < selectedPlant.precioLista && (
-                      <wa-badge variant="success">¡Con descuento!</wa-badge>
+                      <wa-badge variant="success"><wa-icon name="award"></wa-icon> ¡Con descuento!</wa-badge>
                     )}
                   </div>
                 </div>
+                </>
               )}
               </div>
             </div>
 
-            <wa-button 
+            <wa-button
               slot="footer"
               variant="neutral"
               data-dialog="close"
             >
               Cerrar
             </wa-button>
-            <wa-button 
+            <wa-button
               slot="footer"
-              variant="brand" 
-              disabled={checkoutLoading} 
-              {...(checkoutLoading && { loading: true })} 
+              variant="brand"
+              disabled={checkoutLoading}
+              {...(checkoutLoading && { loading: true })}
               onClick={handleCheckoutFromDialog}
             >
-              {checkoutLoading ? 'Cargando...' : 'Cotizar Ahora'}
+              {checkoutLoading ? 'Cargando...' : <><wa-icon name="hand-holding-dollar"></wa-icon> Cotizar Ahora</>}
             </wa-button>
           </>
         )}
+      </wa-dialog>
+
+      <wa-dialog
+        ref={zoomDialogRef}
+        label={selectedPlant?.nombre ? `Imagen ampliada - ${selectedPlant.nombre}` : 'Imagen ampliada'}
+        style={{ '--width': '92vw' }}
+        light-dismiss
+      >
+        {zoomImageSrc && (
+          <img
+            src={zoomImageSrc}
+            alt={selectedPlant?.nombre || 'Imagen de planta ampliada'}
+            style={{ width: '100%', maxHeight: '82vh', objectFit: 'contain', borderRadius: '0.75rem' }}
+          />
+        )}
+
+        <wa-button slot="footer" variant="neutral" data-dialog="close">
+          Cerrar
+        </wa-button>
       </wa-dialog>
 
       {/* Paginación */}

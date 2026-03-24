@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Payments\Tables;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
 use App\Filament\Exports\PaymentExporter;
+use App\Filament\Resources\Payments\PaymentResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -23,6 +24,26 @@ class PaymentsTable
                 TextColumn::make('user.name')
                     ->searchable(),
                 TextColumn::make('gateway')
+                    ->badge()
+                    ->color('info')
+                    ->icon(function (PaymentGateway|string|null $state): string {
+                        $gateway = $state instanceof PaymentGateway
+                            ? $state
+                            : collect(PaymentGateway::cases())->first(
+                                fn (PaymentGateway $gateway): bool => $gateway->value === (string) $state,
+                            );
+
+                        return $gateway?->icon() ?? 'heroicon-o-credit-card';
+                    })
+                    ->formatStateUsing(function (PaymentGateway|string|null $state): string {
+                        $gateway = $state instanceof PaymentGateway
+                            ? $state
+                            : collect(PaymentGateway::cases())->first(
+                                fn (PaymentGateway $gateway): bool => $gateway->value === (string) $state,
+                            );
+
+                        return $gateway?->label() ?? '-';
+                    })
                     ->searchable(),
                 TextColumn::make('gateway_tx_id')
                     ->searchable(),
@@ -34,17 +55,29 @@ class PaymentsTable
                 TextColumn::make('status')
                     ->badge()
                     ->color(function (PaymentStatus|string|null $state): string {
-                        $status = $state instanceof PaymentStatus ? $state : ($state ? PaymentStatus::from($state) : null);
+                        $status = $state instanceof PaymentStatus
+                            ? $state
+                            : collect(PaymentStatus::cases())->first(
+                                fn (PaymentStatus $status): bool => $status->value === (string) $state,
+                            );
 
                         return $status?->color() ?? 'gray';
                     })
                     ->icon(function (PaymentStatus|string|null $state): string {
-                        $status = $state instanceof PaymentStatus ? $state : ($state ? PaymentStatus::from($state) : null);
+                        $status = $state instanceof PaymentStatus
+                            ? $state
+                            : collect(PaymentStatus::cases())->first(
+                                fn (PaymentStatus $status): bool => $status->value === (string) $state,
+                            );
 
                         return $status?->icon() ?? 'heroicon-o-question-mark-circle';
                     })
                     ->formatStateUsing(function (PaymentStatus|string|null $state): string {
-                        $status = $state instanceof PaymentStatus ? $state : ($state ? PaymentStatus::from($state) : null);
+                        $status = $state instanceof PaymentStatus
+                            ? $state
+                            : collect(PaymentStatus::cases())->first(
+                                fn (PaymentStatus $status): bool => $status->value === (string) $state,
+                            );
 
                         return $status?->label() ?? '-';
                     })
@@ -61,6 +94,7 @@ class PaymentsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->recordUrl(fn ($record): string => PaymentResource::getUrl('view', ['record' => $record]))
             ->filters([
                 SelectFilter::make('gateway')
                     ->label('Gateway')
