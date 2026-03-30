@@ -50,7 +50,7 @@ class ProyectoApiFiltersTest extends TestCase
 
         $item = $response->json('data.0');
 
-        $this->assertSame(['id', 'name', 'direccion', 'comuna', 'pagina_web'], array_keys($item));
+        $this->assertSame(['id', 'name', 'direccion', 'comuna', 'pagina_web', 'image_url'], array_keys($item));
         $this->assertArrayNotHasKey('region', $item);
     }
 

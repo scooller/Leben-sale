@@ -28,6 +28,14 @@ app/
 └── Models/Payment.php                      # Modelo con enums
 ```
 
+## 🔗 Relaciones de Dominio
+
+- `Payment` pertenece a `User`
+- `Payment` pertenece a `Proyecto` mediante `project_id`
+- `Payment` pertenece a `Plant` mediante `plant_id`
+- La relación con `plant_id` se usa para trazabilidad administrativa y para marcar indisponibilidad en la API pública cuando el pago queda `completed` o `authorized`
+- La API sigue soportando `plant_reservations`; ambas fuentes conviven
+
 ## 🚀 Uso Rápido
 
 ### Crear y procesar pago con Transbank
@@ -41,6 +49,8 @@ use App\Facades\PaymentGateway as PaymentGatewayFacade;
 // 1. Crear registro en BD
 $payment = Payment::create([
     'user_id' => auth()->id(),
+    'project_id' => $project->id,
+    'plant_id' => $plant->id,
     'gateway' => PaymentGateway::TRANSBANK,
     'amount' => 10000,
     'currency' => 'CLP',
@@ -68,6 +78,8 @@ return redirect($transaction['url'] . '?token_ws=' . $transaction['token']);
 // 1. Crear registro
 $payment = Payment::create([
     'user_id' => auth()->id(),
+    'project_id' => $project->id,
+    'plant_id' => $plant->id,
     'gateway' => PaymentGateway::MERCADOPAGO,
     'amount' => 10000,
     'currency' => 'CLP',
@@ -218,6 +230,8 @@ use App\Models\Payment;
 // Crear
 $payment = Payment::create([
     'user_id' => 1,
+    'project_id' => 10,
+    'plant_id' => 99,
     'gateway' => PaymentGateway::TRANSBANK,
     'amount' => 50000,
     'currency' => 'CLP',
@@ -244,6 +258,18 @@ $payment->canBeApproved();     // bool (manual)
 $payment->markAsCompleted();
 $payment->markAsFailed('Motivo');
 ```
+
+## 🌿 Disponibilidad de Plantas
+
+La API pública de plantas considera una planta como no disponible cuando ocurre cualquiera de estas condiciones:
+
+- existe una `plant_reservation` activa
+- existe una `plant_reservation` completada
+- existe un `payment` relacionado por `plant_id` con estado `completed` o `authorized`
+
+No se considera bloqueante:
+
+- un `payment` en estado `pending`, `processing` o `pending_approval` sin una reserva que ya haya quedado completada
 
 ## 🎨 Uso en Filament
 
@@ -381,6 +407,12 @@ tail -f storage/logs/laravel.log | grep -E "Transbank|MercadoPago"
 - [ ] Validación firma webhooks MP
 - [ ] Notificaciones email
 - [ ] Deploy producción
+
+## 📝 Notas Operativas
+
+- En Filament, el recurso de pagos permite seleccionar `project_id` y `plant_id` al crear o editar.
+- Users, Payments y Plants soportan exportación con `ExportAction`.
+- Las exportaciones usan la tabla `exports` y notificaciones persistidas en base de datos.
 
 ## 🎯 Opcional (No implementado)
 

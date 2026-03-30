@@ -25,7 +25,7 @@ class CheckoutInitiateRequest extends FormRequest
         return [
             'plant_id' => ['required', 'integer', 'exists:plants,id'],
             'quantity' => ['required', 'integer', 'min:1'],
-            'gateway' => ['required', 'string', 'in:transbank,mercadopago'],
+            'gateway' => ['required', 'string', 'in:transbank,mercadopago,manual'],
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
@@ -40,7 +40,7 @@ class CheckoutInitiateRequest extends FormRequest
                 'max:12',
                 Rule::unique('users', 'rut')->ignore($this->user()?->id),
             ],
-            'session_token' => ['nullable', 'string', 'max:64'],
+            'session_token' => ['nullable', 'string', 'max:64', 'required_if:gateway,manual'],
         ];
     }
 

@@ -9,6 +9,7 @@ use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Widgets\ApiMonitoringWidget;
 use App\Filament\Widgets\ApiUsageChartWidget;
+use App\Filament\Widgets\PaymentGatewayChartWidget;
 use App\Filament\Widgets\PaymentsChartWidget;
 use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
@@ -49,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ActivityChartWidget::class,
             LatestActivityWidget::class,
             PaymentsChartWidget::class,
+            PaymentGatewayChartWidget::class,
             PaymentStatusChartWidget::class,
             SyncPlantsWidget::class,
             SyncProjectsWidget::class,

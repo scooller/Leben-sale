@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Feature\Api;
 
+use App\Enums\PaymentGateway;
+use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Models\Payment;
 use App\Models\Plant;
 use App\Models\PlantReservation;
 use App\Models\Proyecto;
@@ -70,6 +73,100 @@ class PlantApiFiltersTest extends TestCase
 
         $this->assertContains($reservedPlant->id, $unavailablePlantIds);
         $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
+    }
+
+    public function test_it_treats_paid_plants_as_unavailable(): void
+    {
+        $project = Proyecto::factory()->create();
+
+        $availablePlant = $this->createPlant($project->salesforce_id, true);
+        $paidPlant = $this->createPlant($project->salesforce_id, true);
+
+        PlantReservation::query()->create([
+            'plant_id' => $paidPlant->id,
+            'session_token' => Str::random(64),
+            'status' => ReservationStatus::COMPLETED,
+            'expires_at' => now()->addMinutes(30),
+            'completed_at' => now(),
+        ]);
+
+        $availableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=1');
+        $availableResponse->assertOk();
+        $availablePlantIds = collect($availableResponse->json('data'))->pluck('id')->all();
+
+        $this->assertContains($availablePlant->id, $availablePlantIds);
+        $this->assertNotContains($paidPlant->id, $availablePlantIds);
+
+        $unavailableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=0');
+        $unavailableResponse->assertOk();
+        $unavailablePlantIds = collect($unavailableResponse->json('data'))->pluck('id')->all();
+
+        $this->assertContains($paidPlant->id, $unavailablePlantIds);
+        $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
+        $this->assertTrue((bool) collect($unavailableResponse->json('data'))
+            ->firstWhere('id', $paidPlant->id)['is_paid']);
+    }
+
+    public function test_it_treats_completed_payments_related_to_the_plant_as_unavailable(): void
+    {
+        $project = Proyecto::factory()->create();
+
+        $availablePlant = $this->createPlant($project->salesforce_id, true);
+        $paidPlant = $this->createPlant($project->salesforce_id, true);
+
+        Payment::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'project_id' => $project->id,
+            'plant_id' => $paidPlant->id,
+            'gateway' => PaymentGateway::TRANSBANK->value,
+            'gateway_tx_id' => (string) Str::uuid(),
+            'amount' => 5000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::COMPLETED,
+            'completed_at' => now(),
+        ]);
+
+        $availableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=1');
+        $availableResponse->assertOk();
+        $availablePlantIds = collect($availableResponse->json('data'))->pluck('id')->all();
+
+        $this->assertContains($availablePlant->id, $availablePlantIds);
+        $this->assertNotContains($paidPlant->id, $availablePlantIds);
+
+        $unavailableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=0');
+        $unavailableResponse->assertOk();
+        $unavailablePlantIds = collect($unavailableResponse->json('data'))->pluck('id')->all();
+
+        $this->assertContains($paidPlant->id, $unavailablePlantIds);
+        $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
+        $this->assertTrue((bool) collect($unavailableResponse->json('data'))
+            ->firstWhere('id', $paidPlant->id)['is_paid']);
+    }
+
+    public function test_it_keeps_pending_payments_related_to_the_plant_available(): void
+    {
+        $project = Proyecto::factory()->create();
+        $plant = $this->createPlant($project->salesforce_id, true);
+
+        Payment::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'project_id' => $project->id,
+            'plant_id' => $plant->id,
+            'gateway' => PaymentGateway::TRANSBANK->value,
+            'gateway_tx_id' => (string) Str::uuid(),
+            'amount' => 5000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING,
+        ]);
+
+        $availableResponse = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id.'&disponible=1');
+        $availableResponse->assertOk();
+
+        $availablePlant = collect($availableResponse->json('data'))->firstWhere('id', $plant->id);
+
+        $this->assertNotNull($availablePlant);
+        $this->assertFalse((bool) $availablePlant['is_paid']);
+        $this->assertTrue((bool) $availablePlant['is_available']);
     }
 
     public function test_it_filters_plants_by_comuna(): void

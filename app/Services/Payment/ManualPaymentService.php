@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Contracts\PaymentGatewayInterface;
 use App\Enums\PaymentStatus;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ManualPaymentService implements PaymentGatewayInterface
 {
@@ -25,7 +26,7 @@ class ManualPaymentService implements PaymentGatewayInterface
     {
         Log::info('ManualPayment: Creando transacción manual', $data);
 
-        $reference = 'manual-'.uniqid();
+        $reference = 'MAN-'.Str::upper(Str::ulid()->toBase32());
 
         return [
             'reference' => $reference,

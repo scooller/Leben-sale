@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ManualPaymentProofRequest;
+use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class PaymentController extends Controller
 {
@@ -59,5 +65,61 @@ class PaymentController extends Controller
             ->findOrFail($id);
 
         return response()->json($payment);
+    }
+
+    /**
+     * Store manual payment proof for an existing manual payment.
+     */
+    public function uploadManualProof(ManualPaymentProofRequest $request, string $id): JsonResponse
+    {
+        /** @var Payment $payment */
+        $payment = $request->user()
+            ->payments()
+            ->findOrFail($id);
+
+        if (! $payment->requiresManualApproval()) {
+            return response()->json([
+                'message' => 'Este pago no admite comprobante manual.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $metadata = $payment->metadata ?? [];
+        $expiresAt = filled($metadata['manual_payment_expires_at'] ?? null)
+            ? Carbon::parse($metadata['manual_payment_expires_at'])
+            : null;
+
+        if ($expiresAt !== null && $expiresAt->isPast()) {
+            return response()->json([
+                'message' => 'La fecha limite para enviar el comprobante ya expiro.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if (filled($metadata['manual_payment_proof_path'] ?? null)) {
+            Storage::delete($metadata['manual_payment_proof_path']);
+        }
+
+        /** @var UploadedFile $proof */
+        $proof = $request->file('proof');
+        $path = $proof->store('payment-proofs');
+
+        $metadata['manual_payment_proof_path'] = $path;
+        $metadata['manual_payment_proof_name'] = $proof->getClientOriginalName();
+        $metadata['manual_payment_proof_mime_type'] = $proof->getClientMimeType();
+        $metadata['manual_payment_proof_uploaded_at'] = now()->toISOString();
+        $metadata['manual_payment_proof_notes'] = $request->validated('notes');
+        $metadata['manual_payment_proof_submitted'] = true;
+
+        $payment->update([
+            'metadata' => $metadata,
+        ]);
+
+        return response()->json([
+            'message' => 'Comprobante recibido correctamente.',
+            'payment' => $payment->fresh(),
+            'proof' => [
+                'name' => $metadata['manual_payment_proof_name'],
+                'uploaded_at' => $metadata['manual_payment_proof_uploaded_at'],
+            ],
+        ]);
     }
 }

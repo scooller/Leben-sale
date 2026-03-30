@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -99,6 +100,14 @@ class Plant extends Model
     }
 
     /**
+     * Relacion con pagos.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
      * Obtener reserva activa actual (si existe)
      */
     public function activeReservation(): HasOne
@@ -110,10 +119,42 @@ class Plant extends Model
     }
 
     /**
+     * Obtener la reserva completada mas reciente (pago exitoso).
+     */
+    public function completedReservation(): HasOne
+    {
+        return $this->hasOne(PlantReservation::class)
+            ->where('status', ReservationStatus::COMPLETED)
+            ->latest('completed_at');
+    }
+
+    /**
+     * Obtener el pago completado o autorizado mas reciente.
+     */
+    public function completedPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)
+            ->whereIn('status', [
+                PaymentStatus::COMPLETED,
+                PaymentStatus::AUTHORIZED,
+            ])
+            ->latest('completed_at')
+            ->latest('id');
+    }
+
+    /**
      * Verificar si la planta esta reservada actualmente
      */
     public function isReserved(): bool
     {
         return $this->activeReservation()->exists();
+    }
+
+    /**
+     * Verificar si la planta ya fue pagada.
+     */
+    public function isPaid(): bool
+    {
+        return $this->completedReservation()->exists() || $this->completedPayment()->exists();
     }
 }

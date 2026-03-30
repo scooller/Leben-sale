@@ -21,6 +21,10 @@ class PaymentExporter extends Exporter
                 ->label('Usuario'),
             ExportColumn::make('user.email')
                 ->label('Email Usuario'),
+            ExportColumn::make('project.name')
+                ->label('Proyecto'),
+            ExportColumn::make('plant.name')
+                ->label('Planta'),
             ExportColumn::make('gateway')
                 ->label('Pasarela'),
             ExportColumn::make('gateway_tx_id')

@@ -60,6 +60,7 @@ Route::prefix('v1')->group(function () {
                     'post' => ['tags' => ['Pagos'], 'operationId' => 'createPayment', 'summary' => 'Crear pago', 'security' => [['bearerAuth' => []]], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['201' => ['description' => 'Pago creado'], '422' => ['description' => 'Error de validación']]],
                 ],
                 '/payments/{id}' => ['get' => ['tags' => ['Pagos'], 'operationId' => 'getPayment', 'summary' => 'Detalle de pago', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'responses' => ['200' => ['description' => 'Detalle de pago'], '404' => ['description' => 'No encontrado']]]],
+                '/payments/{id}/manual-proof' => ['post' => ['tags' => ['Pagos'], 'operationId' => 'uploadManualProof', 'summary' => 'Subir comprobante de pago manual', 'security' => [['bearerAuth' => []]], 'parameters' => [['$ref' => '#/components/parameters/Id']], 'requestBody' => ['required' => true, 'content' => ['multipart/form-data' => ['schema' => ['type' => 'object']]]], 'responses' => ['200' => ['description' => 'Comprobante recibido'], '422' => ['description' => 'Error de validación']]]],
             ],
             'components' => [
                 'securitySchemes' => [
@@ -138,4 +139,5 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(functio
     Route::post('/payments', [App\Http\Controllers\Api\PaymentController::class, 'create']);
     Route::get('/payments', [App\Http\Controllers\Api\PaymentController::class, 'index']);
     Route::get('/payments/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show']);
+    Route::post('/payments/{id}/manual-proof', [App\Http\Controllers\Api\PaymentController::class, 'uploadManualProof']);
 });

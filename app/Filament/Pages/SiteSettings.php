@@ -6,6 +6,7 @@ use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
 use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
 use App\Filament\Widgets\ApiMonitoringWidget;
 use App\Filament\Widgets\ApiUsageChartWidget;
+use App\Filament\Widgets\PaymentGatewayChartWidget;
 use App\Filament\Widgets\PaymentsChartWidget;
 use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
@@ -61,6 +62,7 @@ class SiteSettings extends Page implements HasForms
             ActivityChartWidget::class => 'Actividad (Gráfico)',
             LatestActivityWidget::class => 'Actividad (Últimos)',
             PaymentsChartWidget::class => 'Pagos (Gráfico)',
+            PaymentGatewayChartWidget::class => 'Pagos (Tipo)',
             PaymentStatusChartWidget::class => 'Pagos (Estado)',
             SyncPlantsWidget::class => 'Sync Plantas',
             SyncProjectsWidget::class => 'Sync Proyectos',

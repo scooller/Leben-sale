@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import PlantsService from '../services/plants';
 import CheckoutService from '../services/checkout';
@@ -27,6 +27,8 @@ function Home() {
   const [totalPlants, setTotalPlants] = useState(0);
   const [gateways, setGateways] = useState([]);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [manualProofLoading, setManualProofLoading] = useState(false);
+  const [manualPayment, setManualPayment] = useState(null);
   const [plantForCheckout, setPlantForCheckout] = useState(null);
   const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
   const isAuthenticated = authService.isAuthenticated();
@@ -86,9 +88,11 @@ function Home() {
     return `${value}`;
   };
 
-  const filteredComunaOptions = tempRegion
-    ? (comunasByRegion[tempRegion] || [])
-    : comunaOptions;
+  const filteredComunaOptions = useMemo(() => (
+    tempRegion
+      ? (comunasByRegion[tempRegion] || [])
+      : comunaOptions
+  ), [comunaOptions, comunasByRegion, tempRegion]);
 
   const activeFilterCount = selectedProyecto.length
     + selectedDormitorios.length
@@ -108,7 +112,8 @@ function Home() {
           fields: 'id,salesforce_id,name,comuna,region',
         });
         setProyectos(data.data || []);
-      } catch (err) {
+      } catch {
+        return;
       }
     };
     fetchProyectos();
@@ -121,7 +126,8 @@ function Home() {
         setRegionOptions(data.regions || []);
         setComunaOptions(data.comunas || []);
         setComunasByRegion(data.comunas_by_region || {});
-      } catch (err) {
+      } catch {
+        return;
       }
     };
 
@@ -136,7 +142,8 @@ function Home() {
           .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true }));
 
         setPisoOptions(pisos);
-      } catch (err) {
+      } catch {
+        return;
       }
     };
 
@@ -149,88 +156,86 @@ function Home() {
     }
   }, [tempComuna, filteredComunaOptions]);
 
-  // Cargar plantas cuando cambian los filtros
-  useEffect(() => {
-    const loadPlants = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadPlants = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const filters = {
-          page,
-          perPage: 12,
-        };
+      const filters = {
+        page,
+        perPage: 12,
+        // available: true,
+      };
 
-        if (selectedProyecto.length > 0) {
-          filters.salesforce_proyecto_id = selectedProyecto;
-        }
-
-        if (selectedDormitorios.length > 0) {
-          filters.programa = selectedDormitorios;
-        }
-
-        if (selectedBanos.length > 0) {
-          filters.programa2 = selectedBanos;
-        }
-
-        if (selectedPiso) {
-          filters.piso = selectedPiso;
-        }
-
-        if (selectedComuna) {
-          filters.comuna = selectedComuna;
-        }
-
-        if (selectedRegion) {
-          filters.region = selectedRegion;
-        }
-
-        if (selectedPrecioMin) {
-          filters.min_precio = selectedPrecioMin;
-        }
-
-        if (selectedPrecioMax) {
-          filters.max_precio = selectedPrecioMax;
-        }
-
-        const data = await PlantsService.getAll(filters);
-
-        const totalCount = data.total ?? data.data?.length ?? 0;
-
-        const mappedPlants = (data.data || []).map(plant => ({
-          ...plant,
-          nombre: plant.name,
-          categoria: plant.programa,
-          coverImage: plant.cover_image_url || plant.cover_image_media?.url || '',
-          interiorImage: plant.interior_image_url || plant.interior_image_media?.url || '',
-          precioBase: Number(plant.precio_base) || 0,
-          precioLista: Number(plant.precio_lista) || 0,
-          reservaExigidaPeso: Number(plant.proyecto?.valor_reserva_exigido_defecto_peso) || 0,
-          proyectoNombre: plant.proyecto?.name,
-          proyectoDescripcion: plant.proyecto?.descripcion,
-          proyectoDireccion: plant.proyecto?.direccion,
-          proyectoComuna: plant.proyecto?.comuna,
-          isReserved: !!plant.active_reservation,
-        }));
-
-        setPlants(mappedPlants);
-        setTotalPages(data.last_page || 1);
-        setTotalPlants(totalCount);
-      } catch (err) {
-        const errorInfo = {
-          type: err.type || 'unknown',
-          message: err.message || 'Error al cargar las plantas',
-          userMessage: err.userMessage || 'No se pudieron cargar las plantas. Por favor, intenta de nuevo.',
-          title: 'Error al cargar plantas',
-          canRetry: isRetryableError(err),
-        };
-        setError(errorInfo);
-      } finally {
-        setLoading(false);
+      if (selectedProyecto.length > 0) {
+        filters.salesforce_proyecto_id = selectedProyecto;
       }
-    };
 
-    loadPlants();
+      if (selectedDormitorios.length > 0) {
+        filters.programa = selectedDormitorios;
+      }
+
+      if (selectedBanos.length > 0) {
+        filters.programa2 = selectedBanos;
+      }
+
+      if (selectedPiso) {
+        filters.piso = selectedPiso;
+      }
+
+      if (selectedComuna) {
+        filters.comuna = selectedComuna;
+      }
+
+      if (selectedRegion) {
+        filters.region = selectedRegion;
+      }
+
+      if (selectedPrecioMin) {
+        filters.min_precio = selectedPrecioMin;
+      }
+
+      if (selectedPrecioMax) {
+        filters.max_precio = selectedPrecioMax;
+      }
+
+      const data = await PlantsService.getAll(filters);
+
+      const totalCount = data.total ?? data.data?.length ?? 0;
+
+      const mappedPlants = (data.data || []).map(plant => ({
+        ...plant,
+        nombre: plant.name,
+        programa: plant.programa,
+        coverImage: plant.cover_image_url || plant.cover_image_media?.url || '',
+        interiorImage: plant.interior_image_url || plant.interior_image_media?.url || '',
+        precioBase: Number(plant.precio_base) || 0,
+        precioLista: Number(plant.precio_lista) || 0,
+        reservaExigidaPeso: Number(plant.proyecto?.valor_reserva_exigido_defecto_peso) || 0,
+        proyectoNombre: plant.proyecto?.name,
+        proyectoDescripcion: plant.proyecto?.descripcion,
+        proyectoDireccion: plant.proyecto?.direccion,
+        proyectoComuna: plant.proyecto?.comuna,
+        isPaid: !!plant.is_paid,
+        isAvailable: !!plant.is_available,
+        isReserved: !!plant.active_reservation,
+      }));
+
+      setPlants(mappedPlants);
+      setTotalPages(data.last_page || 1);
+      setTotalPlants(totalCount);
+    } catch (err) {
+      const errorInfo = {
+        type: err.type || 'unknown',
+        message: err.message || 'Error al cargar las plantas',
+        userMessage: err.userMessage || 'No se pudieron cargar las plantas. Por favor, intenta de nuevo.',
+        title: 'Error al cargar plantas',
+        canRetry: isRetryableError(err),
+      };
+      setError(errorInfo);
+    } finally {
+      setLoading(false);
+    }
   }, [
     page,
     selectedProyecto,
@@ -242,6 +247,11 @@ function Home() {
     selectedPrecioMin,
     selectedPrecioMax,
   ]);
+
+  // Cargar plantas cuando cambian los filtros
+  useEffect(() => {
+    loadPlants();
+  }, [loadPlants]);
 
   // Animaciones del Hero con GSAP
   useEffect(() => {
@@ -332,29 +342,28 @@ function Home() {
     setPage(1);
   };
 
-  // Cargar pasarelas disponibles
-  useEffect(() => {
-    const fetchGateways = async () => {
-      try {
-        const availableGateways = await CheckoutService.getAvailableGateways();
-        setGateways(availableGateways);
-      } catch (err) {
-        // Error no crítico, el usuario puede no ver las pasarelas pero no bloquea la app
-        setCheckoutError({
-          type: err.type || 'gateway',
-          message: err.message || 'Error al cargar pasarelas',
-          userMessage: err.userMessage || 'No se pudieron cargar las pasarelas de pago. Intenta recargar la página.',
-          title: 'Aviso',
-        });
-      }
-    };
-    fetchGateways();
-  }, []);
-
   // Manejar compra directo desde la tarjeta
   const handleQuickCheckout = async (plant) => {
-    setPlantForCheckout(plant);
-    setGatewayDialogOpen(true);
+    try {
+      setCheckoutLoading(true);
+      setCheckoutError(null);
+      setManualPayment(null);
+
+      const availableGateways = await CheckoutService.getAvailableGateways(plant?.id);
+
+      setGateways(availableGateways);
+      setPlantForCheckout(plant);
+      setGatewayDialogOpen(true);
+    } catch (err) {
+      setCheckoutError({
+        type: err.type || 'gateway',
+        message: err.message || 'Error al cargar pasarelas',
+        userMessage: err.userMessage || 'No se pudieron cargar las pasarelas de pago para este proyecto.',
+        title: 'Aviso',
+      });
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   // Confirmar checkout con pasarela seleccionada
@@ -382,8 +391,15 @@ function Home() {
         }));
       }
 
+      if (response.flow === 'manual') {
+        setManualPayment(response);
+        setCheckoutLoading(false);
+        return;
+      }
+
       // Cerrar diálogo antes de redirigir
       setGatewayDialogOpen(false);
+      setManualPayment(null);
 
       // Redirigir a la pasarela
       CheckoutService.redirect(response.redirect_url);
@@ -396,6 +412,22 @@ function Home() {
         details: err.details,
       });
       setCheckoutLoading(false);
+    }
+  };
+
+  const handleManualProofSubmission = async ({ paymentId, proofFile }) => {
+    try {
+      setManualProofLoading(true);
+      const response = await CheckoutService.submitManualProof(paymentId, proofFile);
+
+      setManualPayment((current) => (current ? {
+        ...current,
+        proofSubmitted: true,
+      } : current));
+
+      return response;
+    } finally {
+      setManualProofLoading(false);
     }
   };
 
@@ -508,19 +540,26 @@ function Home() {
   }
 
   return (
+    <>
+    {/* Banner Promocional */}
+    <BannerPromo banner={config?.banner} />
+
+    {/* Hero Section */}
+    <div className='video-home wa-position-relative wa-overflow-hidden wa-justify-content-center'>
+        <div className="hero-section wa-position-absolute wa-z-index-1">
+            {config?.logo && (
+            <img src={config.logo} alt={config?.site_name} className="hero-logo" />
+            )}
+            <h1>{config?.site_name}</h1>
+            <p>{config?.site_description}</p>
+        </div>
+        <video autoPlay muted loop playsInline className="hero-video">
+            <source src="https://viveelsur.ileben.cl/wp-content/uploads/2025/12/Banner-Hero-MobileV2.mp4" type="video/mp4" media="(max-width: 768px)" />
+            <source src="https://viveelsur.ileben.cl/wp-content/uploads/2025/12/Banner-Hero-Desktop.mp4" type="video/mp4" media="(min-width: 769px)" />
+            Tu navegador no soporta el video.
+        </video>
+    </div>
     <div className="home-container" ref={heroRef}>
-      {/* Banner Promocional */}
-      <BannerPromo banner={config?.banner} />
-
-      {/* Hero Section */}
-      <div className="hero-section">
-        {config?.logo && (
-          <img src={config.logo} alt={config?.site_name} className="hero-logo" />
-        )}
-        <h1>{config?.site_name}</h1>
-        <p>{config?.site_description}</p>
-      </div>
-
       {/* Header de Plantas */}
       <div className="plants-header">
         <div className="wa-cluster wa-gap-s wa-align-items-center">
@@ -731,12 +770,16 @@ function Home() {
         onClose={() => {
           setGatewayDialogOpen(false);
           setPlantForCheckout(null);
+          setManualPayment(null);
         }}
         plant={plantForCheckout}
         gateways={gateways}
         loading={checkoutLoading}
+        manualPayment={manualPayment}
+        manualProofLoading={manualProofLoading}
         isAuthenticated={isAuthenticated}
         onConfirm={handleConfirmCheckout}
+        onSubmitManualProof={handleManualProofSubmission}
       />
 
       {/* Notificación de errores de checkout */}
@@ -746,6 +789,7 @@ function Home() {
         duration={6000}
       />
     </div>
+    </>
   );
 }
 

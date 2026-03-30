@@ -26,6 +26,7 @@ class ProyectoController extends Controller
         'direccion',
         'comuna',
         'pagina_web',
+        'image_url',
     ];
 
     /**
@@ -53,6 +54,7 @@ class ProyectoController extends Controller
         'horario_atencion',
         'is_active',
         'entrega_inmediata',
+        'image_url',
         'created_at',
         'updated_at',
     ];
@@ -62,7 +64,7 @@ class ProyectoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Proyecto::query();
+        $query = Proyecto::query()->where('is_active', true);
 
         // Filtros opcionales
         if (filled($request->input('region'))) {
@@ -89,11 +91,6 @@ class ProyectoController extends Controller
             });
         }
 
-        $isActive = $this->normalizeBoolean($request->input('is_active'));
-        if ($isActive !== null) {
-            $query->where('is_active', $isActive);
-        }
-
         $entregaInmediata = $this->normalizeBoolean($request->input('entrega_inmediata'));
         if ($entregaInmediata !== null) {
             $query->where('entrega_inmediata', $entregaInmediata);
@@ -111,12 +108,29 @@ class ProyectoController extends Controller
         }
 
         $requestedFields = $this->resolveRequestedFields($request);
-        if (count($requestedFields) > 0) {
-            $query->select($requestedFields);
+        $computedFields = array_intersect(['image_url'], $requestedFields);
+        $databaseFields = array_diff($requestedFields, $computedFields);
+
+        if (count($databaseFields) > 0) {
+            $query->select($databaseFields);
         }
 
         $perPage = (int) $request->input('perPage', 15);
         $proyectos = $query->paginate(max(1, min($perPage, 100)));
+
+        // Add computed fields to response if needed
+        if (count($computedFields) > 0) {
+            $proyectos->transform(function (Proyecto $proyecto) use ($computedFields): array {
+                $data = $proyecto->toArray();
+                foreach ($computedFields as $field) {
+                    if ($field === 'image_url') {
+                        $data['image_url'] = $proyecto->image_url;
+                    }
+                }
+
+                return $data;
+            });
+        }
 
         return response()->json($proyectos);
     }

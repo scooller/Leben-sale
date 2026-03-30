@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Plants\Tables;
 
+use App\Filament\Exports\PlantExporter;
 use App\Models\Plant;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -131,6 +133,10 @@ class PlantsTable
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ExportAction::make()
+                    ->label('Exportar Plantas')
+                    ->icon('heroicon-o-document-arrow-up')
+                    ->exporter(PlantExporter::class),
                 BulkActionGroup::make([
                     BulkAction::make('deactivateSelected')
                         ->label('Desactivar seleccionadas')

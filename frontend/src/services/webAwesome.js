@@ -2,7 +2,7 @@
  * Servicio para inicializar Web Awesome y aplicar temas dinÃ¡micos
  * https://webawesome.com/docs/themes
  * https://webawesome.com/docs/color-palettes
- * 
+ *
  * Web Awesome soporta personalizaciÃ³n mediante CSS Custom Properties (Design Tokens)
  */
 // Import Web Awesome Pro base utilities and styles
@@ -12,12 +12,12 @@ import '@web.awesome.me/webawesome-pro/dist/styles/webawesome.css'
 // Configurar basePath para que Web Awesome encuentre assets (Font Awesome icons, etc.)
 // SegÃºn documentaciÃ³n oficial: https://webawesome.com/docs/installation#setting-the-base-path
 // Cuando usas bundler, debes configurar explÃ­citamente la ruta a los assets
-// 
+//
 // Opciones para Vite:
 // - En desarrollo: Vite sirve desde node_modules directamente
 // - En producciÃ³n: Assets se copian a dist/assets/
-// 
-// Vite copia automÃ¡ticamente los assets de Web Awesome al build, 
+//
+// Vite copia automÃ¡ticamente los assets de Web Awesome al build,
 // pero necesitamos decirle a Web Awesome dÃ³nde buscarlos.
 // Usamos import.meta.env para detectar el entorno
 if (import.meta.env.DEV) {
@@ -47,6 +47,10 @@ import '@web.awesome.me/webawesome-pro/dist/components/option/option.js'
 import '@web.awesome.me/webawesome-pro/dist/components/radio/radio.js'
 import '@web.awesome.me/webawesome-pro/dist/components/radio-group/radio-group.js'
 import '@web.awesome.me/webawesome-pro/dist/components/select/select.js'
+import '@web.awesome.me/webawesome-pro/dist/components/scroller/scroller.js'
+import '@web.awesome.me/webawesome-pro/dist/components/switch/switch.js'
+import '@web.awesome.me/webawesome-pro/dist/components/tag/tag.js'
+import '@web.awesome.me/webawesome-pro/dist/components/textarea/textarea.js'
 import '@web.awesome.me/webawesome-pro/dist/components/skeleton/skeleton.js'
 import '@web.awesome.me/webawesome-pro/dist/components/tag/tag.js'
 
@@ -72,12 +76,12 @@ class WebAwesomeService {
    * Aplicar paleta de colores de Web Awesome
    * Paletas disponibles: default, bright, shoelace, rudimentary, elegant, mild, natural, anodized, vogue
    * Ref: https://webawesome.com/docs/color-palettes
-   * 
+   *
    * @param {string} paletteName - Nombre de la paleta
    */
   static applyPalette(paletteName = 'default') {
     const htmlElement = document.documentElement;
-    
+
     // Remover clases de paletas anteriores
     htmlElement.classList.remove(
       'wa-palette-default',
@@ -90,7 +94,7 @@ class WebAwesomeService {
       'wa-palette-anodized',
       'wa-palette-vogue'
     );
-    
+
     htmlElement.classList.add(`wa-palette-${paletteName}`);
   }
 
@@ -99,9 +103,9 @@ class WebAwesomeService {
    * Estructura: wa-{semantic}-{color}
    * Semantic: brand, neutral, success, warning, danger
    * Colors: red, orange, yellow, green, cyan, blue, indigo, purple, pink, gray
-   * 
+   *
    * Ref: https://webawesome.com/docs/color-palettes#semantic-color-overrides
-   * 
+   *
    * @param {Object} colors - Objeto con los colores semÃ¡nticos del backend
    * @param {string} colors.semantic_brand_color - Color para brand
    * @param {string} colors.semantic_neutral_color - Color para neutral
@@ -111,35 +115,35 @@ class WebAwesomeService {
    */
   static applySemanticColors(colors = {}) {
     const htmlElement = document.documentElement;
-    
+
     // Mapeo de colores semÃ¡nticos a clases CSS
     const semanticGroups = ['brand', 'neutral', 'success', 'warning', 'danger'];
     const availableColors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'indigo', 'purple', 'pink', 'gray'];
-    
+
     // Remover todas las clases de colores semÃ¡nticos anteriores
     semanticGroups.forEach(group => {
       availableColors.forEach(color => {
         htmlElement.classList.remove(`wa-${group}-${color}`);
       });
     });
-    
+
     // Aplicar nuevos colores semÃ¡nticos
     if (colors.semantic_brand_color) {
       htmlElement.classList.add(`wa-brand-${colors.semantic_brand_color}`);
     }
-    
+
     if (colors.semantic_neutral_color) {
       htmlElement.classList.add(`wa-neutral-${colors.semantic_neutral_color}`);
     }
-    
+
     if (colors.semantic_success_color) {
       htmlElement.classList.add(`wa-success-${colors.semantic_success_color}`);
     }
-    
+
     if (colors.semantic_warning_color) {
       htmlElement.classList.add(`wa-warning-${colors.semantic_warning_color}`);
     }
-    
+
     if (colors.semantic_danger_color) {
       htmlElement.classList.add(`wa-danger-${colors.semantic_danger_color}`);
     }
@@ -149,7 +153,7 @@ class WebAwesomeService {
    * Aplicar tipografÃ­a personalizada
    * Configura las CSS Custom Properties de Web Awesome para fuentes
    * Ref: https://webawesome.com/docs/tokens/typography
-   * 
+   *
    * Web Awesome Typography Tokens:
    * - --wa-font-family-body: Fuente para texto general del body
    * - --wa-font-family-heading: Fuente para headings (h1-h6)
@@ -157,7 +161,7 @@ class WebAwesomeService {
    * - --wa-font-weight-*: Pesos (light, normal, semibold, bold)
    * - --wa-letter-spacing-*: Espaciado entre letras (dense, normal, loose)
    * - --wa-line-height-*: Altura de lÃ­nea (dense, normal, loose)
-   * 
+   *
    * @param {Object} fonts - Objeto con fuentes del backend
    * @param {string} fonts.font_family_body - Fuente para texto general
    * @param {string} fonts.font_family_heading - Fuente para encabezados
@@ -184,7 +188,7 @@ class WebAwesomeService {
    * Aplicar tema predefinido de Web Awesome como clase en <html>
    * Temas disponibles: default, awesome, shoelace, active, brutalist, glossy, matter, mellow, playful, premium, tailspin
    * Ref: https://webawesome.com/docs/themes
-   * 
+   *
    * @param {string} themeName - Nombre del tema predefinido
    */
   static async applyPrebuiltTheme(themeName = 'default') {

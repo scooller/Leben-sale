@@ -61,9 +61,11 @@ class CheckoutService {
   /**
    * Obtener pasarelas de pago disponibles
    */
-  static async getAvailableGateways() {
+  static async getAvailableGateways(plantId = null) {
     try {
-      const response = await api.get('/payment-gateways');
+      const response = await api.get('/payment-gateways', {
+        params: plantId ? { plant_id: plantId } : {},
+      });
       return response.data.gateways || [];
     } catch (error) {
       logError('CheckoutService.getAvailableGateways', error);
@@ -147,8 +149,9 @@ class CheckoutService {
         ...(sessionToken ? { session_token: sessionToken } : {}),
       });
 
-      // Validar que la respuesta contenga redirect_url
-      if (!response.data || !response.data.redirect_url) {
+      const responseData = response.data;
+
+      if (!responseData) {
         throw {
           type: ErrorTypes.GATEWAY,
           message: 'Respuesta inválida del servidor',
@@ -156,7 +159,27 @@ class CheckoutService {
         };
       }
 
-      return response.data;
+      if (responseData.flow === 'manual') {
+        if (!responseData.payment_id || !responseData.reference) {
+          throw {
+            type: ErrorTypes.GATEWAY,
+            message: 'Respuesta inválida para pago manual',
+            userMessage: 'No se pudo generar la referencia del pago manual.',
+          };
+        }
+
+        return responseData;
+      }
+
+      if (!responseData.redirect_url) {
+        throw {
+          type: ErrorTypes.GATEWAY,
+          message: 'Respuesta inválida del servidor',
+          userMessage: 'Error al procesar el pago. Respuesta inválida del servidor.',
+        };
+      }
+
+      return responseData;
     } catch (error) {
       // Si el error ya fue formateado (validaciones locales), lanzarlo directamente
       if (error.type && error.userMessage) {
@@ -191,6 +214,60 @@ class CheckoutService {
         ...parsed,
         context: 'initiate',
         userMessage,
+      };
+    }
+  }
+
+  /**
+   * Subir comprobante para un pago manual.
+   */
+  static async submitManualProof(paymentId, proofFile, notes = '') {
+    try {
+      if (!paymentId || paymentId <= 0) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'Pago inválido',
+          userMessage: 'No se encontro el pago manual asociado.',
+        };
+      }
+
+      if (!(proofFile instanceof File)) {
+        throw {
+          type: ErrorTypes.VALIDATION,
+          message: 'Comprobante inválido',
+          userMessage: 'Selecciona un comprobante antes de continuar.',
+        };
+      }
+
+      const formData = new FormData();
+      formData.append('proof', proofFile);
+
+      if (notes) {
+        formData.append('notes', notes);
+      }
+
+      const response = await api.post(`/payments/${paymentId}/manual-proof`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (error.type && error.userMessage) {
+        logError('CheckoutService.submitManualProof', error);
+        throw error;
+      }
+
+      logError('CheckoutService.submitManualProof', error);
+      const parsed = parseError(error);
+
+      throw {
+        ...parsed,
+        context: 'submitManualProof',
+        userMessage: parsed.type === ErrorTypes.VALIDATION
+          ? 'No se pudo subir el comprobante. Revisa el archivo seleccionado.'
+          : 'No se pudo enviar el comprobante. Intenta nuevamente.',
       };
     }
   }

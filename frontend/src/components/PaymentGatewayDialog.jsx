@@ -13,7 +13,10 @@ function PaymentGatewayDialog({
   gateways,
   loading,
   isAuthenticated,
-  onConfirm
+  onConfirm,
+  manualPayment,
+  manualProofLoading,
+  onSubmitManualProof
 }) {
   const dialogRef = useRef(null);
   const [selectedGateway, setSelectedGateway] = useState('');
@@ -34,6 +37,9 @@ function PaymentGatewayDialog({
   const [reservationError, setReservationError] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [validationToast, setValidationToast] = useState(null);
+  const [manualProofFile, setManualProofFile] = useState(null);
+  const [manualProofError, setManualProofError] = useState(null);
+  const [manualProofSuccess, setManualProofSuccess] = useState(null);
 
   const formatRut = (value) => {
     const cleaned = String(value ?? '')
@@ -144,24 +150,36 @@ function PaymentGatewayDialog({
     && !reservationError
   );
 
-  const reservaExigidaPeso = (
-    plant?.proyecto?.valor_reserva_exigido_defecto_peso
-    ?? plant?.proyecto?.valorReservaExigidoDefectoPeso
-    ?? plant?.valor_reserva_exigido_defecto_peso
-    ?? plant?.valorReservaExigidoDefectoPeso
-    ?? plant?.reservaExigidaPeso
-  );
+  const reservaExigidaPeso = plant?.proyecto?.valor_reserva_exigido_defecto_peso ?? null;
   const reservaAsNumber = reservaExigidaPeso !== null && reservaExigidaPeso !== undefined
     ? Number(reservaExigidaPeso)
     : null;
   const formattedReserva = Number.isFinite(reservaAsNumber)
     ? `$ ${reservaAsNumber.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`
     : 'Por confirmar';
+  const hasActiveCountdown = remainingSeconds > 0;
 
   const formatCountdown = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) {
+      return 'Sin limite definido';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat('es-CL', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
   };
 
   // Sincronizar estado abierto con el diálogo
@@ -216,7 +234,7 @@ function PaymentGatewayDialog({
 
   // Countdown timer
   useEffect(() => {
-    if (remainingSeconds <= 0 || !reservationToken) {
+    if (!hasActiveCountdown || !reservationToken) {
       return;
     }
 
@@ -233,7 +251,7 @@ function PaymentGatewayDialog({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [reservationToken, remainingSeconds > 0]);
+  }, [hasActiveCountdown, remainingSeconds, reservationToken]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -244,8 +262,10 @@ function PaymentGatewayDialog({
     const handleHide = () => {
       // Release reservation when dialog closes without purchase
       if (reservationToken) {
-        ReservationService.release(reservationToken);
-        setReservationToken(null);
+        if (!manualPayment) {
+          ReservationService.release(reservationToken);
+          setReservationToken(null);
+        }
       }
       setReservationError(null);
       setRemainingSeconds(0);
@@ -257,7 +277,7 @@ function PaymentGatewayDialog({
     return () => {
       dialog.removeEventListener('wa-hide', handleHide);
     };
-  }, [onClose, reservationToken]);
+  }, [manualPayment, onClose, reservationToken]);
 
   // Cargar datos del usuario cuando se abre el diálogo
   useEffect(() => {
@@ -275,8 +295,35 @@ function PaymentGatewayDialog({
         rut: false,
       });
       setValidationToast(null);
+      setManualProofFile(null);
+      setManualProofError(null);
+      setManualProofSuccess(null);
     }
   }, [open, plant, gateways]);
+
+  const handleManualProofUpload = async () => {
+    if (!manualPayment?.payment_id) {
+      setManualProofError('No se encontro la referencia del pago manual.');
+      return;
+    }
+
+    if (!manualProofFile) {
+      setManualProofError('Selecciona un archivo antes de enviar el comprobante.');
+      return;
+    }
+
+    try {
+      setManualProofError(null);
+      const response = await onSubmitManualProof({
+        paymentId: manualPayment.payment_id,
+        proofFile: manualProofFile,
+      });
+
+      setManualProofSuccess(response?.message || 'Comprobante enviado correctamente.');
+    } catch (error) {
+      setManualProofError(error.userMessage || 'No se pudo enviar el comprobante.');
+    }
+  };
 
   const handleConfirm = () => {
     if (!isCheckoutReady) {
@@ -311,7 +358,7 @@ function PaymentGatewayDialog({
   return (
     <wa-dialog
       ref={dialogRef}
-      label="Seleccionar Pasarela de Pago"
+      label={manualPayment ? 'Pago Manual' : 'Seleccionar Pasarela de Pago'}
       style={{ '--width': '500px' }}
       light-dismiss
     >
@@ -332,138 +379,218 @@ function PaymentGatewayDialog({
       )}
 
       <div className="gateway-selection">
-        <div className="checkout-user-fields wa-stack wa-gap-s">
-          {/* Reservation status */}
-          {reservationLoading && (
-            <wa-callout variant="info">
-              <wa-spinner slot="icon"></wa-spinner>
-              Reservando planta...
-            </wa-callout>
-          )}
-
-          {reservationError && (
-            <wa-callout variant="danger">
-              <wa-icon name="circle-exclamation" slot="icon"></wa-icon>
-              {reservationError}
-            </wa-callout>
-          )}
-
-          {reservationToken && remainingSeconds > 0 && (
+        {manualPayment ? (
+          <div className="wa-stack wa-gap-m">
             <wa-callout variant="warning">
-              <wa-icon name="clock" slot="icon"></wa-icon>
-              Planta reservada por <strong>{formatCountdown(remainingSeconds)}</strong>
+              <wa-icon name="building-columns" slot="icon"></wa-icon>
+              Tu planta permanece reservada hasta <strong>{formatDateTime(manualPayment.expires_at)}</strong>.
             </wa-callout>
-          )}
 
-          {!isAuthenticated && (
-            <wa-callout variant="info">
-              <wa-icon name="address-card" slot="icon"></wa-icon>
-              Rellena todos los campos para continuar al pago.
-            </wa-callout>
-          )}
+            <div className="wa-split wa-align-items-center">
+              <strong>Referencia unica</strong>
+              <span>{manualPayment.reference}</span>
+            </div>
 
-          <div className="wa-split wa-align-items-center">
-            <strong>Proyecto</strong>
-            <span>{plant?.proyecto?.name || plant?.proyectoNombre || 'Sin proyecto'}</span>
+            <div className="wa-split wa-align-items-center">
+              <strong>Monto</strong>
+              <span>
+                {new Intl.NumberFormat('es-CL', {
+                  style: 'currency',
+                  currency: manualPayment.currency || 'CLP',
+                  maximumFractionDigits: 0,
+                }).format(Number(manualPayment.amount || 0))}
+              </span>
+            </div>
+
+            <div className="wa-stack wa-gap-2xs">
+              <strong>Instrucciones</strong>
+              <p>{manualPayment.instructions || 'Realiza tu pago y envia el comprobante antes del vencimiento.'}</p>
+            </div>
+
+            {Array.isArray(manualPayment.bank_accounts) && manualPayment.bank_accounts.length > 0 && (
+              <div className="wa-stack wa-gap-s">
+                <strong>Datos bancarios</strong>
+                {manualPayment.bank_accounts.map((account, index) => (
+                  <wa-card key={`${account.bank || 'bank'}-${index}`} appearance="outlined">
+                    <div className="wa-stack wa-gap-2xs" style={{ padding: '1rem' }}>
+                      {account.bank && <span><strong>Banco:</strong> {account.bank}</span>}
+                      {account.account_type && <span><strong>Tipo:</strong> {account.account_type}</span>}
+                      {account.account_number && <span><strong>Numero:</strong> {account.account_number}</span>}
+                      {account.account_holder && <span><strong>Titular:</strong> {account.account_holder}</span>}
+                      {account.rut && <span><strong>RUT:</strong> {account.rut}</span>}
+                    </div>
+                  </wa-card>
+                ))}
+              </div>
+            )}
+
+            {manualPayment.requires_proof && (
+              <div className="wa-stack wa-gap-s">
+                <strong>Enviar comprobante</strong>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={(event) => {
+                    setManualProofFile(event.target.files?.[0] || null);
+                    setManualProofError(null);
+                  }}
+                />
+                <small className="wa-caption-s">Formatos permitidos: JPG, PNG o PDF. Maximo 5 MB.</small>
+              </div>
+            )}
+
+            {manualProofError && (
+              <wa-callout variant="danger">
+                <wa-icon name="circle-exclamation" slot="icon"></wa-icon>
+                {manualProofError}
+              </wa-callout>
+            )}
+
+            {manualProofSuccess && (
+              <wa-callout variant="success">
+                <wa-icon name="circle-check" slot="icon"></wa-icon>
+                {manualProofSuccess}
+              </wa-callout>
+            )}
           </div>
-          <div className="wa-split wa-align-items-center">
-            <strong>Planta</strong>
-            <span>{plant?.nombre || plant?.name || 'Sin nombre'}</span>
-          </div>
-          <div className="wa-split wa-align-items-center">
-            <strong>Precio Pie</strong>
-            <span>{formattedReserva}</span>
-          </div>
-          <p className="gateway-instructions">Datos del comprador:</p>
-          <wa-input
-            label="Nombre completo"
-            value={checkoutName}
-            onChange={(e) => {
-              setFieldTouched('name');
-              setCheckoutName(e.target.value);
-            }}
-            onBlur={() => setFieldTouched('name')}
-            minlength="3"
-            required
-          ></wa-input>
-          {touched.name && !isNameValid && (
-            <small className="wa-caption-s">Debe tener al menos 3 caracteres.</small>
-          )}
-
-          <wa-input
-            type="email"
-            label="Correo electronico"
-            value={checkoutEmail}
-            onChange={(e) => {
-              setFieldTouched('email');
-              setCheckoutEmail(e.target.value);
-            }}
-            onBlur={() => setFieldTouched('email')}
-            autocomplete="email"
-            required
-          ></wa-input>
-          {touched.email && !isEmailValid && (
-            <small className="wa-caption-s">Ingresa un correo valido (ejemplo@correo.com).</small>
-          )}
-
-          <wa-input
-            type="number"
-            label="Telefono"
-            placeholder="9 1234 5678"
-            value={checkoutPhone}
-            onChange={(e) => {
-              setFieldTouched('phone');
-              setCheckoutPhone(e.target.value);
-            }}
-            onBlur={() => setFieldTouched('phone')}
-            autocomplete="tel"
-            required
-          >
-            <div slot="start" className="wa-input-prefix">+56</div>
-          </wa-input>
-          {touched.phone && !isPhoneValid && (
-            <small className="wa-caption-s">Debe contener entre 8 y 15 digitos.</small>
-          )}
-
-          <wa-input
-            label="RUT"
-            placeholder="12345678-9"
-            value={checkoutRut}
-            onChange={handleRutChange}
-            onBlur={() => setFieldTouched('rut')}
-            pattern="^[0-9]{7,8}-[0-9K]$"
-            maxlength="10"
-            required
-          ></wa-input>
-          <small className="wa-caption-s">Formato: 12345678-9 (sin puntos).</small>
-          {touched.rut && !isRutValid && (
-            <small className="wa-caption-s">RUT invalido. Revisa digito verificador.</small>
-          )}
-        </div>
-
-        <wa-divider></wa-divider>
-
-        <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
-
-        {gateways.length > 0 ? (
-          <wa-radio-group
-            value={selectedGateway}
-            onChange={(e) => setSelectedGateway(e.target.value)}
-          >
-            {gateways.map((gateway) => (
-              <wa-radio key={gateway.id} value={gateway.id}>
-                <div className="gateway-option-content">
-                  <strong>{gateway.name}</strong>
-                  <br />
-                  <small>{gateway.description}</small>
-                </div>
-              </wa-radio>
-            ))}
-          </wa-radio-group>
         ) : (
-          <wa-callout variant="warning">
-            No hay pasarelas de pago configuradas
-          </wa-callout>
+          <>
+            <div className="checkout-user-fields wa-stack wa-gap-s">
+              {reservationLoading && (
+                <wa-callout variant="info">
+                  <wa-spinner slot="icon"></wa-spinner>
+                  Reservando planta...
+                </wa-callout>
+              )}
+
+              {reservationError && (
+                <wa-callout variant="danger">
+                  <wa-icon name="circle-exclamation" slot="icon"></wa-icon>
+                  {reservationError}
+                </wa-callout>
+              )}
+
+              {reservationToken && remainingSeconds > 0 && (
+                <wa-callout variant="warning">
+                  <wa-icon name="clock" slot="icon"></wa-icon>
+                  Planta reservada por <strong>{formatCountdown(remainingSeconds)}</strong>
+                </wa-callout>
+              )}
+
+              {!isAuthenticated && (
+                <wa-callout variant="info">
+                  <wa-icon name="address-card" slot="icon"></wa-icon>
+                  Rellena todos los campos para continuar al pago.
+                </wa-callout>
+              )}
+
+              <div className="wa-split wa-align-items-center">
+                <strong>Proyecto</strong>
+                <span>{plant?.proyecto?.name || plant?.proyectoNombre || 'Sin proyecto'}</span>
+              </div>
+              <div className="wa-split wa-align-items-center">
+                <strong>Planta</strong>
+                <span>{plant?.nombre || plant?.name || 'Sin nombre'}</span>
+              </div>
+              <div className="wa-split wa-align-items-center">
+                <strong>Precio Pie</strong>
+                <span>{formattedReserva}</span>
+              </div>
+              <wa-divider></wa-divider>
+                <wa-scroller orientation="vertical" style={{ maxHeight: '35dvh' }}>
+                    <p className="gateway-instructions">Datos del comprador:</p>
+                    <wa-input
+                        label="Nombre completo"
+                        value={checkoutName}
+                        onChange={(e) => {
+                        setFieldTouched('name');
+                        setCheckoutName(e.target.value);
+                        }}
+                        onBlur={() => setFieldTouched('name')}
+                        minlength="3"
+                        required
+                    ></wa-input>
+                    {touched.name && !isNameValid && (
+                        <small className="wa-caption-s">Debe tener al menos 3 caracteres.</small>
+                    )}
+
+                    <wa-input
+                        type="email"
+                        label="Correo electronico"
+                        value={checkoutEmail}
+                        onChange={(e) => {
+                        setFieldTouched('email');
+                        setCheckoutEmail(e.target.value);
+                        }}
+                        onBlur={() => setFieldTouched('email')}
+                        autocomplete="email"
+                        required
+                    ></wa-input>
+                    {touched.email && !isEmailValid && (
+                        <small className="wa-caption-s">Ingresa un correo valido (ejemplo@correo.com).</small>
+                    )}
+
+                    <wa-input
+                        type="number"
+                        label="Telefono"
+                        placeholder="9 1234 5678"
+                        value={checkoutPhone}
+                        onChange={(e) => {
+                        setFieldTouched('phone');
+                        setCheckoutPhone(e.target.value);
+                        }}
+                        onBlur={() => setFieldTouched('phone')}
+                        autocomplete="tel"
+                        required
+                    >
+                        <div slot="start" className="wa-input-prefix">+56</div>
+                    </wa-input>
+                    {touched.phone && !isPhoneValid && (
+                        <small className="wa-caption-s">Debe contener entre 8 y 15 digitos.</small>
+                    )}
+
+                    <wa-input
+                        label="RUT"
+                        placeholder="12345678-9"
+                        value={checkoutRut}
+                        onChange={handleRutChange}
+                        onBlur={() => setFieldTouched('rut')}
+                        pattern="^[0-9]{7,8}-[0-9K]$"
+                        maxlength="10"
+                        required
+                    ></wa-input>
+                    <small className="wa-caption-s">Formato: 12345678-9 (sin puntos).</small>
+                    {touched.rut && !isRutValid && (
+                        <small className="wa-caption-s">RUT invalido. Revisa digito verificador.</small>
+                    )}
+                </wa-scroller>
+            </div>
+
+            <wa-divider></wa-divider>
+
+            <p className="gateway-instructions">Selecciona cómo deseas realizar el pago:</p>
+
+            {gateways.length > 0 ? (
+              <wa-radio-group
+                value={selectedGateway}
+                onChange={(e) => setSelectedGateway(e.target.value)}
+              >
+                {gateways.map((gateway) => (
+                  <wa-radio key={gateway.id} value={gateway.id}>
+                    <div className="gateway-option-content">
+                      <strong>{gateway.name}</strong>
+                      <br />
+                      <small>{gateway.description}</small>
+                    </div>
+                  </wa-radio>
+                ))}
+              </wa-radio-group>
+            ) : (
+              <wa-callout variant="warning">
+                No hay forma de pago por el momento.
+              </wa-callout>
+            )}
+          </>
         )}
       </div>
 
@@ -478,11 +605,15 @@ function PaymentGatewayDialog({
       <wa-button
         slot="footer"
         variant="brand"
-        onClick={handleConfirm}
-        disabled={loading || !isCheckoutReady || reservationLoading}
-        {...((loading || reservationLoading) && { loading: true })}
+        onClick={manualPayment ? handleManualProofUpload : handleConfirm}
+        disabled={manualPayment
+          ? manualProofLoading || (manualPayment.requires_proof && !manualProofFile)
+          : (loading || !isCheckoutReady || reservationLoading)}
+        {...((manualPayment ? manualProofLoading : (loading || reservationLoading)) && { loading: true })}
       >
-        {loading ? 'Procesando...' : <><wa-icon name="money-bill-wave"></wa-icon> Continuar al Pago</>}
+        {manualPayment
+          ? (manualProofLoading ? 'Enviando comprobante...' : <><wa-icon name="upload"></wa-icon> Enviar Comprobante</>)
+          : (loading ? 'Procesando...' : <><wa-icon name="money-bill-wave"></wa-icon> {selectedGateway === 'manual' ? 'Generar Referencia de Pago' : 'Continuar al Pago'}</>)}
       </wa-button>
     </wa-dialog>
   );

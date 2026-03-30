@@ -8,13 +8,36 @@
 // RESET Y NORMALIZACIÓN
 // ============================================================
 
+:root {
+  --wa-color-black: #000000;
+  --wa-color-white: #FFFFFF;
+  --wa-color-black-rgb: 0, 0, 0;
+  --wa-color-white-rgb: 255, 255, 255;
+}
+
 html {
   scroll-behavior: smooth;
   height: 100%;
 }
 
-body {  
+body {
   transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.wa-position-relative {
+  position: relative!important;
+}
+.wa-position-absolute {
+  position: absolute!important;
+}
+.wa-overflow-hidden {
+  overflow: hidden!important;
+}
+
+@for $i from 0 through 10 {
+  .wa-z-index-#{$i} {
+    z-index: #{$i} !important;
+  }
 }
 
 //array margenes s,m,l,xl

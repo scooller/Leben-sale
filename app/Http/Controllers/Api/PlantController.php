@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Plant;
 use App\Models\Proyecto;
+use App\Models\SiteSetting;
 use Awcodes\Curator\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class PlantController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Plant::query()
-            ->with(['proyecto', 'activeReservation', 'coverImageMedia', 'interiorImageMedia'])
+            ->with(['proyecto', 'activeReservation', 'completedReservation', 'completedPayment', 'coverImageMedia', 'interiorImageMedia'])
             ->whereHas('proyecto', function ($projectQuery) {
                 $projectQuery->where('is_active', true);
             }) // Solo plantas con proyecto activo asociado
@@ -46,9 +47,17 @@ class PlantController extends Controller
 
         if ($available !== null) {
             if ($available) {
-                $query->whereDoesntHave('activeReservation');
+                $query
+                    ->whereDoesntHave('activeReservation')
+                    ->whereDoesntHave('completedReservation')
+                    ->whereDoesntHave('completedPayment');
             } else {
-                $query->whereHas('activeReservation');
+                $query->where(function ($unavailableQuery) {
+                    $unavailableQuery
+                        ->whereHas('activeReservation')
+                        ->orWhereHas('completedReservation')
+                        ->orWhereHas('completedPayment');
+                });
             }
         }
 
@@ -185,7 +194,7 @@ class PlantController extends Controller
     public function show(string $id): JsonResponse
     {
         $plant = Plant::query()
-            ->with(['proyecto', 'activeReservation', 'coverImageMedia', 'interiorImageMedia'])
+            ->with(['proyecto', 'activeReservation', 'completedReservation', 'completedPayment', 'coverImageMedia', 'interiorImageMedia'])
             ->whereHas('proyecto', function ($projectQuery) {
                 $projectQuery->where('is_active', true);
             })
@@ -254,8 +263,53 @@ class PlantController extends Controller
         $payload['cover_image_url'] = $plant->coverImageMedia?->url;
         $payload['interior_image_url'] = $plant->interiorImageMedia?->url;
         $payload['proyecto'] = $this->projectPayload($plant->proyecto);
+        $payload['proyectoImageUrl'] = $plant->proyecto?->image_url;
+        $payload['imageUrl'] = $this->resolveImageUrl($plant);
+        $payload['detailImageUrl'] = $this->resolveDetailImageUrl($plant);
+        $payload['is_paid'] = $plant->completedReservation !== null || $plant->completedPayment !== null;
+        $payload['is_available'] = $plant->activeReservation === null
+            && $plant->completedReservation === null
+            && $plant->completedPayment === null;
 
         return $payload;
+    }
+
+    private function resolveImageUrl(Plant $plant): string
+    {
+        // 1. Plant cover image
+        if ($plant->coverImageMedia?->url) {
+            return $plant->coverImageMedia->url;
+        }
+
+        // 2. Project image
+        if ($plant->proyecto?->image_url) {
+            return $plant->proyecto->image_url;
+        }
+
+        // 3. Site logo
+        $siteSettings = SiteSetting::first();
+        if ($siteSettings?->logoMedia?->url) {
+            return $siteSettings->logoMedia->url;
+        }
+
+        // 4. Default SVG icon
+        return $this->getDefaultImageUrl();
+    }
+
+    private function resolveDetailImageUrl(Plant $plant): string
+    {
+        // 1. Plant interior image (prioritize interior for detail view)
+        if ($plant->interiorImageMedia?->url) {
+            return $plant->interiorImageMedia->url;
+        }
+
+        // 2. Fall back to all other images (same chain as cover)
+        return $this->resolveImageUrl($plant);
+    }
+
+    private function getDefaultImageUrl(): string
+    {
+        return 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2248%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-family=%22system-ui%22%3EPlanta%3C/text%3E%3C/svg%3E';
     }
 
     private function mediaPayload(?Media $media): ?array
@@ -293,6 +347,9 @@ class PlantController extends Controller
             'horario_atencion' => $proyecto->horario_atencion,
             'entrega_inmediata' => $proyecto->entrega_inmediata,
             'is_active' => $proyecto->is_active,
+            'image_url' => $proyecto->image_url,
+            'valor_reserva_exigido_defecto_peso' => $proyecto->valor_reserva_exigido_defecto_peso,
+            'valor_reserva_exigido_min_peso' => $proyecto->valor_reserva_exigido_min_peso,
         ];
     }
 

@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\ProjectImageService;
+use Awcodes\Curator\Models\Media;
+use Illuminate\Database\Eloquent\Attributes\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -33,6 +37,7 @@ class Proyecto extends Model
         'etapa',
         'horario_atencion',
         'is_active',
+        'project_image_id',
         // Descuentos de mercado
         'dscto_m_x_prod_principal_porc',
         'dscto_m_x_prod_principal_uf',
@@ -54,6 +59,10 @@ class Proyecto extends Model
         'entrega_inmediata',
         // Transbank Mall
         'transbank_commerce_code',
+        // Pago manual por proyecto
+        'manual_payment_instructions',
+        'manual_payment_bank_accounts',
+        'manual_payment_link',
     ];
 
     protected $casts = [
@@ -73,6 +82,7 @@ class Proyecto extends Model
         'tasa' => 'decimal:6',
         'entrega_inmediata' => 'boolean',
         'is_active' => 'boolean',
+        'manual_payment_bank_accounts' => 'array',
     ];
 
     /**
@@ -92,6 +102,24 @@ class Proyecto extends Model
                 $model->slug = Str::slug($model->name);
             }
         });
+    }
+
+    /**
+     * Relación con imagen del proyecto (Media de Curator)
+     */
+    public function projectImage(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'project_image_id');
+    }
+
+    /**
+     * Atributo computado: obtiene la URL de imagen del proyecto
+     * Sigue la prioridad: imagen del proyecto > logo principal > ícono por defecto
+     */
+    #[Attribute]
+    public function imageUrl(): string
+    {
+        return ProjectImageService::getProjectImageUrl($this);
     }
 
     /**

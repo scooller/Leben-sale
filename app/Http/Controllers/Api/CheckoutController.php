@@ -5,9 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutInitiateRequest;
 use App\Models\Plant;
+use App\Models\PlantReservation;
+use App\Models\Proyecto;
+use App\Models\SiteSetting;
+use App\Models\User;
+use App\Services\Payment\ManualPaymentService;
 use App\Services\PlantReservationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 
 class CheckoutController extends Controller
 {
@@ -23,10 +30,11 @@ class CheckoutController extends Controller
     {
         try {
             $validated = $request->validated();
+            $reservation = null;
 
             // Validar reserva si se proporciona session_token
             if (! empty($validated['session_token'])) {
-                $this->reservationService->validateReservationForCheckout(
+                $reservation = $this->reservationService->validateReservationForCheckout(
                     (int) $validated['plant_id'],
                     $validated['session_token'],
                 );
@@ -40,12 +48,25 @@ class CheckoutController extends Controller
                 'rut' => $validated['rut'],
             ]);
 
-            // Obtener la planta
-            $plant = Plant::findOrFail($validated['plant_id']);
+            // Obtener la planta con su proyecto
+            $plant = Plant::with('proyecto')->findOrFail($validated['plant_id']);
 
-            // Calcular monto total usando precio_base
-            $amount = (float) $plant->precio_base * $validated['quantity'];
+            if ($validated['gateway'] === 'transbank' && ! $this->projectHasCommerceCode($plant->proyecto)) {
+                return response()->json([
+                    'message' => 'Este proyecto no tiene Código de Comercio configurado.',
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // Usar valor_reserva_exigido_defecto_peso del proyecto como monto a cobrar
+            $reservaDefectoPeso = $plant->proyecto?->valor_reserva_exigido_defecto_peso;
+            $amount = $reservaDefectoPeso !== null
+                ? (float) $reservaDefectoPeso * $validated['quantity']
+                : (float) $plant->precio_base * $validated['quantity'];
             $description = "{$validated['quantity']}x {$plant->name}";
+
+            if ($validated['gateway'] === 'manual') {
+                return $this->initiateManual($user, $plant, $reservation, $amount, $description);
+            }
 
             // Iniciar transacción según la pasarela
             if ($validated['gateway'] === 'transbank') {
@@ -59,12 +80,93 @@ class CheckoutController extends Controller
                 $validated['quantity'],
                 $validated['email'],
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar el checkout',
                 'error' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Iniciar pago manual.
+     */
+    private function initiateManual(User $user, Plant $plant, ?PlantReservation $reservation, float $amount, string $description): JsonResponse
+    {
+        if (! $this->projectHasManualPaymentData($plant->proyecto)) {
+            return response()->json([
+                'message' => 'El pago manual no esta disponible para este proyecto.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $config = $this->manualGatewayConfig($plant->proyecto);
+
+        if (! ($config['enabled'] ?? false)) {
+            return response()->json([
+                'message' => 'El pago manual no esta disponible actualmente.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if (! $reservation) {
+            return response()->json([
+                'message' => 'Debes contar con una reserva activa para iniciar un pago manual.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $service = new ManualPaymentService($config);
+        $manualTransaction = $service->createTransaction([
+            'user_id' => $user->id,
+            'plant_id' => $plant->id,
+            'amount' => $amount,
+            'description' => $description,
+        ]);
+
+        $expiresAt = filled($manualTransaction['expires_at'] ?? null)
+            ? Carbon::parse($manualTransaction['expires_at'])
+            : null;
+
+        $payment = $user->payments()->create([
+            'project_id' => $plant->proyecto?->id,
+            'plant_id' => $plant->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => $manualTransaction['reference'],
+            'amount' => $amount,
+            'currency' => config('payments.currency', 'CLP'),
+            'status' => $manualTransaction['status'],
+            'metadata' => [
+                'description' => $description,
+                'manual_payment_reference' => $manualTransaction['reference'],
+                'manual_payment_instructions' => $manualTransaction['instructions'] ?? null,
+                'manual_payment_bank_accounts' => $manualTransaction['bank_accounts'] ?? [],
+                'manual_payment_requires_proof' => (bool) ($manualTransaction['requires_proof'] ?? true),
+                'manual_payment_expires_at' => $expiresAt?->toISOString(),
+                'manual_payment_proof_submitted' => false,
+                'manual_payment_link' => $config['payment_link'] ?? null,
+            ],
+        ]);
+
+        if ($expiresAt !== null) {
+            $this->reservationService->extendForManualPayment($reservation, $expiresAt, [
+                'manual_payment_id' => $payment->id,
+                'manual_payment_reference' => $manualTransaction['reference'],
+            ]);
+        }
+
+        return response()->json([
+            'flow' => 'manual',
+            'gateway' => 'manual',
+            'payment_id' => $payment->id,
+            'reference' => $manualTransaction['reference'],
+            'amount' => $amount,
+            'currency' => $payment->currency,
+            'description' => $description,
+            'status' => is_object($payment->status) ? $payment->status->value : (string) $payment->status,
+            'instructions' => $manualTransaction['instructions'] ?? null,
+            'bank_accounts' => $manualTransaction['bank_accounts'] ?? [],
+            'payment_link' => $config['payment_link'] ?? null,
+            'requires_proof' => (bool) ($manualTransaction['requires_proof'] ?? true),
+            'expires_at' => $expiresAt?->toISOString(),
+        ]);
     }
 
     /**
@@ -97,7 +199,7 @@ class CheckoutController extends Controller
 
             $response = $service->createTransaction([
                 'amount' => (int) $amount,
-                'buy_order' => 'ORDER-PLANT-'.$plant->id.'-'.time(),
+                'buy_order' => 'ORDER-PLANT-'.$plant->id.'-'.now()->timestamp,
                 'session_id' => 'SESSION-'.uniqid(),
                 'return_url' => route('payment.transbank.return'),
             ]);
@@ -110,7 +212,7 @@ class CheckoutController extends Controller
                 'description' => $description,
                 'environment' => $transbankEnv,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar pago con Transbank',
                 'error' => $e->getMessage(),
@@ -134,7 +236,7 @@ class CheckoutController extends Controller
             $response = $service->createTransaction([
                 'amount' => $amount,
                 'description' => $description,
-                'external_reference' => 'PLANT-'.$plant->id.'-'.time(),
+                'external_reference' => 'PLANT-'.$plant->id.'-'.now()->timestamp,
                 'currency' => 'CLP',
                 'payer_email' => $payerEmail,
             ]);
@@ -146,7 +248,7 @@ class CheckoutController extends Controller
                 'amount' => $amount,
                 'description' => $description,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar pago con Mercado Pago',
                 'error' => $e->getMessage(),
@@ -179,18 +281,34 @@ class CheckoutController extends Controller
     /**
      * Obtener pasarelas disponibles
      */
-    public function availableGateways(): JsonResponse
+    public function availableGateways(Request $request): JsonResponse
     {
         $gateways = [];
+        $siteSettings = SiteSetting::current();
+        $project = null;
+
+        $plantId = $request->query('plant_id');
+
+        if (filled($plantId)) {
+            $plant = Plant::query()
+                ->with('proyecto')
+                ->find($plantId);
+
+            $project = $plant?->proyecto;
+        }
 
         // Verificar Transbank (en modo integration siempre está disponible)
         $transbankEnv = config('services.transbank.environment', 'integration');
         $hasTransbankCredentials = config('services.transbank.commerce_code') && config('services.transbank.api_key');
+        $transbankEnabled = (bool) ($siteSettings->gateway_transbank_enabled ?? config('payments.gateways.transbank.enabled', true));
 
-        if ($transbankEnv === 'integration' || $hasTransbankCredentials) {
+        $transbankAvailableForProject = $project === null || $this->projectHasCommerceCode($project);
+
+        if ($transbankEnabled && ($transbankEnv === 'integration' || $hasTransbankCredentials) && $transbankAvailableForProject) {
             $gateways[] = [
                 'id' => 'transbank',
                 'name' => 'Webpay (Transbank)',
+                'flow' => 'redirect',
                 'description' => $transbankEnv === 'integration'
                     ? 'Modo de prueba - Tarjeta de crédito o débito'
                     : 'Paga con tarjeta de crédito o débito',
@@ -198,11 +316,28 @@ class CheckoutController extends Controller
         }
 
         // Verificar Mercado Pago
-        if (config('services.mercadopago.public_key') && config('services.mercadopago.access_token')) {
+        $mercadoPagoEnabled = (bool) ($siteSettings->gateway_mercadopago_enabled ?? config('payments.gateways.mercadopago.enabled', false));
+
+        if ($mercadoPagoEnabled && config('services.mercadopago.public_key') && config('services.mercadopago.access_token')) {
             $gateways[] = [
                 'id' => 'mercadopago',
                 'name' => 'Mercado Pago',
+                'flow' => 'redirect',
                 'description' => 'Paga con múltiples métodos',
+            ];
+        }
+
+        $manualConfig = $this->manualGatewayConfig($project);
+        $manualAvailableForProject = $project === null || $this->projectHasManualPaymentData($project);
+
+        if (($manualConfig['enabled'] ?? false) && $manualAvailableForProject) {
+            $gateways[] = [
+                'id' => 'manual',
+                'name' => $manualConfig['name'] ?? 'Pago Manual',
+                'flow' => 'manual',
+                'description' => ($manualConfig['requires_proof'] ?? true)
+                    ? 'Genera una referencia unica, transfiere y sube tu comprobante antes del vencimiento.'
+                    : 'Transferencia bancaria u otro metodo offline.',
             ];
         }
 
@@ -210,5 +345,53 @@ class CheckoutController extends Controller
             'gateways' => $gateways,
             'count' => count($gateways),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function manualGatewayConfig(?Proyecto $project = null): array
+    {
+        $settings = SiteSetting::current();
+        $defaultConfig = config('payments.gateways.manual', []);
+        $settingsConfig = is_array($settings->gateway_manual_config) ? $settings->gateway_manual_config : [];
+
+        $projectConfig = [];
+
+        if ($project) {
+            if (filled($project->manual_payment_instructions)) {
+                $projectConfig['instructions'] = (string) $project->manual_payment_instructions;
+            }
+
+            if (is_array($project->manual_payment_bank_accounts) && ! empty($project->manual_payment_bank_accounts)) {
+                $projectConfig['bank_accounts'] = $project->manual_payment_bank_accounts;
+            }
+
+            if (filled($project->manual_payment_link)) {
+                $projectConfig['payment_link'] = (string) $project->manual_payment_link;
+            }
+        }
+
+        return array_replace_recursive($defaultConfig, $settingsConfig, $projectConfig, [
+            'enabled' => (bool) ($settings->gateway_manual_enabled ?? ($defaultConfig['enabled'] ?? false)),
+        ]);
+    }
+
+    private function projectHasManualPaymentData(?Proyecto $project): bool
+    {
+        if (! $project) {
+            return false;
+        }
+
+        if (filled($project->manual_payment_link) || filled($project->manual_payment_instructions)) {
+            return true;
+        }
+
+        return is_array($project->manual_payment_bank_accounts) && ! empty($project->manual_payment_bank_accounts);
+    }
+
+    private function projectHasCommerceCode(?Proyecto $project): bool
+    {
+        return filled($project?->transbank_commerce_code);
     }
 }

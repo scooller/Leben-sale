@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\Proyectos\Schemas;
 
 use App\Models\Proyecto;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -100,6 +102,11 @@ class ProyectoForm
                         Toggle::make('is_active')
                             ->label('Activo')
                             ->required(),
+
+                        CuratorPicker::make('project_image_id')
+                            ->label('Imagen del Proyecto')
+                            ->helperText('Imagen que se mostrará como portada en lugar de la imagen por defecto. Si no se proporciona, se usará el logo principal del sitio o un ícono por defecto.')
+                            ->columnSpan(2),
                     ])
                     ->columns(2),
 
@@ -137,6 +144,48 @@ class ProyectoForm
                             })
                             ->searchable()
                             ->nullable(),
+
+                        Section::make('Pago Manual por Proyecto')
+                            ->description('Configura los datos de depósito y/o link de pago para este proyecto')
+                            ->schema([
+                                TextInput::make('manual_payment_link')
+                                    ->label('Link de Pago del Proyecto')
+                                    ->url()
+                                    ->placeholder('https://...')
+                                    ->helperText('Si se define, se enviará al checkout manual de este proyecto.'),
+
+                                Textarea::make('manual_payment_instructions')
+                                    ->label('Instrucciones de Depósito')
+                                    ->rows(3)
+                                    ->maxLength(2000)
+                                    ->helperText('Estas instrucciones tienen prioridad sobre la configuración global.'),
+
+                                Repeater::make('manual_payment_bank_accounts')
+                                    ->label('Cuentas para Depósito')
+                                    ->schema([
+                                        TextInput::make('bank')
+                                            ->label('Banco')
+                                            ->maxLength(150),
+                                        TextInput::make('account_type')
+                                            ->label('Tipo de Cuenta')
+                                            ->maxLength(100),
+                                        TextInput::make('account_number')
+                                            ->label('Número de Cuenta')
+                                            ->maxLength(100),
+                                        TextInput::make('account_holder')
+                                            ->label('Titular')
+                                            ->maxLength(150),
+                                        TextInput::make('rut')
+                                            ->label('RUT Titular')
+                                            ->maxLength(20),
+                                    ])
+                                    ->columns(2)
+                                    ->defaultItems(0)
+                                    ->reorderable(false)
+                                    ->collapsible()
+                                    ->helperText('Puedes agregar una o más cuentas de depósito para este proyecto.'),
+                            ])
+                            ->columns(1),
 
                         Section::make('Descuentos por Producto Principal')
                             ->schema([
@@ -257,8 +306,7 @@ class ProyectoForm
                         Toggle::make('entrega_inmediata')
                             ->label('Entrega Inmediata')
                             ->disabled(),
-                    ])
-                    ->columns(2),
+                    ]),
             ]);
     }
 }

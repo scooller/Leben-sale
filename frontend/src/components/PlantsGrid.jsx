@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import PlantDetailDialog from './PlantDetailDialog';
 
-const DEFAULT_PLANT_IMAGE = 'https://sale.ileben.cl/wp-content/uploads/2022/11/portada_bold_terraza.jpg';
+
 
 /**
  * Componente para el grid de plantas con tarjetas, skeleton, diálogo de detalles y paginación
@@ -18,9 +19,7 @@ function PlantsGrid({
   onPageChange
 }) {
   const [selectedPlant, setSelectedPlant] = useState(null);
-  const [zoomImageSrc, setZoomImageSrc] = useState('');
   const dialogRef = useRef(null);
-  const zoomDialogRef = useRef(null);
   const gridContainerRef = useRef(null);
 
   // GSAP ScrollTrigger para animar cards cuando entran al viewport
@@ -36,7 +35,7 @@ function PlantsGrid({
 
         if (cards.length === 0) return;
 
-        cards.forEach((card, index) => {
+        cards.forEach((card) => {
           // console.log('Animando card:', card);
           gsap.to(card, {
             opacity: 1,
@@ -109,16 +108,6 @@ function PlantsGrid({
     onQuickCheckout(selectedPlant);
   };
 
-  const openZoomImage = (imageSrc) => {
-    if (!imageSrc) return;
-
-    setZoomImageSrc(imageSrc);
-
-    if (zoomDialogRef.current) {
-      zoomDialogRef.current.open = true;
-    }
-  };
-
   // Skeleton de carga
   if (loading) {
 
@@ -129,40 +118,56 @@ function PlantsGrid({
             <wa-skeleton slot="media" effect="pulse" style={{ height: '220px' }}></wa-skeleton>
 
             <div slot="header" className="plant-header-wrapper">
-              <div className="wa-stack wa-gap-xs" style={{ width: '100%' }}>
-                <wa-skeleton effect="pulse" style={{ height: '18px', width: '65%' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '18px', width: '45%' }}></wa-skeleton>
+              <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l" style={{ width: '100%' }}>
+                <wa-skeleton effect="pulse" style={{ height: '24px', width: '52%' }}></wa-skeleton>
+                <wa-skeleton effect="pulse" style={{ height: '28px', width: '96px', borderRadius: '999px' }}></wa-skeleton>
               </div>
             </div>
 
-            <div slot="header-actions">
-              <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
+            <div slot="header-actions" className="wa-cluster wa-gap-xs">
+              <wa-skeleton effect="pulse" style={{ height: '26px', width: '82px', borderRadius: '999px' }}></wa-skeleton>
+              <wa-skeleton effect="pulse" style={{ height: '26px', width: '74px', borderRadius: '999px' }}></wa-skeleton>
             </div>
 
             <div className="plant-body">
-              <div className="wa-split wa-align-items-center">
-                <wa-skeleton effect="pulse" style={{ height: '16px', width: '35%' }}></wa-skeleton>
+              <div className="wa-split wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
                 <div className="wa-cluster wa-gap-xs">
-                  <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
-                  <wa-skeleton effect="pulse" style={{ height: '26px', width: '70px' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '16px', borderRadius: '4px', flexShrink: '0' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '48px' }}></wa-skeleton>
+                </div>
+                <div className="wa-cluster wa-gap-xs">
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '16px', borderRadius: '4px', flexShrink: '0' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '62px' }}></wa-skeleton>
+                </div>
+                <div className="wa-cluster wa-gap-xs">
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '16px', borderRadius: '4px', flexShrink: '0' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '42px' }}></wa-skeleton>
+                </div>
+                <div className="wa-cluster wa-gap-xs">
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '16px', borderRadius: '4px', flexShrink: '0' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '74px' }}></wa-skeleton>
                 </div>
               </div>
             </div>
 
             <div slot="footer" className="plant-price-wrapper">
-              <div className="wa-stack wa-gap-xs">
-                <wa-skeleton effect="pulse" style={{ height: '14px', width: '50%' }}></wa-skeleton>
-                <wa-skeleton effect="pulse" style={{ height: '28px', width: '40%' }}></wa-skeleton>
+              <div className="plant-price-header">
+                <div className="price-original">
+                  <wa-skeleton effect="pulse" style={{ height: '16px', width: '52%' }}></wa-skeleton>
+                </div>
+                <div className="price-final">
+                  <wa-skeleton effect="pulse" style={{ height: '28px', width: '42%' }}></wa-skeleton>
+                </div>
               </div>
             </div>
 
             <div slot="footer-actions" className="wa-cluster wa-gap-s">
               <wa-button-group label="Skeleton actions">
                 <wa-button size="small" disabled>
-                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '70px' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '84px' }}></wa-skeleton>
                 </wa-button>
                 <wa-button size="small" variant="brand" disabled>
-                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '54px' }}></wa-skeleton>
+                  <wa-skeleton effect="pulse" style={{ height: '14px', width: '58px' }}></wa-skeleton>
                 </wa-button>
               </wa-button-group>
             </div>
@@ -192,57 +197,60 @@ function PlantsGrid({
           <div className="plants-count">Total: {totalPlants} planta{totalPlants === 1 ? '' : 's'}</div>
         )}
         <div className="plants-grid wa-grid" ref={gridContainerRef}>
-          {plants.map((plant, index) => (
+          {plants.map((plant) => (
             <wa-card key={plant.id} className="plant-card" appearance="filled">
                 <img
                   slot="media"
-                  src={plant.coverImage || plant.cover_image_url || plant.cover_image_media?.url || DEFAULT_PLANT_IMAGE}
+                  src={plant.imageUrl}
                   alt={plant.nombre}
                   onClick={() => openPlantDetail(plant)}
                   className="plant-image"
                 />
-
                 <div slot="header" className="plant-header-wrapper">
-                  <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
-                    <span>{plant.proyectoNombre}</span> -
-                    <wa-badge appearance="filled-outlined" variant="neutral">Planta {plant.nombre}</wa-badge>
-                  </div>
-                </div>
-                {plant.categoria && (
-                    <div slot="header-actions" className="wa-cluster wa-gap-xs">
-                      <wa-badge variant="brand">{plant.categoria}</wa-badge>
-                      {plant.isReserved && (
-                        <wa-badge variant="warning">Reservado</wa-badge>
-                      )}
+                    <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
+                        <span>{plant.proyectoNombre}</span> -
+                        <wa-badge appearance="filled-outlined" variant="neutral">Planta {plant.nombre}</wa-badge>
                     </div>
-                )}
+                </div>
+
+                <div slot="header-actions" className="wa-cluster wa-gap-xs">
+                    {plant.proyectoComuna && (
+                    <wa-badge variant={plant.isPaid ? 'neutral' : 'brand'}>{plant.proyectoComuna}</wa-badge>
+                    )}
+                    {plant.isPaid && (
+                    <wa-badge variant="neutral">Pagada</wa-badge>
+                    )}
+                    {plant.isReserved && (
+                    <wa-badge variant="warning">Reservado</wa-badge>
+                    )}
+                </div>
+
                 <div className="plant-body">
-                    <div className="wa-split">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                            <wa-icon name="location-dot" style={{ fontSize: '1em' }}></wa-icon>
-                            <span>{plant.proyectoComuna}</span>
+                    <div className="wa-split wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
+                        {plant.programa && (
+                        <div className="wa-cluster wa-gap-xs">
+                            <wa-icon name="kaaba"></wa-icon>
+                            <span>{plant.programa}</span>
                         </div>
-                        {/* Tags para información adicional */}
-                        <div className="wa-cluster wa-gap-xs plant-tags" style={{ '--spacing': '0' }}>
-                            {plant.orientacion && (
-                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                                <wa-icon name="compass" slot="header"></wa-icon>
-                                <span>Orient. {plant.orientacion}</span>
-                            </wa-card>
-                            )}
-                            {plant.piso && (
-                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                                <wa-icon name="building" slot="header"></wa-icon>
-                                <span>Piso {plant.piso}</span>
-                            </wa-card>
-                            )}
-                            {plant.superficie_util && (
-                            <wa-card appearance="plain" className="wa-align-self-center wa-align-items-center">
-                                <wa-icon name="ruler" slot="header"></wa-icon>
-                                <span>Sup. {plant.superficie_util} m²</span>
-                            </wa-card>
-                            )}
+                        )}
+                        {plant.orientacion && (
+                        <div className="wa-cluster wa-gap-xs">
+                            <wa-icon name="compass" slot="header"></wa-icon>
+                            <span>Orient. {plant.orientacion}</span>
                         </div>
+                        )}
+                        {plant.piso && (
+                        <div className="wa-cluster wa-gap-xs">
+                            <wa-icon name="building" slot="header"></wa-icon>
+                            <span>Piso {plant.piso}</span>
+                        </div>
+                        )}
+                        {plant.superficie_util && (
+                        <div className="wa-cluster wa-gap-xs">
+                            <wa-icon name="ruler" slot="header"></wa-icon>
+                            <span>Sup. {plant.superficie_util} m²</span>
+                        </div>
+                        )}
                     </div>
                 </div>
                 {/* Ubicación destacada */}
@@ -283,12 +291,16 @@ function PlantsGrid({
                     <wa-button
                       size="small"
                       variant="brand"
-                      disabled={checkoutLoading || plant.isReserved}
+                      disabled={checkoutLoading || plant.isReserved || plant.isPaid || plant.isAvailable === false}
                       {...(checkoutLoading && { loading: true })}
                       onClick={() => onQuickCheckout(plant)}
                     >
-                      {plant.isReserved
-                        ? 'Reservado'
+                      {plant.isPaid
+                        ? <><wa-icon name="house-circle-xmark" slot="start"></wa-icon>Pagada</>
+                        : plant.isReserved
+                          ? <><wa-icon name="house-lock" slot="start"></wa-icon>Reservado</>
+                          : plant.isAvailable === false
+                            ? <><wa-icon name="house-chimney-crack" slot="start"></wa-icon>No disponible</>
                         : checkoutLoading
                           ? 'Cargando...'
                           : <><wa-icon name="comments-dollar" slot="start"></wa-icon>Cotizar</>
@@ -302,193 +314,12 @@ function PlantsGrid({
       </div>
 
       {/* Diálogo - Detalles de Planta */}
-      <wa-dialog
-        ref={dialogRef}
-        style={{ '--width': '720px' }}
-        light-dismiss
-      >
-        {selectedPlant && (
-          <>
-            <span slot="label"><wa-icon name="building-circle-exclamation"></wa-icon> Planta - {selectedPlant?.nombre || 'Detalle'}</span>
-            <div className="wa-grid wa-gap-l" style={{ '--min-column-size': '32ch', padding: '1.25rem 1.5rem 0.75rem' }}>
-              <img
-                src={selectedPlant.interiorImage || selectedPlant.interior_image_url || selectedPlant.interior_image_media?.url || DEFAULT_PLANT_IMAGE}
-                alt={selectedPlant.nombre}
-                onClick={() => openZoomImage(selectedPlant.interiorImage || selectedPlant.interior_image_url || selectedPlant.interior_image_media?.url || DEFAULT_PLANT_IMAGE)}
-                style={{ width: '100%', height: '100%', maxHeight: '380px', objectFit: 'cover', borderRadius: '0.75rem', cursor: 'zoom-in' }}
-              />
-
-              <div className="wa-stack wa-gap-m">
-                <div className='wa-grid wa-gap-m' style={{ '--min-column-size': '14rem' }}>
-                    {selectedPlant.proyectoNombre && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Proyecto</strong>
-                        <span>{selectedPlant.proyectoNombre}</span>
-                        </div>
-                    )}
-                    {selectedPlant.proyectoComuna && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Ubicación</strong>
-                        <span>{selectedPlant.proyectoComuna}</span>
-                        </div>
-                    )}
-                    {selectedPlant.proyectoDescripcion && (
-                        <div className="wa-stack wa-gap-xs">
-                        <strong>Descripción del Proyecto</strong>
-                        <span>{selectedPlant.proyectoDescripcion}</span>
-                        </div>
-                    )}
-                    <div className="wa-split wa-align-items-center">
-                        <strong>Nombre</strong>
-                        <span>{selectedPlant.nombre}</span>
-                    </div>
-                    {selectedPlant.categoria && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Categoría</strong>
-                        <wa-badge variant="brand">{selectedPlant.categoria}</wa-badge>
-                        </div>
-                    )}
-                    {selectedPlant.programa && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Programa</strong>
-                        <span>{selectedPlant.programa}</span>
-                        </div>
-                    )}
-                    {selectedPlant.orientacion && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Orientación</strong>
-                        <wa-tag variant="primary">{selectedPlant.orientacion}</wa-tag>
-                        </div>
-                    )}
-                    {selectedPlant.piso && (
-                        <div className="wa-split wa-align-items-center">
-                        <strong>Piso</strong>
-                        <wa-tag variant="primary">{selectedPlant.piso}</wa-tag>
-                        </div>
-                    )}
-                </div>
-              <wa-divider></wa-divider>
-              {(selectedPlant.superficie_total_principal !== null && selectedPlant.superficie_total_principal !== undefined
-                || selectedPlant.superficie_interior !== null && selectedPlant.superficie_interior !== undefined
-                || selectedPlant.superficie_util !== null && selectedPlant.superficie_util !== undefined
-                || selectedPlant.superficie_terraza !== null && selectedPlant.superficie_terraza !== undefined
-                || selectedPlant.superficie_vendible !== null && selectedPlant.superficie_vendible !== undefined) && (
-                <div className="wa-stack wa-gap-s">
-                  <strong>Superficies</strong>
-                  <div className="wa-grid wa-gap-s" style={{ '--min-column-size': '12rem' }}>
-                    {selectedPlant.superficie_total_principal !== null && selectedPlant.superficie_total_principal !== undefined && (
-                      <div className="wa-stack wa-gap-2xs">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                          <wa-icon name="house" style={{ fontSize: '0.9em' }}></wa-icon>
-                          <span>Total principal</span>
-                        </div>
-                        <strong>{selectedPlant.superficie_total_principal} m²</strong>
-                      </div>
-                    )}
-                    {selectedPlant.superficie_interior !== null && selectedPlant.superficie_interior !== undefined && (
-                      <div className="wa-stack wa-gap-2xs">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                          <wa-icon name="door-open" style={{ fontSize: '0.9em' }}></wa-icon>
-                          <span>Interior</span>
-                        </div>
-                        <strong>{selectedPlant.superficie_interior} m²</strong>
-                      </div>
-                    )}
-                    {selectedPlant.superficie_util !== null && selectedPlant.superficie_util !== undefined && (
-                      <div className="wa-stack wa-gap-2xs">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                          <wa-icon name="ruler" style={{ fontSize: '0.9em' }}></wa-icon>
-                          <span>Útil</span>
-                        </div>
-                        <strong>{selectedPlant.superficie_util} m²</strong>
-                      </div>
-                    )}
-                    {selectedPlant.superficie_terraza !== null && selectedPlant.superficie_terraza !== undefined && (
-                      <div className="wa-stack wa-gap-2xs">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                          <wa-icon name="umbrella-beach" style={{ fontSize: '0.9em' }}></wa-icon>
-                          <span>Terraza</span>
-                        </div>
-                        <strong>{selectedPlant.superficie_terraza} m²</strong>
-                      </div>
-                    )}
-                    {selectedPlant.superficie_vendible !== null && selectedPlant.superficie_vendible !== undefined && (
-                      <div className="wa-stack wa-gap-2xs">
-                        <div className="wa-cluster wa-gap-xs wa-align-items-center">
-                          <wa-icon name="layer-group" style={{ fontSize: '0.9em' }}></wa-icon>
-                          <span>Vendible</span>
-                        </div>
-                        <strong>{selectedPlant.superficie_vendible} m²</strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              {(selectedPlant.precioBase || selectedPlant.precioLista) && (
-                <>
-                <wa-divider></wa-divider>
-                <div className="wa-stack wa-gap-xs">
-                  <strong><wa-icon name="dollar-sign"></wa-icon> Precio</strong>
-                  <div className="wa-grid wa-gap-2xs">
-                    {selectedPlant.precioLista && selectedPlant.precioBase && selectedPlant.precioLista !== selectedPlant.precioBase && (
-                      <div className="wa-cluster wa-gap-xs">
-                        <span>Precio lista:</span>
-                        <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
-                          UF {selectedPlant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                    )}
-                    <span className="wa-heading-xl wa-font-weight-bold">
-                      UF {(selectedPlant.precioBase || selectedPlant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </span>
-                    {selectedPlant.precioBase && selectedPlant.precioLista && selectedPlant.precioBase < selectedPlant.precioLista && (
-                      <wa-badge variant="success"><wa-icon name="award"></wa-icon> ¡Con descuento!</wa-badge>
-                    )}
-                  </div>
-                </div>
-                </>
-              )}
-              </div>
-            </div>
-
-            <wa-button
-              slot="footer"
-              variant="neutral"
-              data-dialog="close"
-            >
-              Cerrar
-            </wa-button>
-            <wa-button
-              slot="footer"
-              variant="brand"
-              disabled={checkoutLoading}
-              {...(checkoutLoading && { loading: true })}
-              onClick={handleCheckoutFromDialog}
-            >
-              {checkoutLoading ? 'Cargando...' : <><wa-icon name="hand-holding-dollar"></wa-icon> Cotizar Ahora</>}
-            </wa-button>
-          </>
-        )}
-      </wa-dialog>
-
-      <wa-dialog
-        ref={zoomDialogRef}
-        label={selectedPlant?.nombre ? `Imagen ampliada - ${selectedPlant.nombre}` : 'Imagen ampliada'}
-        style={{ '--width': '92vw' }}
-        light-dismiss
-      >
-        {zoomImageSrc && (
-          <img
-            src={zoomImageSrc}
-            alt={selectedPlant?.nombre || 'Imagen de planta ampliada'}
-            style={{ width: '100%', maxHeight: '82vh', objectFit: 'contain', borderRadius: '0.75rem' }}
-          />
-        )}
-
-        <wa-button slot="footer" variant="neutral" data-dialog="close">
-          Cerrar
-        </wa-button>
-      </wa-dialog>
+      <PlantDetailDialog
+        plant={selectedPlant}
+        dialogRef={dialogRef}
+        checkoutLoading={checkoutLoading}
+        onCheckout={handleCheckoutFromDialog}
+      />
 
       {/* Paginación */}
       {totalPages > 1 && (

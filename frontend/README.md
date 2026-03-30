@@ -29,3 +29,9 @@ If you are developing a production application, we recommend using TypeScript wi
 - **Web Awesome Pro**: https://webawesome.com/docs/
 - **Web Awesome Themes**: https://webawesome.com/docs/themes/
 
+## Notas del proyecto
+
+- El frontend usa `@web.awesome.me/webawesome-pro`.
+- La disponibilidad del catálogo debe consumir los flags `is_paid` e `is_available` entregados por `/api/v1/plantas`.
+- Una planta no disponible puede deberse a reserva activa, reserva completada o pago completado/autorizado asociado en backend.
+

@@ -30,13 +30,23 @@ Todos los cambios relevantes de este proyecto serán documentados en este archiv
 - Se instaló y configuró el plugin Command Runner para administración
 - Se corrigieron filtros en tablas de plantas y proyectos, incluyendo el filtro de región en proyectos
 - Se habilitaron `databaseNotifications()` en Filament para soportar notificaciones persistidas de exportaciones ejecutadas por cola
+- Se habilitó exportación en users, payments y plants mediante `ExportAction`
+- Se agregó traducción local faltante para el modal de exportación de Filament
+- Se agregó la migración de la tabla `exports` requerida por el sistema de exportaciones
+- Los pagos ahora pueden relacionarse directamente con proyecto y planta desde Filament
+
+#### API de catálogo y disponibilidad
+- La API de plantas ahora expone `is_paid` e `is_available`
+- La disponibilidad de una planta ahora considera tanto `plant_reservations` como pagos completados/autorizados relacionados por `payments.plant_id`
+- El frontend de catálogo consume sólo plantas disponibles y bloquea compra de plantas reservadas o pagadas
 
 #### Estabilidad y testing
 - Se aisló el entorno de pruebas con SQLite en `database/testing.sqlite`
 - Se agregó `APP_KEY` al entorno de testing para asegurar ejecución completa de la suite
 - Se reparó la acción de borrado masivo de plantas para usar borrado compatible con relaciones (`delete()` en lugar de `truncate()`)
 - Se actualizaron y agregaron pruebas para sincronización de proyectos, borrado de plantas y widgets
-- Suite completa validada: 44 tests, 107 assertions
+- Se agregaron pruebas para filtros de disponibilidad de plantas con reservas y pagos relacionados
+- Suite de filtros de API validada para disponibilidad por reservas y pagos
 
 ### 📋 Planificado para v1.1.0
 
@@ -268,7 +278,7 @@ $response = $service->createTransaction($payment);
 
 #### UI/UX
 - Banner promocional con imagen y link configurables
-- Integración de Web Awesome 3.2.1 en componentes de mantenimiento
+- Integración de Web Awesome 3.4.0 en componentes del frontend y mantenimiento
 - 11 temas Web Awesome disponibles en configuración
 - Estilos SCSS para maintenance dialog con Web Awesome
 - Soporte para múltiples paletas de colores
@@ -469,5 +479,5 @@ Las migraciones se ejecutan en orden cronológico. Verificar que las FK están e
 - Filament 5.x
 - PHP 8.4.16
 - React 19.x
-- Web Awesome 3.2.1
+- Web Awesome 3.4.0
 - Tailwind CSS 4.x

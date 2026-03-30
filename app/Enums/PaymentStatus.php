@@ -97,9 +97,35 @@ enum PaymentStatus: string
      */
     public static function toSelectArray(): array
     {
-        return collect(self::cases())->mapWithKeys(
-            fn (self $status) => [$status->value => $status->label()]
-        )->toArray();
+        return [
+            self::PENDING->value => self::PENDING->label(),
+            self::PROCESSING->value => self::PROCESSING->label(),
+            self::AUTHORIZED->value => self::AUTHORIZED->label(),
+            self::COMPLETED->value => self::COMPLETED->label(),
+            self::FAILED->value => self::FAILED->label(),
+            self::CANCELLED->value => self::CANCELLED->label(),
+            self::REFUNDED->value => self::REFUNDED->label(),
+            self::PARTIALLY_REFUNDED->value => self::PARTIALLY_REFUNDED->label(),
+            self::EXPIRED->value => self::EXPIRED->label(),
+            self::PENDING_APPROVAL->value => self::PENDING_APPROVAL->label(),
+        ];
+    }
+
+    public static function fromValue(?string $value): ?self
+    {
+        return match ($value) {
+            self::PENDING->value => self::PENDING,
+            self::PROCESSING->value => self::PROCESSING,
+            self::AUTHORIZED->value => self::AUTHORIZED,
+            self::COMPLETED->value => self::COMPLETED,
+            self::FAILED->value => self::FAILED,
+            self::CANCELLED->value => self::CANCELLED,
+            self::REFUNDED->value => self::REFUNDED,
+            self::PARTIALLY_REFUNDED->value => self::PARTIALLY_REFUNDED,
+            self::EXPIRED->value => self::EXPIRED,
+            self::PENDING_APPROVAL->value => self::PENDING_APPROVAL,
+            default => null,
+        };
     }
 
     /**

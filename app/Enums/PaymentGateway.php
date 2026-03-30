@@ -56,9 +56,21 @@ enum PaymentGateway: string
      */
     public static function toSelectArray(): array
     {
-        return collect(self::cases())->mapWithKeys(
-            fn (self $gateway) => [$gateway->value => $gateway->label()]
-        )->toArray();
+        return [
+            self::TRANSBANK->value => self::TRANSBANK->label(),
+            self::MERCADOPAGO->value => self::MERCADOPAGO->label(),
+            self::MANUAL->value => self::MANUAL->label(),
+        ];
+    }
+
+    public static function fromValue(?string $value): ?self
+    {
+        return match ($value) {
+            self::TRANSBANK->value => self::TRANSBANK,
+            self::MERCADOPAGO->value => self::MERCADOPAGO,
+            self::MANUAL->value => self::MANUAL,
+            default => null,
+        };
     }
 
     /**

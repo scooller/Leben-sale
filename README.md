@@ -14,7 +14,7 @@ Aplicación backend-first construida con Laravel 12, Filament 5, React 19 y Web 
 ### Frontend
 - **React 19** - UI library
 - **Vite** - Build tool
-- **Web Awesome 3.2.1** - Design system
+- **Web Awesome 3.4.0** - Design system
 - **Tailwind CSS 4** - Utility-first CSS
 - **GSAP** - Animaciones
 
@@ -68,9 +68,11 @@ frontend/
 ### Panel Administrativo (Filament)
 - ✅ **Autenticación** - Laravel Sanctum + sessions
 - ✅ **Proyectos** - CRUD administrativo, filtros operativos, `tipo` multiselección y commerce code por proyecto
-- ✅ **Usuarios** - Gestión de cuentas
+- ✅ **Usuarios** - Gestión de cuentas con exportación
 - ✅ **Plantas** - Catálogo sincronizado con imágenes de portada e interior vía Curator
-- ✅ **Pagos** - Registro de transacciones
+- ✅ **Plantas** - Exportación y control de disponibilidad para catálogo público
+- ✅ **Pagos** - Registro de transacciones con relación directa a proyecto y planta
+- ✅ **Exportaciones** - Users, Payments y Plants usan `ExportAction` de Filament con cola y notificaciones persistidas
 - ✅ **Configuración Global** - SiteSettings (9+ tabs)
   - General, Banner, Branding, Colores, Tipografía
   - SEO, Contacto, Redes Sociales, Personalización
@@ -107,6 +109,9 @@ frontend/
 - Corrección de filtros operativos en los listados de proyectos y plantas
 - Incorporación de imágenes de portada e interior para plantas usando Filament Curator
 - Activación de `databaseNotifications()` en Filament para notificaciones de exportaciones en cola
+- Exportaciones habilitadas para usuarios, pagos y plantas con tabla `exports` y traducciones locales para Filament
+- `payments` ahora relaciona explícitamente `project_id` y `plant_id` para operación administrativa y trazabilidad
+- La API de plantas ahora marca indisponibilidad tanto por `plant_reservations` como por pagos completados/autorizados asociados a `plant_id`
 - Aislamiento del entorno de testing con SQLite y validación de suite completa
 
 ## � API REST
@@ -194,6 +199,13 @@ Lista de plantas filtradas por proyecto (consumo recomendado para frontend).
 Notas de payload:
 - La API incluye `cover_image_media` e `interior_image_media` con el objeto completo de Curator.
 - También expone `cover_image_url` e `interior_image_url` como atajos para consumir la URL principal.
+- Expone `is_paid` e `is_available` para simplificar la lógica del catálogo en frontend.
+
+Regla de disponibilidad:
+- Una planta se considera no disponible si tiene una reserva activa.
+- Una planta se considera pagada/no disponible si tiene una reserva completada.
+- Una planta también se considera pagada/no disponible si existe un `payment` relacionado por `plant_id` con estado `completed` o `authorized`.
+- Un pago pendiente por sí solo no bloquea la planta en el catálogo.
 
 Nota de consumo:
 - Para listar plantas de un proyecto específico, usa siempre `/api/v1/plantas?proyecto_id=X`.
@@ -209,7 +221,7 @@ GET /api/v1/plantas?programa=2&programa2=2
 # Plantas en rango de precio
 GET /api/v1/plantas?min_precio=5000&max_precio=10000
 
-# Plantas no disponibles (reservadas)
+# Plantas no disponibles (reservadas o pagadas)
 GET /api/v1/plantas?disponible=0
 ```
 
@@ -254,6 +266,8 @@ GET /api/v1/plantas?disponible=0
         "is_active": true
       },
       "active_reservation": null,
+      "is_paid": false,
+      "is_available": true,
       "cover_image_media": {
         "type": "image/jpeg",
         "title": "Modelo A1 - 101",
@@ -325,6 +339,8 @@ Detalle de una planta específica.
     "is_active": true
   },
   "active_reservation": null,
+  "is_paid": false,
+  "is_available": true,
   "cover_image_media": {
     "type": "image/jpeg",
     "title": "Modelo A1 - 101",
@@ -551,13 +567,18 @@ php artisan serve
 - `site_settings` - Configuración global (ID = 1)
 - `curator` - Archivos/media centralizados
 - `payments` - Transacciones de pago
-- `projects` - Proyectos disponibles
+- `proyectos` - Proyectos disponibles
 - `plants` - Catálogo de plantas
+- `exports` - Exportaciones en cola de Filament
 
 ### Relaciones
 ```
 User → has many Payments
 Payment → belongs to User
+Payment → belongs to Proyecto
+Payment → belongs to Plant
+Plant → has many PlantReservations
+Plant → has many Payments
 SiteSetting → belongs to Media (1:1 vía logo_id, favicon_id, etc)
 Project → has Transbank commerce code
 ```
@@ -639,5 +660,5 @@ Todos los derechos reservados - iLeben © 2026
 
 ---
 
-**Última actualización:** 9 Mar 2026  
+**Última actualización:** 30 Mar 2026  
 **Versión:** 1.0.0

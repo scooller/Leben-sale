@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
+use App\Models\Plant;
 use App\Models\Proyecto;
 use App\Models\User;
 use Tests\TestCase;
@@ -36,9 +37,14 @@ class TransbankMallTest extends TestCase
     public function test_payment_project_relationship(): void
     {
         $proyecto = Proyecto::factory()->create(['name' => 'Payment Test '.uniqid()]);
+        $plant = Plant::factory()->create([
+            'salesforce_proyecto_id' => $proyecto->salesforce_id,
+        ]);
+
         $payment = Payment::create([
             'user_id' => $this->user->id,
             'project_id' => $proyecto->id,
+            'plant_id' => $plant->id,
             'gateway' => PaymentGateway::TRANSBANK,
             'amount' => 50000,
             'currency' => 'CLP',
@@ -47,6 +53,8 @@ class TransbankMallTest extends TestCase
 
         $this->assertEquals($proyecto->id, $payment->project->id);
         $this->assertEquals($proyecto->name, $payment->project->name);
+        $this->assertEquals($plant->id, $payment->plant->id);
+        $this->assertEquals($plant->name, $payment->plant->name);
     }
 
     /**

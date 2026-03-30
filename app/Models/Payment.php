@@ -12,6 +12,7 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'project_id',
+        'plant_id',
         'gateway',
         'gateway_tx_id',
         'amount',
@@ -46,6 +47,14 @@ class Payment extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Proyecto::class);
+    }
+
+    /**
+     * Relación con la planta.
+     */
+    public function plant(): BelongsTo
+    {
+        return $this->belongsTo(Plant::class);
     }
 
     /**
