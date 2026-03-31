@@ -35,12 +35,11 @@ function PlantsGrid({
 
         if (cards.length === 0) return;
 
-        cards.forEach((card) => {
-          // console.log('Animando card:', card);
+        cards.forEach((card, index) => {
           gsap.to(card, {
             opacity: 1,
             scale: 1,
-            // delay: index * 0.1,
+            delay: index % 2 === 0 ? 0 : 0.8, // Stagger para cards pares e impares
             ease: 'Power2.in',
             scrollTrigger: {
               trigger: card,
