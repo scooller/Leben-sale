@@ -110,6 +110,13 @@
       0 => 'Filament\\Schemas\\SchemasServiceProvider',
     ),
   ),
+  'filament/spatie-laravel-settings-plugin' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Filament\\SpatieLaravelSettingsPluginServiceProvider',
+    ),
+  ),
   'filament/support' => 
   array (
     'providers' => 
@@ -129,6 +136,17 @@
     'providers' => 
     array (
       0 => 'Filament\\Widgets\\WidgetsServiceProvider',
+    ),
+  ),
+  'finity-labs/fin-mail' => 
+  array (
+    'aliases' => 
+    array (
+      'FinMail' => 'FinityLabs\\FinMail\\Facades\\FinMail',
+    ),
+    'providers' => 
+    array (
+      0 => 'FinityLabs\\FinMail\\FinMailServiceProvider',
     ),
   ),
   'kirschbaum-development/eloquent-power-joins' => 
@@ -257,6 +275,20 @@
     'providers' => 
     array (
       0 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
+    ),
+  ),
+  'spatie/laravel-settings' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\LaravelSettings\\LaravelSettingsServiceProvider',
+    ),
+  ),
+  'spatie/laravel-translatable' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\Translatable\\TranslatableServiceProvider',
     ),
   ),
 );

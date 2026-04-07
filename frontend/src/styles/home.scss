@@ -134,9 +134,9 @@
     opacity: 0.1;
     scale: 0.55;
     cursor: pointer;
-    transition: box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
     &:hover {
       box-shadow: 0 12px 24px rgba(var(--wa-color-black-rgb), 0.15);
+      transition: all 0.3s ease;
     }
     .plant-media {
       position: relative;
@@ -170,11 +170,11 @@
   box-shadow: 0 6px 16px rgba(227, 0, 42, 0.35);
   color: #ffffff;
   display: inline-flex;
-  flex-direction: column;
-  height: 66px;
+  flex-direction: row;
+  width: 4.55rem;
+  height: 4.55rem;
   justify-content: center;
   line-height: 1;
-  min-width: 66px;
   padding: 0.25rem;
   position: absolute;
   right: 0.75rem;
@@ -182,6 +182,25 @@
   text-transform: uppercase;
   top: 0.75rem;
   z-index: 2;
+    .discount-seal-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .discount-seal-label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.3rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-top: 0.2rem;
+        opacity: 0.95;
+        .simbol {
+            font-size: 1rem;
+            line-height: 0.8;
+        }
+    }
 }
 
 .project-logo-badge {
@@ -202,19 +221,6 @@
   object-fit: contain;
 }
 
-.discount-seal-value {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.discount-seal-label {
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin-top: 0.2rem;
-  opacity: 0.95;
-}
 
 .plant-detail-media {
   position: relative;
@@ -372,7 +378,7 @@
 
   .plant-detail-media {
     min-height: 420px;
-    max-height: 550px;
+    max-height: 530px;
   }
 
   .plant-detail-content wa-scroller {

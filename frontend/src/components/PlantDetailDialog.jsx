@@ -5,6 +5,14 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
     const sanitizePhone = (value) => `${value ?? ''}`.replace(/\D+/g, '');
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
+    const reservaExigidaPeso = plant?.proyecto?.valor_reserva_exigido_defecto_peso ?? null;
+    const reservaAsNumber = reservaExigidaPeso !== null && reservaExigidaPeso !== undefined
+        ? Number(reservaExigidaPeso)
+        : null;
+    const formattedReserva = Number.isFinite(reservaAsNumber)
+        ? `$ ${reservaAsNumber.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`
+        : 'Por confirmar';
+
     const getCurrentPlantUrl = () => {
         if (typeof window === 'undefined') {
             return '';
@@ -122,10 +130,15 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
                         </wa-badge>
                     )}
                     {plant.discountPercentage > 0 && (
-                        <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
-                            <span className="discount-seal-value">{plant.discountPercentage}%</span>
-                            <span className="discount-seal-label">descto.</span>
-                        </div>
+                        <wa-animation name="flash" play duration={5000} iterations={Infinity}>
+                            <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
+                                <span className="discount-seal-value">{plant.discountPercentage}</span>
+                                <span className="discount-seal-label">
+                                    <span className='simbol'>%</span>
+                                    descto.
+                                </span>
+                            </div>
+                        </wa-animation>
                     )}
                 </div>
                 <div className="wa-stack wa-gap-m plant-detail-content">
@@ -178,6 +191,12 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
                                     <wa-tag variant="primary">{plant.piso}</wa-tag>
                                 </div>
                                 )}
+                                {/* Precio de reserva */}
+
+                                <div className="wa-split wa-align-items-center">
+                                    <strong>Precio de Reserva</strong>
+                                    <wa-tag variant="success">{formattedReserva}</wa-tag>
+                                </div>
                             </div>
                         </wa-details>
                         <wa-divider></wa-divider>
@@ -342,7 +361,7 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
                         onClick={onCheckout}
                     >
                         {checkoutLoading ? 'Cargando...' : <>
-                            <wa-icon name="hand-holding-dollar" slot="start"></wa-icon> Reserva Ahora
+                            <wa-icon name="hand-holding-dollar" slot="start"></wa-icon> Reserva Ahora {formattedReserva}
                         </>}
                     </wa-button>
                 )}

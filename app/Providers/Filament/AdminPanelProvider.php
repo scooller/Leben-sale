@@ -26,6 +26,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
+use FinityLabs\FinMail\FinMailPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -140,6 +141,7 @@ class AdminPanelProvider extends PanelProvider
                     ->navigationLabel('Command Runner')
                     ->navigationIcon('heroicon-o-command-line')
                     ->navigationSort(1),
+                FinMailPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -6,6 +6,7 @@
 @source '../../../../vendor/awcodes/filament-curator/src/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../vendor/awcodes/filament-curator/resources/**/*';
+@source '../../../../vendor/finity-labs/fin-mail/resources/views/**/*';
 
 @layer base {
 	h1,

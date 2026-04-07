@@ -296,10 +296,15 @@ function PlantsGrid({
                     className="plant-image"
                   />
                   {plant.discountPercentage > 0 && (
-                  <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
-                    <span className="discount-seal-value">{plant.discountPercentage}%</span>
-                    <span className="discount-seal-label">descto.</span>
-                  </div>
+                    <wa-animation name="flash" play duration={5000} iterations={Infinity}>
+                        <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
+                            <span className="discount-seal-value">{plant.discountPercentage}</span>
+                            <span className="discount-seal-label">
+                                <span className='simbol'>%</span>
+                                descto.
+                            </span>
+                        </div>
+                    </wa-animation>
                   )}
                 </div>
                 <div slot="header" className="plant-header-wrapper">
