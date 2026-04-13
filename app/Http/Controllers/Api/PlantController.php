@@ -32,6 +32,7 @@ class PlantController extends Controller
         $banosValues = $this->normalizeInputValues($request->input('programa2'));
         $pisoValues = $this->normalizeInputValues($request->input('piso'));
         $orientacionValues = $this->normalizeInputValues($request->input('orientacion'));
+        $tipoProductoValues = $this->normalizeInputValues($request->input('tipo_producto'));
         $comunaValues = $this->normalizeInputValues($request->input('comuna'));
         $provinciaValues = $this->normalizeInputValues($request->input('provincia'));
         $regionValues = $this->normalizeInputValues($request->input('region'));
@@ -107,6 +108,10 @@ class PlantController extends Controller
 
         if (count($orientacionValues) > 0) {
             $query->whereIn('orientacion', $orientacionValues);
+        }
+
+        if (count($tipoProductoValues) > 0) {
+            $query->whereIn('tipo_producto', $tipoProductoValues);
         }
 
         if ($eventoSale === true) {
@@ -264,6 +269,18 @@ class PlantController extends Controller
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
+        $tiposProducto = Plant::query()
+            ->where('is_active', true)
+            ->whereHas('proyecto', function ($projectQuery) {
+                $projectQuery->where('is_active', true);
+            })
+            ->pluck('tipo_producto')
+            ->map(static fn (mixed $tipoProducto): string => trim((string) $tipoProducto))
+            ->filter(static fn (string $tipoProducto): bool => $tipoProducto !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
         $regions = $projects
             ->pluck('region')
             ->map(static fn (mixed $region): string => trim((string) $region))
@@ -310,6 +327,7 @@ class PlantController extends Controller
             'comunas' => $comunas,
             'comunas_by_region' => $comunasByRegion,
             'orientaciones' => $orientaciones,
+            'tipos_producto' => $tiposProducto,
             'entregas' => $entregas,
         ]);
     }

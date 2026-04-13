@@ -354,6 +354,9 @@ function PlantsGrid({
                 </div>
 
                 <div slot="header-actions" className="wa-cluster wa-gap-xs">
+                  {plant.tipoProducto && (
+                  <wa-badge variant="neutral">{plant.tipoProducto}</wa-badge>
+                  )}
                   {plant.proyectoEtapa && (
                   <wa-badge variant="success" style={{ fontSize: 'var(--wa-font-size-xs)' }}>{plant.proyectoEtapa}</wa-badge>
                   )}

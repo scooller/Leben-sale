@@ -211,8 +211,14 @@ class PlantApiFiltersTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->createPlant($projectInSantiago->salesforce_id, true, ['orientacion' => 'Norte']);
-        $this->createPlant($projectInProvidencia->salesforce_id, true, ['orientacion' => 'Sur']);
+        $this->createPlant($projectInSantiago->salesforce_id, true, [
+            'orientacion' => 'Norte',
+            'tipo_producto' => 'DEPARTAMENTO',
+        ]);
+        $this->createPlant($projectInProvidencia->salesforce_id, true, [
+            'orientacion' => 'Sur',
+            'tipo_producto' => 'LOCAL',
+        ]);
 
         $response = $this->getJson('/api/v1/plantas/filtros-ubicacion');
 
@@ -220,6 +226,7 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonFragment(['regions' => ['Metropolitana']]);
         $response->assertJsonFragment(['comunas' => ['Providencia', 'Santiago']]);
         $response->assertJsonFragment(['orientaciones' => ['Norte', 'Sur']]);
+        $response->assertJsonFragment(['tipos_producto' => ['DEPARTAMENTO', 'LOCAL']]);
         $response->assertJsonFragment(['entregas' => ['En Construccion', 'Entrega Inmediata']]);
         $response->assertJsonPath('comunas_by_region.Metropolitana.0', 'Providencia');
         $response->assertJsonPath('comunas_by_region.Metropolitana.1', 'Santiago');
@@ -241,6 +248,24 @@ class PlantApiFiltersTest extends TestCase
 
         $this->assertContains($northPlant->id, $responsePlantIds);
         $this->assertNotContains($southPlant->id, $responsePlantIds);
+    }
+
+    public function test_it_filters_plants_by_tipo_producto(): void
+    {
+        $project = Proyecto::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $departmentPlant = $this->createPlant($project->salesforce_id, true, ['tipo_producto' => 'DEPARTAMENTO']);
+        $localPlant = $this->createPlant($project->salesforce_id, true, ['tipo_producto' => 'LOCAL']);
+
+        $response = $this->getJson('/api/v1/plantas?tipo_producto=LOCAL');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($localPlant->id, $responsePlantIds);
+        $this->assertNotContains($departmentPlant->id, $responsePlantIds);
     }
 
     public function test_it_filters_plants_by_entrega_stage(): void

@@ -173,6 +173,12 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, dialogRef, checko
                                 <strong>Numero</strong>
                                 <span>{plant.nombre}</span>
                                 </div>
+                                {plant.tipoProducto && (
+                                <div className="wa-split wa-align-items-center">
+                                    <strong>Tipo de planta</strong>
+                                    <wa-badge variant="neutral">{plant.tipoProducto}</wa-badge>
+                                </div>
+                                )}
                                 {plant.programa && (
                                 <div className="wa-split wa-align-items-center">
                                     <strong>Programa</strong>

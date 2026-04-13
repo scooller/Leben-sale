@@ -103,6 +103,7 @@ function Home({ onNavigate, currentPath }) {
   const [selectedBanos, setSelectedBanos] = useState([]);
   const [selectedPiso, setSelectedPiso] = useState('');
   const [selectedOrientacion, setSelectedOrientacion] = useState('');
+  const [selectedTipoProducto, setSelectedTipoProducto] = useState('');
   const [selectedEntrega, setSelectedEntrega] = useState('');
   const [selectedComuna, setSelectedComuna] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
@@ -115,6 +116,7 @@ function Home({ onNavigate, currentPath }) {
   const [tempBanos, setTempBanos] = useState([]);
   const [tempPiso, setTempPiso] = useState('');
   const [tempOrientacion, setTempOrientacion] = useState('');
+  const [tempTipoProducto, setTempTipoProducto] = useState('');
   const [tempEntrega, setTempEntrega] = useState('');
   const [tempComuna, setTempComuna] = useState('');
   const [tempRegion, setTempRegion] = useState('');
@@ -172,6 +174,7 @@ function Home({ onNavigate, currentPath }) {
     + selectedBanos.length
     + (selectedPiso ? 1 : 0)
     + (selectedOrientacion ? 1 : 0)
+    + (selectedTipoProducto ? 1 : 0)
     + (selectedEntrega ? 1 : 0)
     + (selectedComuna ? 1 : 0)
     + (selectedRegion ? 1 : 0)
@@ -265,6 +268,7 @@ function Home({ onNavigate, currentPath }) {
       isPaid: !!plant.is_paid,
       isAvailable: !!plant.is_available,
       isReserved: !!plant.active_reservation,
+      tipoProducto: `${plant.tipo_producto ?? ''}`.trim().toUpperCase(),
     };
   }, []);
 
@@ -338,6 +342,10 @@ function Home({ onNavigate, currentPath }) {
         filters.orientacion = selectedOrientacion;
       }
 
+      if (selectedTipoProducto) {
+        filters.tipo_producto = selectedTipoProducto;
+      }
+
       if (selectedEntrega) {
         filters.entrega = selectedEntrega;
       }
@@ -393,6 +401,7 @@ function Home({ onNavigate, currentPath }) {
     selectedBanos,
     selectedPiso,
     selectedOrientacion,
+    selectedTipoProducto,
     selectedEntrega,
     selectedComuna,
     selectedRegion,
@@ -661,6 +670,7 @@ function Home({ onNavigate, currentPath }) {
     setSelectedBanos(tempBanos);
     setSelectedPiso(tempPiso);
     setSelectedOrientacion(tempOrientacion);
+    setSelectedTipoProducto(tempTipoProducto);
     setSelectedEntrega(tempEntrega);
     setSelectedComuna(tempComuna);
     setSelectedRegion(tempRegion);
@@ -676,6 +686,7 @@ function Home({ onNavigate, currentPath }) {
     setTempBanos([]);
     setTempPiso('');
     setTempOrientacion('');
+    setTempTipoProducto('');
     setTempEntrega('');
     setTempComuna('');
     setTempRegion('');
@@ -686,6 +697,7 @@ function Home({ onNavigate, currentPath }) {
     setSelectedBanos([]);
     setSelectedPiso('');
     setSelectedOrientacion('');
+    setSelectedTipoProducto('');
     setSelectedEntrega('');
     setSelectedComuna('');
     setSelectedRegion('');
@@ -1041,6 +1053,24 @@ function Home({ onNavigate, currentPath }) {
                             </wa-option>
                             ))}
                         </wa-select>
+
+                          <wa-select
+                            with-clear
+                            placeholder="Todos"
+                            size="small"
+                            value={tempTipoProducto}
+                            onChange={(e) => {
+                            const value = getSingleSelectValue(e);
+                            setTempTipoProducto(value);
+                            }}
+                            clearable
+                          >
+                            <span slot='label'><wa-icon name="city"></wa-icon> Tipo de planta</span>
+                            <wa-option value="DEPARTAMENTO"><wa-icon name="building" slot="start"></wa-icon>Departamento</wa-option>
+                            <wa-option value="ESTACIONAMIENTO"><wa-icon name="square-parking" slot="start"></wa-icon>Estacionamiento</wa-option>
+                            <wa-option value="BODEGA"><wa-icon name="box-archive" slot="start"></wa-icon>Bodega</wa-option>
+                            <wa-option value="LOCAL"><wa-icon name="store" slot="start"></wa-icon>Local</wa-option>
+                          </wa-select>
 
                           <wa-select
                             with-clear
