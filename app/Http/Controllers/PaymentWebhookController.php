@@ -22,7 +22,20 @@ class PaymentWebhookController extends Controller
         $token = (string) $request->query('token_ws', '');
         $redirectUrl = (string) $request->query('tbk_url', '');
 
+        Log::info('Transbank: Bridge redirect request received', [
+            'token' => $token,
+            'token_is_empty' => $token === '',
+            'redirect_url' => $redirectUrl,
+            'redirect_url_is_empty' => $redirectUrl === '',
+            'all_query_params' => $request->query(),
+        ]);
+
         if ($token === '' || $redirectUrl === '') {
+            Log::error('Transbank: Bridge missing required parameters', [
+                'token_provided' => $token !== '',
+                'redirect_url_provided' => $redirectUrl !== '',
+            ]);
+
             return redirect()->route('payment.failed')
                 ->with('error', 'No se pudo preparar la redirección a Transbank.');
         }

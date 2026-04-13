@@ -217,15 +217,34 @@ class TransbankService implements PaymentGatewayInterface
                 $response = $transaction->create($buyOrder, $sessionId, $amount, $returnUrl);
             }
 
+            $token = $response->getToken();
+            $url = $response->getUrl();
+
             Log::info('Transbank: Transacción creada exitosamente', [
-                'token' => $response->getToken(),
-                'url' => $response->getUrl(),
+                'token' => $token,
+                'token_is_null' => $token === null,
+                'token_is_empty' => $token === '',
+                'url' => $url,
+                'url_is_null' => $url === null,
+                'url_is_empty' => $url === '',
+                'response_object' => method_exists($response, 'toArray') ? $response->toArray() : (array) $response,
                 'commerce_code' => $commerceCode,
+                'buy_order' => $buyOrder,
+                'session_id' => $sessionId,
             ]);
 
+            if (empty($token) || empty($url)) {
+                Log::error('Transbank: Response inválida - token o URL vacíos', [
+                    'token' => $token,
+                    'url' => $url,
+                    'buy_order' => $buyOrder,
+                    'session_id' => $sessionId,
+                ]);
+            }
+
             return [
-                'token' => $response->getToken(),
-                'url' => $response->getUrl(),
+                'token' => $token,
+                'url' => $url,
             ];
         } catch (\Exception $e) {
             Log::error('Transbank: Error al crear transacción', [

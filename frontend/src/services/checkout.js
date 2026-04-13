@@ -304,17 +304,36 @@ class CheckoutService {
         && redirectData?.gateway === 'transbank'
         && redirectData?.token;
 
+      console.log('Checkout Redirect Debug:', {
+        gateway: redirectData?.gateway,
+        token: redirectData?.token,
+        token_is_empty: redirectData?.token === '' || !redirectData?.token,
+        redirect_url: redirectUrl,
+        is_transbank_redirect: isTransbankRedirect,
+        full_redirect_data: redirectData,
+      });
+
       if (isTransbankRedirect) {
         const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
         const bridgeUrl = new URL('/payments/transbank/redirect', appUrl);
+
+        console.log('Building Transbank bridge URL:', {
+          app_url: appUrl,
+          token: redirectData.token,
+          tbk_url: redirectUrl,
+        });
+
         bridgeUrl.searchParams.set('token_ws', redirectData.token);
         bridgeUrl.searchParams.set('tbk_url', redirectUrl);
+
+        console.log('Final bridge URL:', bridgeUrl.toString());
 
         window.location.href = bridgeUrl.toString();
 
         return;
       }
 
+      console.warn('Not a Transbank redirect, using direct redirect to:', redirectUrl);
       window.location.href = redirectUrl;
     } catch (error) {
       logError('CheckoutService.redirect', error);

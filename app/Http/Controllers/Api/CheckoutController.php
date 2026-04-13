@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
@@ -231,6 +232,15 @@ class CheckoutController extends Controller
             }
 
             $response = $service->createTransaction($requestPayload);
+
+            Log::info('Checkout: Transbank transaction response', [
+                'token' => $response['token'] ?? null,
+                'token_is_null' => ($response['token'] ?? null) === null,
+                'token_is_empty' => empty($response['token'] ?? null),
+                'url' => $response['url'] ?? null,
+                'url_is_null' => ($response['url'] ?? null) === null,
+                'buy_order' => $requestPayload['buy_order'],
+            ]);
 
             return response()->json([
                 'gateway' => 'transbank',

@@ -365,12 +365,10 @@ function PaymentGatewayDialog({
     }
 
     const handleHide = () => {
-      // Release reservation when dialog closes without purchase
-      if (reservationToken) {
-        if (!manualPayment) {
-          ReservationService.release(reservationToken);
-          setReservationToken(null);
-        }
+      // Release reservation only when user closes the dialog without being in checkout processing.
+      if (reservationToken && !manualPayment && !loading) {
+        ReservationService.release(reservationToken);
+        setReservationToken(null);
       }
       setReservationError(null);
       setRemainingSeconds(0);

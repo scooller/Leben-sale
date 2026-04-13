@@ -768,11 +768,8 @@ function Home({ onNavigate, currentPath }) {
         return;
       }
 
-      // Cerrar diálogo antes de redirigir
-      setGatewayDialogOpen(false);
-      setManualPayment(null);
-
-      // Redirigir a la pasarela
+      // En flujo redireccionado no cerramos el dialogo manualmente.
+      // Si se cierra dispara release() de la reserva justo antes de salir a Transbank.
       CheckoutService.redirect(response);
     } catch (err) {
       setCheckoutError({
