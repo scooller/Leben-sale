@@ -95,6 +95,8 @@ class SyncPlantsAction
                     continue;
                 }
 
+                $tipoProducto = self::resolveTipoProducto($plantData['tipo_producto'] ?? null);
+
                 $salesforceInteriorImageUrl = self::resolvePlantInteriorImageUrl(
                     $plantData,
                     $projectNamesBySalesforceId,
@@ -108,7 +110,7 @@ class SyncPlantsAction
                     $updateData = [
                         'salesforce_proyecto_id' => $plantData['proyecto_id'],
                         'name' => $plantData['name'],
-                        'tipo_producto' => $plantData['tipo_producto'] ?? null,
+                        'tipo_producto' => $tipoProducto,
                         'orientacion' => $plantData['orientacion'],
                         'programa' => $plantData['programa'],
                         'programa2' => $plantData['programa2'],
@@ -137,7 +139,7 @@ class SyncPlantsAction
                         'salesforce_proyecto_id' => $plantData['proyecto_id'],
                         'name' => $plantData['name'],
                         'product_code' => $plantData['product_code'],
-                        'tipo_producto' => $plantData['tipo_producto'] ?? null,
+                        'tipo_producto' => $tipoProducto,
                         'orientacion' => $plantData['orientacion'],
                         'programa' => $plantData['programa'],
                         'programa2' => $plantData['programa2'],
@@ -184,6 +186,13 @@ class SyncPlantsAction
                 'count' => 0,
             ];
         }
+    }
+
+    private static function resolveTipoProducto(mixed $tipoProducto): string
+    {
+        $normalized = strtoupper(trim((string) $tipoProducto));
+
+        return $normalized !== '' ? $normalized : 'DEPARTAMENTO';
     }
 
     /**

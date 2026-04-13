@@ -58,6 +58,51 @@ class SyncPlantsActionTipoProductoTest extends TestCase
         ]);
     }
 
+    public function test_it_defaults_tipo_producto_to_departamento_when_salesforce_value_is_empty(): void
+    {
+        $project = Proyecto::factory()->create([
+            'salesforce_id' => 'a0P999999999999AAA',
+            'name' => 'Proyecto Fallback',
+        ]);
+
+        $salesforceService = Mockery::mock(SalesforceService::class);
+        $salesforceService->shouldReceive('findPlants')
+            ->once()
+            ->andReturn([
+                [
+                    'id' => '01t999999999999AAA',
+                    'proyecto_id' => $project->salesforce_id,
+                    'name' => 'Planta 999',
+                    'product_code' => 'PL-999',
+                    'tipo_producto' => '   ',
+                    'orientacion' => 'Sur',
+                    'programa' => '1D',
+                    'programa2' => '1B',
+                    'piso' => '2',
+                    'precio_base' => 1000,
+                    'precio_lista' => 1200,
+                    'porcentaje_maximo_unidad' => 5,
+                    'superficie_total_principal' => 40,
+                    'superficie_interior' => 35,
+                    'superficie_util' => 33,
+                    'superficie_terraza' => 6,
+                ],
+            ]);
+        $salesforceService->shouldReceive('findPublicProjectDocuments')
+            ->andReturn([]);
+
+        $this->app->instance(SalesforceService::class, $salesforceService);
+
+        $result = SyncPlantsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('plants', [
+            'salesforce_product_id' => '01t999999999999AAA',
+            'salesforce_proyecto_id' => $project->salesforce_id,
+            'tipo_producto' => 'DEPARTAMENTO',
+        ]);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

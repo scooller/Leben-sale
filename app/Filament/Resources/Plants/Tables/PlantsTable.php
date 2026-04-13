@@ -136,6 +136,16 @@ class PlantsTable
                         0 => 'No',
                     ])
                     ->default(null),
+                // tipo de planta
+                SelectFilter::make('tipo_producto')
+                    ->label('Tipo de planta')
+                    ->options([
+                        'DEPARTAMENTO' => 'Departamento',
+                        'ESTACIONAMIENTO' => 'Estacionamiento',
+                        'BODEGA' => 'Bodega',
+                        'LOCAL' => 'Local',
+                    ])
+                    ->default('DEPARTAMENTO'),
                 SelectFilter::make('proyecto')
                     ->label('Proyecto')
                     ->relationship('proyecto', 'name')
