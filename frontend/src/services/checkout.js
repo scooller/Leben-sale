@@ -305,18 +305,12 @@ class CheckoutService {
         && redirectData?.token;
 
       if (isTransbankRedirect) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = redirectUrl;
+        const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+        const bridgeUrl = new URL('/payments/transbank/redirect', appUrl);
+        bridgeUrl.searchParams.set('token_ws', redirectData.token);
+        bridgeUrl.searchParams.set('tbk_url', redirectUrl);
 
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = 'token_ws';
-        tokenInput.value = redirectData.token;
-
-        form.appendChild(tokenInput);
-        document.body.appendChild(form);
-        form.submit();
+        window.location.href = bridgeUrl.toString();
 
         return;
       }

@@ -52,6 +52,7 @@ class PlantReservationService
                     Log::info('PlantReservation: Extended existing reservation', [
                         'reservation_id' => $existing->id,
                         'plant_id' => $plantId,
+                        'plant_name' => $plant->name,
                         'user_id' => $userId,
                     ]);
 
@@ -83,6 +84,7 @@ class PlantReservationService
             Log::info('PlantReservation: Created new reservation', [
                 'reservation_id' => $reservation->id,
                 'plant_id' => $plantId,
+                'plant_name' => $plant->name,
                 'user_id' => $userId,
                 'expires_at' => $reservation->expires_at->toISOString(),
             ]);
@@ -111,6 +113,7 @@ class PlantReservationService
         Log::info('PlantReservation: Released by token', [
             'reservation_id' => $reservation->id,
             'plant_id' => $reservation->plant_id,
+            'plant_name' => $reservation->plant?->name,
             'released_by' => $releasedBy,
         ]);
 
@@ -136,6 +139,8 @@ class PlantReservationService
 
         Log::info('PlantReservation: Released by ID', [
             'reservation_id' => $reservationId,
+            'plant_id' => $reservation->plant_id,
+            'plant_name' => $reservation->plant?->name,
             'released_by' => $releasedBy,
         ]);
 
@@ -154,6 +159,7 @@ class PlantReservationService
         if (! $reservation) {
             Log::warning('PlantReservation: No active reservation found to complete', [
                 'plant_id' => $plantId,
+                'plant_name' => Plant::query()->find($plantId)?->name,
             ]);
 
             return false;
@@ -166,6 +172,7 @@ class PlantReservationService
         Log::info('PlantReservation: Completed', [
             'reservation_id' => $reservation->id,
             'plant_id' => $plantId,
+            'plant_name' => $reservation->plant?->name,
         ]);
 
         return true;
@@ -191,6 +198,7 @@ class PlantReservationService
         Log::info('PlantReservation: Released due to payment failure', [
             'reservation_id' => $reservation->id,
             'plant_id' => $plantId,
+            'plant_name' => $reservation->plant?->name,
         ]);
 
         return true;
@@ -244,6 +252,7 @@ class PlantReservationService
         Log::info('PlantReservation: Extended for manual payment', [
             'reservation_id' => $reservation->id,
             'plant_id' => $reservation->plant_id,
+            'plant_name' => $reservation->plant?->name,
             'expires_at' => $reservation->fresh()->expires_at?->toISOString(),
         ]);
 

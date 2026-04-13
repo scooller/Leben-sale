@@ -190,6 +190,8 @@ class TransbankService implements PaymentGatewayInterface
                 'amount' => $amount,
                 'buy_order' => $buyOrder,
                 'session_id' => $sessionId,
+                'plant_name' => $data['plant_name'] ?? null,
+                'plant_id' => $data['plant_id'] ?? null,
                 'commerce_code' => $commerceCode,
                 'environment' => $this->environment,
                 'mall_mode' => $this->mallMode,

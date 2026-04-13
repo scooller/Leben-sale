@@ -1236,6 +1236,7 @@ function Home({ onNavigate, currentPath }) {
         plant={plantForCheckout}
         gateways={gateways}
         loading={checkoutLoading}
+        checkoutError={checkoutError}
         manualPayment={manualPayment}
         manualProofLoading={manualProofLoading}
         isAuthenticated={isAuthenticated}

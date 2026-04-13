@@ -20,6 +20,10 @@ Route::get('/curator/{path}', function (string $path) {
 
 // Rutas de webhooks y retornos de pasarelas de pago
 Route::prefix('payments')->name('payment.')->group(function () {
+    // Transbank - Página puente para enviar POST token_ws al endpoint de Webpay
+    Route::get('transbank/redirect', [PaymentWebhookController::class, 'transbankRedirect'])
+        ->name('transbank.redirect');
+
     // Transbank - Aceptar GET y POST (GET del navegador, POST de confirmación)
     Route::match(['get', 'post'], 'transbank/return', [PaymentWebhookController::class, 'transbankReturn'])
         ->name('transbank.return');

@@ -12,6 +12,7 @@ function PaymentGatewayDialog({
   plant,
   gateways,
   loading,
+  checkoutError,
   isAuthenticated,
   onConfirm,
   manualPayment,
@@ -494,6 +495,14 @@ function PaymentGatewayDialog({
       <wa-toast ref={validationToastRef} placement="top-end"></wa-toast>
 
       <div className="gateway-selection">
+        {checkoutError && (
+          <wa-callout variant="danger" style={{ marginBottom: '0.75rem' }}>
+            <wa-icon name="triangle-exclamation" slot="icon"></wa-icon>
+            <strong>{checkoutError.title || 'Error en el pago'}</strong>
+            <div>{checkoutError.userMessage || checkoutError.message || 'No se pudo iniciar el checkout.'}</div>
+          </wa-callout>
+        )}
+
         {manualPayment ? (
           <div className="wa-stack wa-gap-m">
             <wa-callout variant="warning">

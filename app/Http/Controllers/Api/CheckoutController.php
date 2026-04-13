@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
@@ -199,11 +200,21 @@ class CheckoutController extends Controller
 
             $service = new TransbankService($config);
 
+            $plantReference = Str::upper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $plant->name), 0, 6));
+            if ($plantReference === '') {
+                $plantReference = (string) $plant->id;
+            }
+
+            $timestampRef = substr((string) now()->timestamp, -8);
+            $buyOrder = 'OP'.$plantReference.$timestampRef;
+
             $requestPayload = [
                 'amount' => (int) $amount,
-                'buy_order' => 'ORDER-PLANT-'.$plant->id.'-'.now()->timestamp,
+                'buy_order' => $buyOrder,
                 'session_id' => 'SESSION-'.uniqid(),
                 'return_url' => route('payment.transbank.return'),
+                'plant_name' => (string) $plant->name,
+                'plant_id' => $plant->id,
             ];
 
             if ($mallMode) {
@@ -216,7 +227,7 @@ class CheckoutController extends Controller
                 }
 
                 $requestPayload['child_commerce_code'] = (string) $childCommerceCode;
-                $requestPayload['child_buy_order'] = 'CH-'.$plant->id.'-'.now()->timestamp;
+                $requestPayload['child_buy_order'] = 'CH'.$plantReference.$timestampRef;
             }
 
             $response = $service->createTransaction($requestPayload);

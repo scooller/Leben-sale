@@ -13,6 +13,36 @@ class PaymentWebhookController extends Controller
     public function __construct(
         private readonly PlantReservationService $reservationService,
     ) {}
+
+    /**
+     * Página puente para redirigir a Webpay Plus/Mall vía POST con token_ws.
+     */
+    public function transbankRedirect(Request $request)
+    {
+        $token = (string) $request->query('token_ws', '');
+        $redirectUrl = (string) $request->query('tbk_url', '');
+
+        if ($token === '' || $redirectUrl === '') {
+            return redirect()->route('payment.failed')
+                ->with('error', 'No se pudo preparar la redirección a Transbank.');
+        }
+
+        if (! str_starts_with($redirectUrl, 'https://webpay3gint.transbank.cl/')
+            && ! str_starts_with($redirectUrl, 'https://webpay3g.transbank.cl/')) {
+            Log::warning('Transbank: URL de redirección inválida detectada', [
+                'redirect_url' => $redirectUrl,
+            ]);
+
+            return redirect()->route('payment.failed')
+                ->with('error', 'URL de pago inválida.');
+        }
+
+        return response()->view('payments.transbank-redirect', [
+            'token' => $token,
+            'redirectUrl' => $redirectUrl,
+        ]);
+    }
+
     /**
      * Manejar retorno de Transbank (POST)
      *
