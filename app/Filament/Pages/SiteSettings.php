@@ -18,6 +18,7 @@ use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -112,6 +113,53 @@ class SiteSettings extends Page implements HasForms
                                             ->label('URL del Sitio General')
                                             ->url()
                                             ->placeholder('https://ileben.cl'),
+
+                                        Toggle::make('evento_sale')
+                                            ->label('Evento Sale')
+                                            ->helperText('Cuando está activo, el frontend solo mostrará plantas con Porcentaje Máximo de Unidad y usará la etiqueta "Precio Sale".'),
+
+                                        Repeater::make('footer_menu')
+                                            ->label('Menú del Footer')
+                                            ->schema([
+                                                TextInput::make('label')
+                                                    ->label('Texto')
+                                                    ->required()
+                                                    ->maxLength(100),
+
+                                                TextInput::make('url')
+                                                    ->label('URL')
+                                                    ->required()
+                                                    ->placeholder('https://... o /ruta-interna')
+                                                    ->maxLength(2048),
+
+                                                Toggle::make('new_tab')
+                                                    ->label('Abrir en nueva pestaña')
+                                                    ->default(false),
+                                            ])
+                                            ->defaultItems(0)
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->columns(2)
+                                            ->helperText('Este menú se muestra en el footer del frontend.'),
+
+                                        RichEditor::make('footer_legal_text')
+                                            ->label('Texto Legal del Footer')
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'underline',
+                                                'strike',
+                                                'blockquote',
+                                                'h2',
+                                                'h3',
+                                                'bulletList',
+                                                'orderedList',
+                                                'link',
+                                                'redo',
+                                                'undo',
+                                            ])
+                                            ->helperText('Texto legal visible al final del sitio (acepta formato).')
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(1),
                             ]),
@@ -411,6 +459,85 @@ class SiteSettings extends Page implements HasForms
                                         Textarea::make('contact_address')
                                             ->label('Dirección')
                                             ->rows(3),
+                                    ])
+                                    ->columns(1),
+
+                                Section::make('Página de Contacto')
+                                    ->description('Contenido administrable para la vista de contacto en el frontend')
+                                    ->schema([
+                                        TextInput::make('contact_page_title')
+                                            ->label('Título')
+                                            ->maxLength(255)
+                                            ->placeholder('Contacto'),
+
+                                        Textarea::make('contact_page_subtitle')
+                                            ->label('Subtítulo')
+                                            ->rows(2)
+                                            ->maxLength(500),
+
+                                        RichEditor::make('contact_page_content')
+                                            ->label('Contenido')
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'underline',
+                                                'strike',
+                                                'blockquote',
+                                                'h2',
+                                                'h3',
+                                                'bulletList',
+                                                'orderedList',
+                                                'link',
+                                                'redo',
+                                                'undo',
+                                            ])
+                                            ->columnSpanFull(),
+
+                                        TextInput::make('contact_notification_email')
+                                            ->label('Email receptor de contactos')
+                                            ->email()
+                                            ->placeholder('ventas@tuempresa.cl')
+                                            ->helperText('Si lo dejas vacío, se utilizará el Email de Contacto de esta misma pestaña.'),
+
+                                        Repeater::make('contact_form_fields')
+                                            ->label('Campos del formulario de contacto')
+                                            ->schema([
+                                                TextInput::make('key')
+                                                    ->label('Clave interna')
+                                                    ->required()
+                                                    ->maxLength(50)
+                                                    ->helperText('Ej: name, rut, email, message'),
+
+                                                TextInput::make('label')
+                                                    ->label('Etiqueta')
+                                                    ->required()
+                                                    ->maxLength(100),
+
+                                                Select::make('type')
+                                                    ->label('Tipo')
+                                                    ->options([
+                                                        'text' => 'Texto',
+                                                        'email' => 'Email',
+                                                        'tel' => 'Teléfono',
+                                                        'number' => 'Número',
+                                                        'textarea' => 'Área de texto',
+                                                    ])
+                                                    ->required()
+                                                    ->default('text'),
+
+                                                TextInput::make('placeholder')
+                                                    ->label('Placeholder')
+                                                    ->maxLength(255),
+
+                                                Toggle::make('required')
+                                                    ->label('Obligatorio')
+                                                    ->default(false),
+                                            ])
+                                            ->defaultItems(0)
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->columns(2)
+                                            ->helperText('Puedes definir cuántos campos deseas mostrar y validar en el formulario.'),
                                     ])
                                     ->columns(1),
                             ]),

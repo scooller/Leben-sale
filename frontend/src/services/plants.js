@@ -25,11 +25,15 @@ class PlantsService {
    */
   async getById(id) {
     try {
-      const response = await api.get(`/plants/${id}`);
+      const response = await api.get(`/plantas/${id}`);
       return response.data;
     } catch (error) {
-      logError('PlantsService.getById', error);
       const parsed = parseError(error);
+
+      if (parsed.type !== 'not_found') {
+        logError('PlantsService.getById', error);
+      }
+
       throw {
         ...parsed,
         context: 'getById',
@@ -51,8 +55,12 @@ class PlantsService {
 
       return response.data;
     } catch (error) {
-      logError('PlantsService.getByProjectAndUnit', error);
       const parsed = parseError(error);
+
+      if (parsed.type !== 'not_found') {
+        logError('PlantsService.getByProjectAndUnit', error);
+      }
+
       throw {
         ...parsed,
         context: 'getByProjectAndUnit',

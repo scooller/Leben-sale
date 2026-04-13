@@ -6,8 +6,6 @@ use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Omniphx\Forrest\Exceptions\MissingKeyException;
-use Omniphx\Forrest\Exceptions\MissingResourceException;
 use Omniphx\Forrest\Providers\Laravel\Facades\Forrest;
 use Throwable;
 
@@ -31,7 +29,7 @@ class SalesforceService
                 $result = Forrest::query($soql);
 
                 return $result['records'] ?? [];
-            } catch (MissingKeyException|MissingResourceException $e) {
+            } catch (Throwable $e) {
                 // Re-autenticar si el token expiró o no hay recursos disponibles
                 Log::info('Salesforce: Re-autenticando debido a: '.$e->getMessage());
                 $this->authenticate();
@@ -90,21 +88,20 @@ class SalesforceService
      *               'piso' => string,
      *               'precio_base' => float,
      *               'precio_lista' => float,
+     *               'porcentaje_maximo_unidad' => float,
      *               'superficie_total_principal' => float,
      *               'superficie_interior' => float,
      *               'superficie_util' => float,
-     *               'opportunity_id' => string|null,
      *               'superficie_terraza' => float,
-     *               'superficie_vendible' => float
      *               ]
      */
     public function findPlants(?int $cacheTtl = null): array
     {
         // SOQL para obtener plantas desde Product2
         $soql = 'SELECT Id, Name, ProductCode, Orientacion2__c, Programa__c, Programa2__c, Modelo__r.Name, Modelo__r.Programa__c, Piso__c, '
-            .'Precio_Base__c, Precio_Lista__c, '
+            .'Precio_Base__c, Precio_Lista__c, Porcentaje_maximo_de_unidad__c, '
             .'Superficie_Total_Producto_Principal__c, Superficie_Interior__c, Superficie_Util__c, '
-            .'Opportunity__c, Superficie_Terraza__c, Superficie_Vendible__c, Proyecto__c '
+            .'Superficie_Terraza__c, Proyecto__c '
             .'FROM Product2 '
             ."WHERE IsActive = true AND Estado__c = 'Disponible' AND Tipo_Producto__c = 'DEPARTAMENTO' "
             .'ORDER BY Name '
@@ -131,16 +128,15 @@ class SalesforceService
                         'piso' => $entry['Piso__c'] ?? null,
                         'precio_base' => (float) ($entry['Precio_Base__c'] ?? 0) ?: 0,
                         'precio_lista' => (float) ($entry['Precio_Lista__c'] ?? 0) ?: 0,
+                        'porcentaje_maximo_unidad' => (float) ($entry['Porcentaje_maximo_de_unidad__c'] ?? 0) ?: 0,
                         'superficie_total_principal' => (float) ($entry['Superficie_Total_Producto_Principal__c'] ?? 0),
                         'superficie_interior' => (float) ($entry['Superficie_Interior__c'] ?? 0),
                         'superficie_util' => (float) ($entry['Superficie_Util__c'] ?? 0),
-                        'opportunity_id' => $entry['Opportunity__c'] ?? null,
                         'superficie_terraza' => (float) ($entry['Superficie_Terraza__c'] ?? 0),
-                        'superficie_vendible' => (float) ($entry['Superficie_Vendible__c'] ?? 0),
                         'proyecto_id' => $entry['Proyecto__c'] ?? null,
                     ];
                 }, $entries);
-            } catch (MissingKeyException|MissingResourceException $e) {
+            } catch (Throwable $e) {
                 // Re-autenticar si el token expiró o no hay recursos disponibles
                 Log::info('Salesforce: Re-autenticando plantas debido a: '.$e->getMessage());
                 $this->authenticate();
@@ -160,12 +156,11 @@ class SalesforceService
                         'piso' => $entry['Piso__c'] ?? null,
                         'precio_base' => (float) ($entry['Precio_Base__c'] ?? 0) ?: 0,
                         'precio_lista' => (float) ($entry['Precio_Lista__c'] ?? 0) ?: 0,
+                        'porcentaje_maximo_unidad' => (float) ($entry['Porcentaje_maximo_de_unidad__c'] ?? 0) ?: 0,
                         'superficie_total_principal' => (float) ($entry['Superficie_Total_Producto_Principal__c'] ?? 0),
                         'superficie_interior' => (float) ($entry['Superficie_Interior__c'] ?? 0),
                         'superficie_util' => (float) ($entry['Superficie_Util__c'] ?? 0),
-                        'opportunity_id' => $entry['Opportunity__c'] ?? null,
                         'superficie_terraza' => (float) ($entry['Superficie_Terraza__c'] ?? 0),
-                        'superficie_vendible' => (float) ($entry['Superficie_Vendible__c'] ?? 0),
                         'proyecto_id' => $entry['Proyecto__c'] ?? null,
                     ];
                 }, $entries);
@@ -204,22 +199,8 @@ class SalesforceService
      *               'fecha_entrega' => string|null,
      *               'etapa' => string|null,
      *               'horario_atencion' => string|null,
-     *               'dscto_m_x_prod_principal_porc' => float,
-     *               'dscto_m_x_prod_principal_uf' => float,
-     *               'dscto_m_x_bodega_porc' => float,
-     *               'dscto_m_x_bodega_uf' => float,
-     *               'dscto_m_x_estac_porc' => float,
-     *               'dscto_m_x_estac_uf' => float,
-     *               'dscto_max_otros_porc' => float,
-     *               'dscto_max_otros_prod_uf' => float,
-     *               'dscto_maximo_aporte_leben' => float,
-     *               'n_anos_1' => int|null,
-     *               'n_anos_2' => int|null,
-     *               'n_anos_3' => int|null,
-     *               'n_anos_4' => int|null,
      *               'valor_reserva_exigido_defecto_peso' => float|null,
      *               'valor_reserva_exigido_min_peso' => float|null,
-     *               'tasa' => float|null,
      *               'entrega_inmediata' => bool
      *               ]
      */
@@ -238,14 +219,8 @@ class SalesforceService
             .'Email__c, Telefono__c, Pagina_Web_Proyecto__c, Razon_Social__c, RUT__c, '
             .'Fecha_Inicio_Ventas__c, Fecha_Recepcion_Municipal__c, Etapa__c, Horario_Atencion__c, '
             .'Asesor_Responsable__c, '
-            .'Dscto_M_x_Prod_Principal_Porc__c, Dscto_M_x_Prod_Principal_UF__c, '
-            .'Dscto_M_x_Bodega_Porc__c, Dscto_M_x_Bodega_UF__c, '
-            .'Dscto_M_x_Estac_Porc__c, Dscto_M_x_Estac_UF__c, '
-            .'Dscto_Max_Otros_Porc__c, Dscto_Max_Otros_Prod_UF__c, '
-            .'Dscto_Maximo_Aporte_Leben__c, '
-            .'N_A_os_1__c, N_A_os_2__c, N_A_os_3__c, N_A_os_4__c, '
             .'Valor_Reserva_Exigido_Defecto_Peso__c, Valor_Reserva_Exigido_Min_Peso__c, '
-            .'Tasa__c, Entrega_Inmediata__c '
+            .'Entrega_Inmediata__c '
             .'FROM Proyecto__c '
             ."WHERE IsDeleted = false AND Activo__c = true AND Tipo_Producto__c = 'DEPARTAMENTO' "
             .'ORDER BY Name '
@@ -278,26 +253,12 @@ class SalesforceService
                         'etapa' => $entry['Etapa__c'] ?? null,
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
                         'asesor_responsable_ids' => $this->normalizeSalesforceIdList($entry['Asesor_Responsable__c'] ?? null),
-                        'dscto_m_x_prod_principal_porc' => (float) ($entry['Dscto_M_x_Prod_Principal_Porc__c'] ?? 0),
-                        'dscto_m_x_prod_principal_uf' => (float) ($entry['Dscto_M_x_Prod_Principal_UF__c'] ?? 0),
-                        'dscto_m_x_bodega_porc' => (float) ($entry['Dscto_M_x_Bodega_Porc__c'] ?? 0),
-                        'dscto_m_x_bodega_uf' => (float) ($entry['Dscto_M_x_Bodega_UF__c'] ?? 0),
-                        'dscto_m_x_estac_porc' => (float) ($entry['Dscto_M_x_Estac_Porc__c'] ?? 0),
-                        'dscto_m_x_estac_uf' => (float) ($entry['Dscto_M_x_Estac_UF__c'] ?? 0),
-                        'dscto_max_otros_porc' => (float) ($entry['Dscto_Max_Otros_Porc__c'] ?? 0),
-                        'dscto_max_otros_prod_uf' => (float) ($entry['Dscto_Max_Otros_Prod_UF__c'] ?? 0),
-                        'dscto_maximo_aporte_leben' => (float) ($entry['Dscto_Maximo_Aporte_Leben__c'] ?? 0),
-                        'n_anos_1' => $entry['N_A_os_1__c'] ? (int) $entry['N_A_os_1__c'] : null,
-                        'n_anos_2' => $entry['N_A_os_2__c'] ? (int) $entry['N_A_os_2__c'] : null,
-                        'n_anos_3' => $entry['N_A_os_3__c'] ? (int) $entry['N_A_os_3__c'] : null,
-                        'n_anos_4' => $entry['N_A_os_4__c'] ? (int) $entry['N_A_os_4__c'] : null,
                         'valor_reserva_exigido_defecto_peso' => $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] : null,
                         'valor_reserva_exigido_min_peso' => $entry['Valor_Reserva_Exigido_Min_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Min_Peso__c'] : null,
-                        'tasa' => $entry['Tasa__c'] ? (float) $entry['Tasa__c'] : null,
                         'entrega_inmediata' => (bool) ($entry['Entrega_Inmediata__c'] ?? false),
                     ];
                 }, $entries);
-            } catch (MissingKeyException $e) {
+            } catch (Throwable $e) {
                 $this->authenticate();
                 $result = Forrest::query($soql);
                 $entries = $result['records'] ?? [];
@@ -321,22 +282,8 @@ class SalesforceService
                         'etapa' => $entry['Etapa__c'] ?? null,
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
                         'asesor_responsable_ids' => $this->normalizeSalesforceIdList($entry['Asesor_Responsable__c'] ?? null),
-                        'dscto_m_x_prod_principal_porc' => (float) ($entry['Dscto_M_x_Prod_Principal_Porc__c'] ?? 0),
-                        'dscto_m_x_prod_principal_uf' => (float) ($entry['Dscto_M_x_Prod_Principal_UF__c'] ?? 0),
-                        'dscto_m_x_bodega_porc' => (float) ($entry['Dscto_M_x_Bodega_Porc__c'] ?? 0),
-                        'dscto_m_x_bodega_uf' => (float) ($entry['Dscto_M_x_Bodega_UF__c'] ?? 0),
-                        'dscto_m_x_estac_porc' => (float) ($entry['Dscto_M_x_Estac_Porc__c'] ?? 0),
-                        'dscto_m_x_estac_uf' => (float) ($entry['Dscto_M_x_Estac_UF__c'] ?? 0),
-                        'dscto_max_otros_porc' => (float) ($entry['Dscto_Max_Otros_Porc__c'] ?? 0),
-                        'dscto_max_otros_prod_uf' => (float) ($entry['Dscto_Max_Otros_Prod_UF__c'] ?? 0),
-                        'dscto_maximo_aporte_leben' => (float) ($entry['Dscto_Maximo_Aporte_Leben__c'] ?? 0),
-                        'n_anos_1' => $entry['N_A_os_1__c'] ? (int) $entry['N_A_os_1__c'] : null,
-                        'n_anos_2' => $entry['N_A_os_2__c'] ? (int) $entry['N_A_os_2__c'] : null,
-                        'n_anos_3' => $entry['N_A_os_3__c'] ? (int) $entry['N_A_os_3__c'] : null,
-                        'n_anos_4' => $entry['N_A_os_4__c'] ? (int) $entry['N_A_os_4__c'] : null,
                         'valor_reserva_exigido_defecto_peso' => $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] : null,
                         'valor_reserva_exigido_min_peso' => $entry['Valor_Reserva_Exigido_Min_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Min_Peso__c'] : null,
-                        'tasa' => $entry['Tasa__c'] ? (float) $entry['Tasa__c'] : null,
                         'entrega_inmediata' => (bool) ($entry['Entrega_Inmediata__c'] ?? false),
                     ];
                 }, $entries);

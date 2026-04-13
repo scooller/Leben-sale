@@ -174,7 +174,7 @@ class ProyectoForm
                     ->columns(2),
 
                 Section::make('Pago y Financiamiento')
-                    ->description('Configuración de códigos de comercio, descuentos, precios y opciones de financiamiento')
+                    ->description('Configuración de códigos de comercio, pago manual, reserva exigida y entrega inmediata')
                     ->schema([
                         Select::make('transbank_commerce_code')
                             ->label('Código de Comercio Transbank Mall')
@@ -250,101 +250,6 @@ class ProyectoForm
                             ])
                             ->columns(1),
 
-                        Section::make('Descuentos por Producto Principal')
-                            ->schema([
-                                TextInput::make('dscto_m_x_prod_principal_porc')
-                                    ->label('Descuento (%)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('%'),
-
-                                TextInput::make('dscto_m_x_prod_principal_uf')
-                                    ->label('Descuento (UF)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('UF'),
-                            ])
-                            ->columns(2),
-
-                        Section::make('Descuentos por Bodega')
-                            ->schema([
-                                TextInput::make('dscto_m_x_bodega_porc')
-                                    ->label('Descuento (%)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('%'),
-
-                                TextInput::make('dscto_m_x_bodega_uf')
-                                    ->label('Descuento (UF)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('UF'),
-                            ])
-                            ->columns(2),
-
-                        Section::make('Descuentos por Estacionamiento')
-                            ->schema([
-                                TextInput::make('dscto_m_x_estac_porc')
-                                    ->label('Descuento (%)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('%'),
-
-                                TextInput::make('dscto_m_x_estac_uf')
-                                    ->label('Descuento (UF)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('UF'),
-                            ])
-                            ->columns(2),
-
-                        Section::make('Descuentos por Otros Productos')
-                            ->schema([
-                                TextInput::make('dscto_max_otros_porc')
-                                    ->label('Descuento (%)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('%'),
-
-                                TextInput::make('dscto_max_otros_prod_uf')
-                                    ->label('Descuento (UF)')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->suffix('UF'),
-                            ])
-                            ->columns(2),
-
-                        TextInput::make('dscto_maximo_aporte_leben')
-                            ->label('Descuento Máximo por Aporte Leben')
-                            ->numeric()
-                            ->disabled()
-                            ->suffix('%'),
-
-                        Section::make('Opciones de Financiamiento')
-                            ->description('Plazos disponibles de financiamiento en años')
-                            ->schema([
-                                TextInput::make('n_anos_1')
-                                    ->label('Opción 1 (años)')
-                                    ->numeric()
-                                    ->disabled(),
-
-                                TextInput::make('n_anos_2')
-                                    ->label('Opción 2 (años)')
-                                    ->numeric()
-                                    ->disabled(),
-
-                                TextInput::make('n_anos_3')
-                                    ->label('Opción 3 (años)')
-                                    ->numeric()
-                                    ->disabled(),
-
-                                TextInput::make('n_anos_4')
-                                    ->label('Opción 4 (años)')
-                                    ->numeric()
-                                    ->disabled(),
-                            ])
-                            ->columns(4),
-
                         Section::make('Reserva Exigida')
                             ->schema([
                                 TextInput::make('valor_reserva_exigido_defecto_peso')
@@ -359,12 +264,6 @@ class ProyectoForm
                                     ->prefix('$'),
                             ])
                             ->columns(2),
-
-                        TextInput::make('tasa')
-                            ->label('Tasa de Interés (%)')
-                            ->numeric()
-                            ->disabled()
-                            ->suffix('%'),
 
                         Toggle::make('entrega_inmediata')
                             ->label('Entrega Inmediata')

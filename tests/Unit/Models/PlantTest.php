@@ -24,12 +24,12 @@ class PlantTest extends TestCase
             'piso',
             'precio_base',
             'precio_lista',
+            'porcentaje_maximo_unidad',
+            'unidad_sale',
             'superficie_total_principal',
             'superficie_interior',
             'superficie_util',
-            'opportunity_id',
             'superficie_terraza',
-            'superficie_vendible',
             'cover_image_id',
             'interior_image_id',
             'salesforce_interior_image_url',
@@ -46,11 +46,15 @@ class PlantTest extends TestCase
     {
         $plant = Plant::factory()->create([
             'precio_base' => '5000.50',
+            'porcentaje_maximo_unidad' => '12.50',
+            'unidad_sale' => 1,
             'superficie_total_principal' => '75.25',
             'is_active' => 1,
         ]);
 
         $this->assertIsString($plant->precio_base);
+        $this->assertIsString($plant->porcentaje_maximo_unidad);
+        $this->assertIsBool($plant->unidad_sale);
         $this->assertIsString($plant->superficie_total_principal);
         $this->assertIsBool($plant->is_active);
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $plant->last_synced_at);

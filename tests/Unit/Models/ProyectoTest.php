@@ -42,12 +42,10 @@ class ProyectoTest extends TestCase
     public function test_proyecto_casts_decimals_correctly(): void
     {
         $proyecto = Proyecto::factory()->create([
-            'dscto_m_x_prod_principal_porc' => '15.50',
-            'tasa' => '5.25',
+            'valor_reserva_exigido_defecto_peso' => '150000.50',
         ]);
 
-        $this->assertIsString($proyecto->dscto_m_x_prod_principal_porc);
-        $this->assertIsString($proyecto->tasa);
+        $this->assertIsString($proyecto->valor_reserva_exigido_defecto_peso);
     }
 
     public function test_proyecto_has_many_plantas(): void

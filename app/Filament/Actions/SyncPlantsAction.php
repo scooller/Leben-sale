@@ -5,7 +5,6 @@ namespace App\Filament\Actions;
 use App\Models\Plant;
 use App\Models\Proyecto;
 use App\Services\Salesforce\SalesforceService;
-use Exception;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
@@ -113,12 +112,11 @@ class SyncPlantsAction
                         'piso' => $plantData['piso'],
                         'precio_base' => $plantData['precio_base'],
                         'precio_lista' => $plantData['precio_lista'],
+                        'porcentaje_maximo_unidad' => $plantData['porcentaje_maximo_unidad'] ?? null,
                         'superficie_total_principal' => $plantData['superficie_total_principal'],
                         'superficie_interior' => $plantData['superficie_interior'],
                         'superficie_util' => $plantData['superficie_util'],
-                        'opportunity_id' => $plantData['opportunity_id'],
                         'superficie_terraza' => $plantData['superficie_terraza'],
-                        'superficie_vendible' => $plantData['superficie_vendible'],
                         'is_active' => true,
                         'last_synced_at' => Carbon::now(),
                     ];
@@ -142,12 +140,11 @@ class SyncPlantsAction
                         'piso' => $plantData['piso'],
                         'precio_base' => $plantData['precio_base'],
                         'precio_lista' => $plantData['precio_lista'],
+                        'porcentaje_maximo_unidad' => $plantData['porcentaje_maximo_unidad'] ?? null,
                         'superficie_total_principal' => $plantData['superficie_total_principal'],
                         'superficie_interior' => $plantData['superficie_interior'],
                         'superficie_util' => $plantData['superficie_util'],
-                        'opportunity_id' => $plantData['opportunity_id'],
                         'superficie_terraza' => $plantData['superficie_terraza'],
-                        'superficie_vendible' => $plantData['superficie_vendible'],
                         'is_active' => true,
                         'last_synced_at' => Carbon::now(),
                     ];
@@ -171,9 +168,9 @@ class SyncPlantsAction
                 'updated' => $updated,
                 'skipped' => $skipped,
             ];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error al sincronizar plantas: '.$e->getMessage(), [
-                'exception' => \get_class($e),
+                'exception' => $e::class,
                 'trace' => $e->getTraceAsString(),
             ]);
 

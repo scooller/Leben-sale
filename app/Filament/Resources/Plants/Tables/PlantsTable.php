@@ -66,6 +66,17 @@ class PlantsTable
                     ->color('sky')
                     ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
+                TextColumn::make('porcentaje_maximo_unidad')
+                    ->label('% Máx. Unidad')
+                    ->badge()
+                    ->color('amber')
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 2, ',', '.').'%' : '-')
+                    ->sortable(),
+                IconColumn::make('unidad_sale')
+                    ->label('Unidad Sale')
+                    ->boolean()
+                    ->color(fn (bool $state): string => $state ? 'warning' : 'gray')
+                    ->sortable(),
                 // TextColumn::make('superficie_util')
                 //     ->label('Sup. Útil')
                 //     ->suffix(' m²')

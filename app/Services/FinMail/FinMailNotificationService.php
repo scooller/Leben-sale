@@ -5,6 +5,7 @@ namespace App\Services\FinMail;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\PlantReservation;
+use App\Models\User;
 use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Helpers\TokenValue;
 use FinityLabs\FinMail\Mail\TemplateMail;
@@ -76,6 +77,74 @@ class FinMailNotificationService
             ],
             errorLogMessage: 'FinMail: no se pudo enviar correo de estado de pago',
         );
+    }
+
+    public function sendManualReservationCreated(Payment $payment, PlantReservation $reservation): void
+    {
+        $payment->loadMissing(['user', 'project', 'plant.proyecto']);
+        $reservation->loadMissing(['plant.proyecto']);
+
+        $recipient = $payment->user?->email;
+
+        if (! is_string($recipient) || $recipient === '') {
+            return;
+        }
+
+        $this->sendTemplate(
+            templateKey: 'manual-reservation-created',
+            recipient: $recipient,
+            models: [
+                'user' => $payment->user,
+                'payment' => $payment,
+                'plant' => $payment->plant,
+                'project' => $payment->project ?? $payment->plant?->proyecto,
+                'reservation' => $reservation,
+            ],
+            contextModel: $payment,
+            logContext: [
+                'payment_id' => $payment->id,
+                'reservation_id' => $reservation->id,
+                'user_id' => $payment->user_id,
+            ],
+            errorLogMessage: 'FinMail: no se pudo enviar correo de reserva manual',
+        );
+    }
+
+    public function sendManualPaymentProofSubmittedToAdmins(Payment $payment): void
+    {
+        $payment->loadMissing(['user', 'project', 'plant.proyecto']);
+
+        $adminRecipients = User::query()
+            ->where('user_type', 'admin')
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->filter(static fn (mixed $email): bool => is_string($email) && $email !== '')
+            ->unique()
+            ->values();
+
+        if ($adminRecipients->isEmpty()) {
+            return;
+        }
+
+        foreach ($adminRecipients as $recipient) {
+            $this->sendTemplate(
+                templateKey: 'manual-payment-proof-submitted-admin',
+                recipient: $recipient,
+                models: [
+                    'user' => $payment->user,
+                    'payment' => $payment,
+                    'plant' => $payment->plant,
+                    'project' => $payment->project ?? $payment->plant?->proyecto,
+                ],
+                contextModel: $payment,
+                logContext: [
+                    'payment_id' => $payment->id,
+                    'user_id' => $payment->user_id,
+                    'recipient' => $recipient,
+                ],
+                errorLogMessage: 'FinMail: no se pudo enviar correo a admin por comprobante manual',
+            );
+        }
     }
 
     /**

@@ -20,6 +20,8 @@ function PaymentGatewayDialog({
 }) {
   const dialogRef = useRef(null);
   const validationToastRef = useRef(null);
+  const turnstileContainerRef = useRef(null);
+  const turnstileWidgetIdRef = useRef(null);
   const [selectedGateway, setSelectedGateway] = useState('');
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutEmail, setCheckoutEmail] = useState('');
@@ -41,6 +43,12 @@ function PaymentGatewayDialog({
   const [manualProofFile, setManualProofFile] = useState(null);
   const [manualProofError, setManualProofError] = useState(null);
   const [manualProofSuccess, setManualProofSuccess] = useState(null);
+  const [turnstileReady, setTurnstileReady] = useState(Boolean(window.turnstile));
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState(null);
+
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
   const formatRut = (value) => {
     const cleaned = String(value ?? '')
@@ -137,6 +145,10 @@ function PaymentGatewayDialog({
     validationMessages.push('Selecciona una pasarela de pago.');
   }
 
+  if (isTurnstileEnabled && !turnstileToken) {
+    validationMessages.push('Completa la verificacion de seguridad antes de continuar.');
+  }
+
   const isCheckoutReady = Boolean(
     isAuthenticated
     && selectedGateway
@@ -149,6 +161,7 @@ function PaymentGatewayDialog({
     && isRutValid
     && reservationToken
     && !reservationError
+    && (!isTurnstileEnabled || turnstileToken)
   );
 
   const reservaExigidaPeso = plant?.proyecto?.valor_reserva_exigido_defecto_peso ?? null;
@@ -189,6 +202,94 @@ function PaymentGatewayDialog({
       dialogRef.current.open = open;
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!isTurnstileEnabled || window.turnstile) {
+      return;
+    }
+
+    const existingScript = document.querySelector('script[data-turnstile-script="true"]');
+
+    if (existingScript) {
+      const handleScriptLoad = () => setTurnstileReady(true);
+      const handleScriptError = () => setTurnstileError('No se pudo cargar Turnstile. Intenta nuevamente.');
+
+      existingScript.addEventListener('load', handleScriptLoad);
+      existingScript.addEventListener('error', handleScriptError);
+
+      return () => {
+        existingScript.removeEventListener('load', handleScriptLoad);
+        existingScript.removeEventListener('error', handleScriptError);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.setAttribute('data-turnstile-script', 'true');
+
+    const handleScriptLoad = () => {
+      setTurnstileReady(true);
+      setTurnstileError(null);
+    };
+
+    const handleScriptError = () => {
+      setTurnstileError('No se pudo cargar Turnstile. Intenta nuevamente.');
+    };
+
+    script.addEventListener('load', handleScriptLoad);
+    script.addEventListener('error', handleScriptError);
+    document.head.appendChild(script);
+
+    return () => {
+      script.removeEventListener('load', handleScriptLoad);
+      script.removeEventListener('error', handleScriptError);
+    };
+  }, [isTurnstileEnabled]);
+
+  useEffect(() => {
+    if (!open || manualPayment || !isTurnstileEnabled || !turnstileReady || !turnstileContainerRef.current || !window.turnstile) {
+      return;
+    }
+
+    setTurnstileToken('');
+    setTurnstileError(null);
+
+    if (turnstileWidgetIdRef.current) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
+      return;
+    }
+
+    turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+      sitekey: turnstileSiteKey,
+      callback: (token) => {
+        setTurnstileToken(token);
+        setTurnstileError(null);
+      },
+      'expired-callback': () => {
+        setTurnstileToken('');
+        setTurnstileError('La verificacion expiro. Completa Turnstile nuevamente.');
+      },
+      'error-callback': () => {
+        setTurnstileToken('');
+        setTurnstileError('No se pudo validar Turnstile. Intenta nuevamente.');
+      },
+    });
+  }, [open, manualPayment, isTurnstileEnabled, turnstileReady, turnstileSiteKey]);
+
+  useEffect(() => {
+    if (open || !isTurnstileEnabled) {
+      return;
+    }
+
+    setTurnstileToken('');
+    setTurnstileError(null);
+
+    if (window.turnstile && turnstileWidgetIdRef.current) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
+    }
+  }, [open, isTurnstileEnabled]);
 
   useEffect(() => {
     if (!validationToast || !validationToastRef.current || typeof validationToastRef.current.create !== 'function') {
@@ -301,6 +402,8 @@ function PaymentGatewayDialog({
       setManualProofFile(null);
       setManualProofError(null);
       setManualProofSuccess(null);
+      setTurnstileToken('');
+      setTurnstileError(null);
     }
   }, [open, plant, gateways]);
 
@@ -349,6 +452,7 @@ function PaymentGatewayDialog({
       plantId: plant?.id,
       gateway: selectedGateway,
       sessionToken: reservationToken,
+      turnstileToken,
       userData: {
         name: checkoutName,
         email: checkoutEmail,
@@ -599,6 +703,19 @@ function PaymentGatewayDialog({
                     <small className="wa-caption-s validation-hint info">Formato: 12345678-9 (sin puntos).</small>
                     {touched.rut && !isRutValid && (
                         <small className="wa-caption-s validation-hint error">RUT invalido. Revisa digito verificador.</small>
+                    )}
+
+                    {isTurnstileEnabled && (
+                      <div className="turnstile-wrapper wa-stack wa-gap-2xs">
+                        <strong>Verificacion de seguridad</strong>
+                        <div ref={turnstileContainerRef}></div>
+                        {!turnstileReady && (
+                          <small className="wa-caption-s validation-hint info">Cargando verificacion Turnstile...</small>
+                        )}
+                        {turnstileError && (
+                          <small className="wa-caption-s validation-hint error">{turnstileError}</small>
+                        )}
+                      </div>
                     )}
                   </wa-scroller>
                 </div>

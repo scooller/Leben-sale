@@ -1,7 +1,7 @@
 import { Fancybox } from '@fancyapps/ui';
 import '@fancyapps/ui/dist/fancybox/fancybox.css';
 
-function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
+function PlantDetailDialog({ plant, isSaleEventActive = false, dialogRef, checkoutLoading, onCheckout }) {
     const sanitizePhone = (value) => `${value ?? ''}`.replace(/\D+/g, '');
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
@@ -130,7 +130,7 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
                         </wa-badge>
                     )}
                     {plant.discountPercentage > 0 && (
-                        <wa-animation name="flash" play duration={5000} iterations={Infinity}>
+                        <wa-animation name="flash" duration={5000} iterations={Infinity}>
                             <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
                                 <span className="discount-seal-value">{plant.discountPercentage}</span>
                                 <span className="discount-seal-label">
@@ -309,23 +309,23 @@ function PlantDetailDialog({ plant, dialogRef, checkoutLoading, onCheckout }) {
                 </div>
             </div>
 
-            <div slot="footer" className="plant-detail-dialog-footer">
-                {(plant.precioBase || plant.precioLista) && (
+            <div slot="footer" className="wa-split wa-align-items-end">
+                {(plant.precioFinal || plant.precioBase || plant.precioLista) && (
                 <>
                 <div className="wa-stack wa-gap-xs precio-detail wa-order-0 wa-order-mobile-1">
-                    <div className="wa-cluster wa-caption-s">
-                    {plant.precioLista && plant.precioBase && plant.precioLista !== plant.precioBase && (
-                        <div className="wa-split wa-gap-xs wa-mt-m">
-                            <span>Precio lista:</span>
-                            <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+                    <div className="wa-cluster wa-caption-s wa-mt-m">
+                    {plant.precioLista && (plant.precioFinal || plant.precioBase) && plant.precioLista !== (plant.precioFinal || plant.precioBase) && (
+                        <div className="wa-split wa-gap-xs">
+                            <span className='wa-heading-l'>Precio lista:</span>
+                            <span className='wa-heading-l' style={{ textDecoration: 'line-through', opacity: 0.7 }}>
                                 UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                         </div>
                     )}
                         <div className="wa-split wa-gap-xs">
-                            <span className='wa-text-uppercase price-label-discount wa-font-weight-bold'>Precio Sale:</span>
-                            <span className="wa-heading-xl wa-font-weight-bold">
-                                UF {(plant.precioBase || plant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            <span className='wa-heading-xl wa-text-uppercase price-label-discount wa-font-weight-bold'>{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'}</span>
+                            <span className="wa-heading-3xl wa-font-weight-bold">
+                                UF {(plant.precioFinal || plant.precioBase || plant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                         </div>
                     </div>

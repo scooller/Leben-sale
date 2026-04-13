@@ -200,25 +200,96 @@ class PlantApiFiltersTest extends TestCase
         $projectInSantiago = Proyecto::factory()->create([
             'comuna' => 'Santiago',
             'region' => 'Metropolitana',
+            'etapa' => 'Entrega Inmediata',
             'is_active' => true,
         ]);
 
         $projectInProvidencia = Proyecto::factory()->create([
             'comuna' => 'Providencia',
             'region' => 'Metropolitana',
+            'etapa' => 'En Construccion',
             'is_active' => true,
         ]);
 
-        $this->createPlant($projectInSantiago->salesforce_id, true);
-        $this->createPlant($projectInProvidencia->salesforce_id, true);
+        $this->createPlant($projectInSantiago->salesforce_id, true, ['orientacion' => 'Norte']);
+        $this->createPlant($projectInProvidencia->salesforce_id, true, ['orientacion' => 'Sur']);
 
         $response = $this->getJson('/api/v1/plantas/filtros-ubicacion');
 
         $response->assertOk();
         $response->assertJsonFragment(['regions' => ['Metropolitana']]);
         $response->assertJsonFragment(['comunas' => ['Providencia', 'Santiago']]);
+        $response->assertJsonFragment(['orientaciones' => ['Norte', 'Sur']]);
+        $response->assertJsonFragment(['entregas' => ['En Construccion', 'Entrega Inmediata']]);
         $response->assertJsonPath('comunas_by_region.Metropolitana.0', 'Providencia');
         $response->assertJsonPath('comunas_by_region.Metropolitana.1', 'Santiago');
+    }
+
+    public function test_it_filters_plants_by_orientacion(): void
+    {
+        $project = Proyecto::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $northPlant = $this->createPlant($project->salesforce_id, true, ['orientacion' => 'Norte']);
+        $southPlant = $this->createPlant($project->salesforce_id, true, ['orientacion' => 'Sur']);
+
+        $response = $this->getJson('/api/v1/plantas?orientacion=Norte');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($northPlant->id, $responsePlantIds);
+        $this->assertNotContains($southPlant->id, $responsePlantIds);
+    }
+
+    public function test_it_filters_plants_by_entrega_stage(): void
+    {
+        $deliveryProject = Proyecto::factory()->create([
+            'etapa' => 'Entrega Inmediata',
+            'is_active' => true,
+        ]);
+
+        $constructionProject = Proyecto::factory()->create([
+            'etapa' => 'En Construccion',
+            'is_active' => true,
+        ]);
+
+        $deliveryPlant = $this->createPlant($deliveryProject->salesforce_id, true);
+        $constructionPlant = $this->createPlant($constructionProject->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?entrega=Entrega%20Inmediata');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($deliveryPlant->id, $responsePlantIds);
+        $this->assertNotContains($constructionPlant->id, $responsePlantIds);
+    }
+
+    public function test_it_filters_plants_for_evento_sale(): void
+    {
+        $project = Proyecto::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $plantMarkedForSale = $this->createPlant($project->salesforce_id, true, [
+            'porcentaje_maximo_unidad' => null,
+            'unidad_sale' => true,
+        ]);
+
+        $plantWithoutSaleFlag = $this->createPlant($project->salesforce_id, true, [
+            'porcentaje_maximo_unidad' => 12.5,
+            'unidad_sale' => false,
+        ]);
+
+        $response = $this->getJson('/api/v1/plantas?evento_sale=1');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($plantMarkedForSale->id, $responsePlantIds);
+        $this->assertNotContains($plantWithoutSaleFlag->id, $responsePlantIds);
     }
 
     public function test_it_excludes_plants_from_inactive_projects(): void
@@ -458,19 +529,20 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonPath('proyecto.asesores.0.avatar_url', $logoMedia->url);
     }
 
-    private function createPlant(string $salesforceProyectoId, bool $isActive): Plant
+    private function createPlant(string $salesforceProyectoId, bool $isActive, array $attributes = []): Plant
     {
-        return Plant::query()->create([
+        return Plant::query()->create(array_merge([
             'salesforce_product_id' => (string) Str::uuid(),
             'salesforce_proyecto_id' => $salesforceProyectoId,
             'name' => strtoupper(substr((string) Str::uuid(), 0, 3)),
             'product_code' => 'PLANT-'.substr((string) Str::uuid(), 0, 8),
+            'orientacion' => 'Norte',
             'programa' => '2 dormitorios',
             'programa2' => '2 baños',
             'precio_base' => 5000,
             'precio_lista' => 5500,
             'is_active' => $isActive,
             'last_synced_at' => now(),
-        ]);
+        ], $attributes));
     }
 }

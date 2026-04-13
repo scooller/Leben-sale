@@ -24,13 +24,15 @@ class PlantTestFixed extends TestCase
             'piso',
             'precio_base',
             'precio_lista',
-            'precio_venta',
+            'porcentaje_maximo_unidad',
+            'unidad_sale',
             'superficie_total_principal',
             'superficie_interior',
             'superficie_util',
-            'opportunity_id',
             'superficie_terraza',
-            'superficie_vendible',
+            'cover_image_id',
+            'interior_image_id',
+            'salesforce_interior_image_url',
             'is_active',
             'last_synced_at',
         ];
@@ -43,14 +45,19 @@ class PlantTestFixed extends TestCase
     public function test_plant_casts_attributes_correctly(): void
     {
         $plant = Plant::factory()->create([
-            'precio_venta' => '5000.50',
+            'precio_base' => '5000.50',
+            'porcentaje_maximo_unidad' => '12.50',
+            'unidad_sale' => 1,
             'superficie_total_principal' => '75.25',
             'is_active' => 1,
         ]);
 
         // Decimal casts are returned as strings in Laravel for precision
-        $this->assertIsString((string) $plant->precio_venta);
-        $this->assertEquals('5000.50', $plant->precio_venta);
+        $this->assertIsString((string) $plant->precio_base);
+        $this->assertEquals('5000.50', $plant->precio_base);
+        $this->assertIsString((string) $plant->porcentaje_maximo_unidad);
+        $this->assertEquals('12.50', $plant->porcentaje_maximo_unidad);
+        $this->assertTrue($plant->unidad_sale);
         $this->assertIsString((string) $plant->superficie_total_principal);
         $this->assertEquals('75.25', $plant->superficie_total_principal);
         $this->assertIsBool($plant->is_active);

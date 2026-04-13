@@ -14,6 +14,9 @@ class SiteSetting extends Model
         'site_name',
         'site_description',
         'site_url',
+        'footer_menu',
+        'footer_legal_text',
+        'evento_sale',
         'logo',
         'logo_dark',
         'favicon',
@@ -40,6 +43,11 @@ class SiteSetting extends Model
         'contact_email',
         'contact_phone',
         'contact_address',
+        'contact_page_title',
+        'contact_page_subtitle',
+        'contact_page_content',
+        'contact_form_fields',
+        'contact_notification_email',
         'facebook_url',
         'instagram_url',
         'twitter_url',
@@ -69,6 +77,7 @@ class SiteSetting extends Model
     protected $casts = [
         'maintenance_mode' => 'boolean',
         'maintenance_use_html' => 'boolean',
+        'evento_sale' => 'boolean',
         'gateway_transbank_enabled' => 'boolean',
         'gateway_mercadopago_enabled' => 'boolean',
         'gateway_manual_enabled' => 'boolean',
@@ -78,6 +87,8 @@ class SiteSetting extends Model
         'gateway_mercadopago_config' => 'array',
         'gateway_manual_config' => 'array',
         'dashboard_widget_order' => 'array',
+        'footer_menu' => 'array',
+        'contact_form_fields' => 'array',
     ];
 
     /**
@@ -120,6 +131,64 @@ class SiteSetting extends Model
                 'webawesome_theme' => 'mellow',
                 'webawesome_palette' => 'natural',
                 'brand_color' => '#eb0029',
+                'footer_menu' => [
+                    [
+                        'label' => 'Proceso Reserva en Línea y Retracto',
+                        'url' => '#',
+                        'new_tab' => false,
+                    ],
+                    [
+                        'label' => 'Representante Legal',
+                        'url' => '#',
+                        'new_tab' => false,
+                    ],
+                    [
+                        'label' => 'Bases Legales',
+                        'url' => '#',
+                        'new_tab' => false,
+                    ],
+                ],
+                'evento_sale' => false,
+                'contact_page_title' => 'Contacto',
+                'contact_page_subtitle' => 'Estamos para ayudarte',
+                'contact_page_content' => '<p>Si tienes dudas sobre nuestras plantas o el proceso de compra, escríbenos y te responderemos a la brevedad.</p>',
+                'contact_form_fields' => [
+                    [
+                        'key' => 'name',
+                        'label' => 'Nombre',
+                        'type' => 'text',
+                        'placeholder' => 'Ingresa tu nombre completo',
+                        'required' => true,
+                    ],
+                    [
+                        'key' => 'rut',
+                        'label' => 'RUT',
+                        'type' => 'text',
+                        'placeholder' => '12.345.678-9',
+                        'required' => false,
+                    ],
+                    [
+                        'key' => 'email',
+                        'label' => 'Email',
+                        'type' => 'email',
+                        'placeholder' => 'correo@dominio.cl',
+                        'required' => true,
+                    ],
+                    [
+                        'key' => 'phone',
+                        'label' => 'Teléfono',
+                        'type' => 'tel',
+                        'placeholder' => '+56 9 1234 5678',
+                        'required' => false,
+                    ],
+                    [
+                        'key' => 'message',
+                        'label' => 'Mensaje',
+                        'type' => 'textarea',
+                        'placeholder' => 'Escribe tu consulta...',
+                        'required' => true,
+                    ],
+                ],
             ]
         );
     }
@@ -161,6 +230,9 @@ class SiteSetting extends Model
             'site_name' => $settings->site_name,
             'site_description' => $settings->site_description,
             'site_url' => $settings->site_url,
+            'footer_menu' => is_array($settings->footer_menu) ? $settings->footer_menu : [],
+            'footer_legal_text' => $settings->footer_legal_text,
+            'evento_sale' => (bool) $settings->evento_sale,
             'logo' => $settings->logoMedia?->url ?? null,
             'logo_dark' => $settings->logoDarkMedia?->url ?? null,
             'favicon' => $settings->faviconMedia?->url ?? null,
@@ -186,6 +258,12 @@ class SiteSetting extends Model
                 'email' => $settings->contact_email,
                 'phone' => $settings->contact_phone,
                 'address' => $settings->contact_address,
+            ],
+            'contact_page' => [
+                'title' => $settings->contact_page_title,
+                'subtitle' => $settings->contact_page_subtitle,
+                'content' => $settings->contact_page_content,
+                'form_fields' => is_array($settings->contact_form_fields) ? $settings->contact_form_fields : [],
             ],
             'social' => [
                 'facebook' => $settings->facebook_url,

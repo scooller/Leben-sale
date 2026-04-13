@@ -9,6 +9,7 @@ use App\Models\PlantReservation;
 use App\Models\Proyecto;
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Services\FinMail\FinMailNotificationService;
 use App\Services\Payment\ManualPaymentService;
 use App\Services\PlantReservationService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class CheckoutController extends Controller
 {
     public function __construct(
         private readonly PlantReservationService $reservationService,
+        private readonly FinMailNotificationService $finMailNotificationService,
     ) {}
 
     /**
@@ -150,6 +152,10 @@ class CheckoutController extends Controller
                 'manual_payment_id' => $payment->id,
                 'manual_payment_reference' => $manualTransaction['reference'],
             ]);
+        }
+
+        if ($reservation !== null) {
+            $this->finMailNotificationService->sendManualReservationCreated($payment, $reservation->fresh());
         }
 
         return response()->json([

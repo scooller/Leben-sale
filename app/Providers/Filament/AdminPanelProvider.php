@@ -25,6 +25,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use FinityLabs\FinMail\FinMailPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -85,6 +86,10 @@ class AdminPanelProvider extends PanelProvider
             ->favicon($settings?->faviconMedia?->url)
             ->brandLogo($settings?->logoMedia?->url)
             ->brandLogoHeight('2.5rem')
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn (): \Illuminate\Contracts\View\View => view('filament.components.view-web-button'),
+            )
             ->colors([
                 'primary' => '#eb0029',
                 'danger' => '#eb0029',

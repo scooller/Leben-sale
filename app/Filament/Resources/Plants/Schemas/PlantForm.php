@@ -56,6 +56,14 @@ class PlantForm
                     ->numeric()
                     ->prefix('$')
                     ->disabled(),
+                TextInput::make('porcentaje_maximo_unidad')
+                    ->label('Porcentaje Máximo de Unidad')
+                    ->numeric()
+                    ->suffix('%')
+                    ->disabled(),
+                Toggle::make('unidad_sale')
+                    ->label('Unidad Sale')
+                    ->helperText('Define si esta unidad debe mostrarse cuando la configuración sale está activa.'),
                 TextInput::make('superficie_total_principal')
                     ->label('Superficie Total Principal')
                     ->numeric()
@@ -75,14 +83,6 @@ class PlantForm
                     ->label('Superficie Terraza')
                     ->numeric()
                     ->suffix('m²')
-                    ->disabled(),
-                TextInput::make('superficie_vendible')
-                    ->label('Superficie Vendible')
-                    ->numeric()
-                    ->suffix('m²')
-                    ->disabled(),
-                TextInput::make('opportunity_id')
-                    ->label('Opportunity ID')
                     ->disabled(),
                 CuratorPicker::make('cover_image_id')
                     ->label('Imagen de Portada')

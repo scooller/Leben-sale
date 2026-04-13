@@ -42,15 +42,12 @@ class ProyectoTestFixed extends TestCase
     public function test_proyecto_casts_decimals_correctly(): void
     {
         $proyecto = Proyecto::factory()->create([
-            'dscto_m_x_prod_principal_porc' => '15.50',
-            'tasa' => '5.25',
+            'valor_reserva_exigido_defecto_peso' => '150000.50',
         ]);
 
         // Decimal casts are returned as strings in Laravel for precision
-        $this->assertIsString((string) $proyecto->dscto_m_x_prod_principal_porc);
-        $this->assertEquals('15.50', $proyecto->dscto_m_x_prod_principal_porc);
-        $this->assertIsString((string) $proyecto->tasa);
-        $this->assertEquals('5.25', $proyecto->tasa);
+        $this->assertIsString((string) $proyecto->valor_reserva_exigido_defecto_peso);
+        $this->assertEquals('150000.50', $proyecto->valor_reserva_exigido_defecto_peso);
     }
 
     public function test_proyecto_has_many_plantas(): void

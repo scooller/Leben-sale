@@ -53,10 +53,27 @@ html.wa-light #root{
   }
 }
 
+/* header */
+.site-header{
+    background: var(--wa-color-surface-raised);
+    border-bottom: 1px solid rgba(var(--wa-color-neutral-border-normal-rgb), 0.42);
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 30;
+    .site-logo{
+        height: 30px;
+    }
+}
+
 .home-container {
   padding: 2rem 1rem;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+#menu-section {
+  scroll-margin-top: 6.5rem;
 }
 
 /* Video */
@@ -438,8 +455,16 @@ html.wa-light #root{
   font-weight: var(--wa-font-weight-medium);
 }
 
+.turnstile-wrapper {
+  margin-top: var(--wa-space-2xs);
+}
+
+.turnstile-wrapper > div {
+  min-height: 66px;
+}
+
 .box-shadow-1{
-    box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+    box-shadow: rgb(var(--wa-color-black-rgb)) 0px 20px 30px -10px;
 }
 .box-shadow-2{
     box-shadow: rgba(var(--wa-color-black-rgb), 0.25) 0px 14px 28px, rgba(var(--wa-color-black-rgb), 0.22) 0px 10px 10px;

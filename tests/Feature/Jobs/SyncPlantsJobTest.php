@@ -5,6 +5,7 @@ namespace Tests\Feature\Jobs;
 use App\Jobs\SyncPlantsJob;
 use App\Models\Proyecto;
 use App\Services\Salesforce\SalesforceService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Mockery\MockInterface;
@@ -47,9 +48,7 @@ class SyncPlantsJobTest extends TestCase
                         'superficie_total_principal' => 75.0,
                         'superficie_interior' => 65.0,
                         'superficie_util' => 60.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 10.0,
-                        'superficie_vendible' => 75.0,
                         'proyecto_id' => $proyecto->salesforce_id,
                     ],
                 ]);
@@ -91,9 +90,7 @@ class SyncPlantsJobTest extends TestCase
                         'superficie_total_principal' => 50.0,
                         'superficie_interior' => 45.0,
                         'superficie_util' => 40.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 5.0,
-                        'superficie_vendible' => 50.0,
                         'proyecto_id' => $proyecto->salesforce_id,
                     ],
                 ]);
@@ -135,7 +132,7 @@ class SyncPlantsJobTest extends TestCase
 
         Forrest::shouldReceive('authenticate')
             ->once()
-            ->andThrow(new \Exception('Auth failed'));
+            ->andThrow(new Exception('Auth failed'));
 
         $this->mock(SalesforceService::class, function (MockInterface $mock) use ($proyecto) {
             $mock->shouldReceive('findPlants')
@@ -154,9 +151,7 @@ class SyncPlantsJobTest extends TestCase
                         'superficie_total_principal' => 90.0,
                         'superficie_interior' => 80.0,
                         'superficie_util' => 75.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 15.0,
-                        'superficie_vendible' => 90.0,
                         'proyecto_id' => $proyecto->salesforce_id,
                     ],
                 ]);

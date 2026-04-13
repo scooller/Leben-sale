@@ -14,6 +14,7 @@ gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
  */
 function PlantsGrid({
   plants,
+  isSaleEventActive = false,
   loading,
   checkoutLoading,
   onQuickCheckout,
@@ -319,7 +320,7 @@ function PlantsGrid({
         {typeof totalPlants === 'number' && (
           <div className="plants-count"><wa-icon name="city"></wa-icon> {totalPlants} planta{totalPlants === 1 ? '' : 's'}</div>
         )}
-        <div className="plants-grid wa-grid wa-gap-2xl" ref={gridContainerRef}>
+        <div id='plantas' className="plants-grid wa-grid wa-gap-2xl" ref={gridContainerRef}>
           {plants.map((plant) => (
             <wa-card key={plant.id} className="plant-card box-shadow-2" appearance="filled">
                 <div slot="media" className="plant-media">
@@ -334,7 +335,7 @@ function PlantsGrid({
                     }}
                   />
                   {plant.discountPercentage > 0 && (
-                    <wa-animation name="flash" play duration={5000} iterations={Infinity}>
+                    <wa-animation name="flash" duration={5000} iterations={Infinity}>
                         <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
                             <span className="discount-seal-value">{plant.discountPercentage}</span>
                             <span className="discount-seal-label">
@@ -397,11 +398,11 @@ function PlantsGrid({
                 </div>
                 {/* Ubicación destacada */}
                 {plant.proyectoComuna && (
-                <div slot="footer" className="plant-price-wrapper">
+                <div slot="footer" className="plant-price-wrapper wa-align-items-end">
                     {/* Precios destacados en el header */}
-                    {(plant.precioBase || plant.precioLista) && (
+                    {(plant.precioFinal || plant.precioBase || plant.precioLista) && (
                         <div className="plant-price-header">
-                        {(0 < plant.precioLista) && (plant.precioLista !== plant.precioBase) && (
+                      {(0 < plant.precioLista) && (plant.precioLista !== (plant.precioFinal || plant.precioBase)) && (
                             <div className="price-original">
                             <span className="price-label-small">Precio lista: </span>
                             <span className="price wa-font-weight-bold">
@@ -409,13 +410,13 @@ function PlantsGrid({
                             </span>
                             </div>
                         )}
-                        {(0 < plant.precioBase) && (
+                      {(0 < (plant.precioFinal || plant.precioBase)) && (
                             <div className="price-final">
-                            {plant.precioBase < plant.precioLista && (
-                            <span className="price-label-discount wa-text-uppercase">Precio Sale: </span>
+                            {(plant.precioFinal || plant.precioBase) < plant.precioLista && (
+                            <span className="price-label-discount wa-text-uppercase">{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'} </span>
                             )}
                             <span className="price-sale wa-font-weight-bold wa-heading-xl">
-                                UF {(plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          UF {(plant.precioFinal || plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                             </div>
                         )}
@@ -424,7 +425,7 @@ function PlantsGrid({
                 </div>
                 )}
                 {/* Acciones */}
-                <div slot="footer-actions" className="wa-cluster wa-gap-s">
+                <div slot="footer-actions" className="wa-cluster wa-align-items-end wa-gap-s">
                   <wa-button-group label="Alignment">
                     <wa-button
                       size="small"
@@ -463,6 +464,7 @@ function PlantsGrid({
       {/* Diálogo - Detalles de Planta */}
       <PlantDetailDialog
         plant={activePlant}
+        isSaleEventActive={isSaleEventActive}
         dialogRef={dialogRef}
         checkoutLoading={checkoutLoading}
         onCheckout={handleCheckoutFromDialog}

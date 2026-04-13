@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
             ],
             'paths' => [
                 '/site-config' => ['get' => ['tags' => ['Config'], 'operationId' => 'getSiteConfig', 'summary' => 'Configuración pública del sitio', 'security' => [], 'responses' => ['200' => ['description' => 'Configuración del sitio']]]],
+                '/contact-submissions' => ['post' => ['tags' => ['Config'], 'operationId' => 'storeContactSubmission', 'summary' => 'Enviar formulario de contacto', 'security' => [], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['201' => ['description' => 'Contacto recibido'], '422' => ['description' => 'Error de validación']]]],
                 '/login' => ['post' => ['tags' => ['Auth'], 'operationId' => 'login', 'summary' => 'Login de usuario', 'security' => [], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['200' => ['description' => 'Autenticado'], '422' => ['description' => 'Error de validación']]]],
                 '/register' => ['post' => ['tags' => ['Auth'], 'operationId' => 'register', 'summary' => 'Registro de usuario', 'security' => [], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object']]]], 'responses' => ['201' => ['description' => 'Usuario creado'], '422' => ['description' => 'Error de validación']]]],
                 '/proyectos' => ['get' => ['tags' => ['Proyectos'], 'operationId' => 'listProyectos', 'summary' => 'Listado de proyectos', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Listado paginado'], '401' => ['description' => 'No autenticado']]]],
@@ -99,6 +100,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/site-config', function () {
         return response()->json(App\Models\SiteSetting::forFrontend());
     });
+
+    // Contacto público
+    Route::post('/contact-submissions', [App\Http\Controllers\Api\ContactSubmissionController::class, 'store']);
 
     // Autenticación
     Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);

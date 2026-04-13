@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ManualPaymentProofRequest;
 use App\Models\Payment;
+use App\Models\User;
+use App\Services\FinMail\FinMailNotificationService;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -113,6 +117,8 @@ class PaymentController extends Controller
             'metadata' => $metadata,
         ]);
 
+        $this->notifyAdminsManualProofSubmitted($payment->fresh());
+
         return response()->json([
             'message' => 'Comprobante recibido correctamente.',
             'payment' => $payment->fresh(),
@@ -121,5 +127,38 @@ class PaymentController extends Controller
                 'uploaded_at' => $metadata['manual_payment_proof_uploaded_at'],
             ],
         ]);
+    }
+
+    private function notifyAdminsManualProofSubmitted(Payment $payment): void
+    {
+        $admins = User::query()
+            ->where('user_type', 'admin')
+            ->get();
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        $reference = filled($payment->gateway_tx_id)
+            ? (string) $payment->gateway_tx_id
+            : '#'.$payment->getKey();
+
+        FilamentNotification::make()
+            ->title('Comprobante de pago recibido')
+            ->body("Se recibio un comprobante para el pago {$reference}.")
+            ->info()
+            ->icon('heroicon-o-document-check')
+            ->sendToDatabase($admins);
+
+        $status = $payment->status instanceof PaymentStatus
+            ? $payment->status
+            : PaymentStatus::fromValue((string) $payment->status);
+
+        if ($status !== PaymentStatus::PENDING_APPROVAL) {
+            return;
+        }
+
+        app(FinMailNotificationService::class)
+            ->sendManualPaymentProofSubmittedToAdmins($payment);
     }
 }

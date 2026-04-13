@@ -9,11 +9,14 @@ use App\Models\Plant;
 use App\Models\Proyecto;
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Services\FinMail\FinMailNotificationService;
 use App\Services\PlantReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\TestCase;
 
 class ManualCheckoutFlowTest extends TestCase
@@ -196,6 +199,17 @@ class ManualCheckoutFlowTest extends TestCase
 
         $reservation = app(PlantReservationService::class)->reserve($plant->id, $this->user->id);
 
+        $mock = Mockery::mock(FinMailNotificationService::class);
+        $mock->shouldReceive('sendManualReservationCreated')
+            ->once()
+            ->withArgs(function (Payment $payment, $updatedReservation) use ($reservation): bool {
+                return $payment->requiresManualApproval()
+                    && filled($payment->gateway_tx_id)
+                    && (float) $payment->amount > 0
+                    && $updatedReservation->id === $reservation->id;
+            });
+        $this->app->instance(FinMailNotificationService::class, $mock);
+
         $response = $this->postJson('/api/v1/checkout', [
             'plant_id' => $plant->id,
             'quantity' => 1,
@@ -237,6 +251,18 @@ class ManualCheckoutFlowTest extends TestCase
     {
         Storage::fake();
 
+        $admin = User::factory()->create([
+            'user_type' => 'admin',
+        ]);
+
+        $mock = Mockery::mock(FinMailNotificationService::class);
+        $mock->shouldReceive('sendManualPaymentProofSubmittedToAdmins')
+            ->once()
+            ->withArgs(function (Payment $payment): bool {
+                return $payment->status === PaymentStatus::PENDING_APPROVAL;
+            });
+        $this->app->instance(FinMailNotificationService::class, $mock);
+
         $payment = Payment::query()->create([
             'user_id' => $this->user->id,
             'gateway' => 'manual',
@@ -265,6 +291,18 @@ class ManualCheckoutFlowTest extends TestCase
         $this->assertSame('comprobante.jpg', $payment->metadata['manual_payment_proof_name'] ?? null);
         $this->assertTrue((bool) ($payment->metadata['manual_payment_proof_submitted'] ?? false));
         Storage::assertExists($payment->metadata['manual_payment_proof_path']);
+
+        $notification = DatabaseNotification::query()
+            ->where('notifiable_type', User::class)
+            ->where('notifiable_id', $admin->id)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertStringContainsString(
+            'Comprobante de pago recibido',
+            (string) data_get($notification->data, 'title')
+        );
     }
 
     public function test_it_uses_project_manual_payment_data_with_priority_over_global_settings(): void

@@ -85,7 +85,14 @@ class CheckoutService {
    * @param {string} gateway - Pasarela de pago ('transbank' o 'mercadopago')
    * @param {{name: string, email: string, phone: string, rut: string}} userData - Datos del usuario
    */
-  static async initiate(plantId, quantity = 1, gateway = 'transbank', userData = {}, sessionToken = null) {
+  static async initiate(
+    plantId,
+    quantity = 1,
+    gateway = 'transbank',
+    userData = {},
+    sessionToken = null,
+    turnstileToken = null,
+  ) {
     try {
       // Validaciones básicas antes de hacer la petición
       if (!plantId || plantId <= 0) {
@@ -147,6 +154,7 @@ class CheckoutService {
         phone: userData.phone,
         rut: normalizedRut,
         ...(sessionToken ? { session_token: sessionToken } : {}),
+        ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
       });
 
       const responseData = response.data;

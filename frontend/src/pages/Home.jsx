@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import PlantsService from '../services/plants';
 import CheckoutService from '../services/checkout';
-import { proyectosService } from '../services/proyectos';
 import { authService } from '../services/auth';
 import ErrorNotification from '../components/ErrorNotification';
 import PlantsGrid from '../components/PlantsGrid';
 import BannerPromo from '../components/BannerPromo';
 import PaymentGatewayDialog from '../components/PaymentGatewayDialog';
+import SiteHeader from '../components/SiteHeader';
 import { isRetryableError } from '../utils/errorHandler';
 import gsap from 'gsap';
 import '../styles/home.scss' with { type: 'css' };
@@ -51,12 +51,28 @@ const normalizeBrowserUrl = (url) => {
   }
 };
 
+const normalizeFooterMenu = (menuItems) => {
+  if (!Array.isArray(menuItems)) {
+    return [];
+  }
+
+  return menuItems
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      label: `${item.label ?? ''}`.trim(),
+      url: `${item.url ?? ''}`.trim(),
+      newTab: Boolean(item.new_tab),
+    }))
+    .filter((item) => item.label !== '' && item.url !== '');
+};
+
 /**
  * Página principal - Catálogo de plantas
  * Usa Web Awesome components de forma nativa con íconos integrados
  */
-function Home() {
+function Home({ onNavigate, currentPath }) {
   const { config, loading: configLoading, colorMode, toggleColorMode } = useSiteConfig();
+  const isSaleEventActive = Boolean(config?.evento_sale);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,8 +92,9 @@ function Home() {
   const isAuthenticated = authService.isAuthenticated();
 
   // Estados para filtros
-  const [proyectos, setProyectos] = useState([]);
   const [pisoOptions, setPisoOptions] = useState([]);
+  const [orientacionOptions, setOrientacionOptions] = useState([]);
+  const [entregaOptions, setEntregaOptions] = useState([]);
   const [regionOptions, setRegionOptions] = useState([]);
   const [comunaOptions, setComunaOptions] = useState([]);
   const [comunasByRegion, setComunasByRegion] = useState({});
@@ -85,6 +102,8 @@ function Home() {
   const [selectedDormitorios, setSelectedDormitorios] = useState([]);
   const [selectedBanos, setSelectedBanos] = useState([]);
   const [selectedPiso, setSelectedPiso] = useState('');
+  const [selectedOrientacion, setSelectedOrientacion] = useState('');
+  const [selectedEntrega, setSelectedEntrega] = useState('');
   const [selectedComuna, setSelectedComuna] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPrecioMin, setSelectedPrecioMin] = useState('');
@@ -95,12 +114,24 @@ function Home() {
   const [tempDormitorios, setTempDormitorios] = useState([]);
   const [tempBanos, setTempBanos] = useState([]);
   const [tempPiso, setTempPiso] = useState('');
+  const [tempOrientacion, setTempOrientacion] = useState('');
+  const [tempEntrega, setTempEntrega] = useState('');
   const [tempComuna, setTempComuna] = useState('');
   const [tempRegion, setTempRegion] = useState('');
   const [tempPrecioMin, setTempPrecioMin] = useState('');
   const [tempPrecioMax, setTempPrecioMax] = useState('');
 
   const heroRef = useRef(null);
+
+  const handleMenuNavigation = useCallback(() => {
+    const menuSection = document.getElementById('menu-section');
+
+    if (!menuSection) {
+      return;
+    }
+
+    menuSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const normalizeMultiValue = (value) => {
     if (Array.isArray(value)) {
@@ -140,15 +171,65 @@ function Home() {
     + selectedDormitorios.length
     + selectedBanos.length
     + (selectedPiso ? 1 : 0)
+    + (selectedOrientacion ? 1 : 0)
+    + (selectedEntrega ? 1 : 0)
     + (selectedComuna ? 1 : 0)
     + (selectedRegion ? 1 : 0)
     + (selectedPrecioMin ? 1 : 0)
     + (selectedPrecioMax ? 1 : 0);
 
+  const footerMenuItems = useMemo(() => normalizeFooterMenu(config?.footer_menu), [config?.footer_menu]);
+  const hasLegalText = Boolean(config?.footer_legal_text && config.footer_legal_text.trim() !== '');
+  const socialLinks = useMemo(() => {
+    const social = config?.social || {};
+
+    return [
+      {
+        key: 'facebook',
+        label: 'Facebook',
+        icon: 'facebook',
+        url: social.facebook,
+      },
+      {
+        key: 'instagram',
+        label: 'Instagram',
+        icon: 'instagram',
+        url: social.instagram,
+      },
+      {
+        key: 'linkedin',
+        label: 'LinkedIn',
+        icon: 'linkedin-in',
+        url: social.linkedin,
+      },
+      {
+        key: 'youtube',
+        label: 'YouTube',
+        icon: 'youtube',
+        url: social.youtube,
+      },
+      {
+        key: 'twitter',
+        label: 'X',
+        icon: 'x-twitter',
+        url: social.twitter,
+      },
+    ].filter((item) => Boolean(item.url));
+  }, [config?.social]);
+
   const mapPlant = useCallback((plant) => {
     const precioBase = Number(plant.precio_base) || 0;
     const precioLista = Number(plant.precio_lista) || 0;
-    const discountPercentage = precioLista > 0 && precioBase > 0 && precioBase < precioLista
+    const porcentajeMaximoUnidad = Number(plant.porcentaje_maximo_unidad) || 0;
+    const precioCalculadoPorPorcentaje = porcentajeMaximoUnidad > 0 && precioLista > 0
+      ? Math.max(0, precioLista - ((precioLista * porcentajeMaximoUnidad) / 100))
+      : 0;
+    const precioFinal = precioCalculadoPorPorcentaje > 0 ? precioCalculadoPorPorcentaje : precioBase;
+    const discountPercentage = precioLista > 0 && precioFinal > 0 && precioFinal < precioLista
+      ? Math.max(0, Math.round(Math.abs(((precioLista - precioFinal) / precioLista) * 100)))
+      : 0;
+
+    const legacyDiscountPercentage = precioLista > 0 && precioBase > 0 && precioBase < precioLista
       ? Math.max(0, Math.round(Math.abs(((precioLista - precioBase) / precioLista) * 100)))
       : 0;
 
@@ -160,7 +241,9 @@ function Home() {
       interiorImage: plant.interior_image_url || plant.interior_image_media?.url || '',
       precioBase,
       precioLista,
-      discountPercentage,
+      precioFinal,
+      porcentajeMaximoUnidad,
+      discountPercentage: discountPercentage || legacyDiscountPercentage,
       reservaExigidaPeso: Number(plant.proyecto?.valor_reserva_exigido_defecto_peso) || 0,
       proyectoNombre: plant.proyecto?.name,
       proyectoSlug: plant.proyecto?.slug || slugifySegment(plant.proyecto?.name),
@@ -185,26 +268,12 @@ function Home() {
     };
   }, []);
 
-  // Cargar proyectos para el filtro
-  useEffect(() => {
-    const fetchProyectos = async () => {
-      try {
-        const data = await proyectosService.getProyectos({
-          perPage: 100,
-          fields: 'id,salesforce_id,name,comuna,region',
-        });
-        setProyectos(data.data || []);
-      } catch {
-        return;
-      }
-    };
-    fetchProyectos();
-  }, []);
-
   useEffect(() => {
     const fetchLocationFilters = async () => {
       try {
         const data = await PlantsService.getLocationFilters();
+        setOrientacionOptions(data.orientaciones || []);
+        setEntregaOptions(data.entregas || []);
         setRegionOptions(data.regions || []);
         setComunaOptions(data.comunas || []);
         setComunasByRegion(data.comunas_by_region || {});
@@ -265,6 +334,14 @@ function Home() {
         filters.piso = selectedPiso;
       }
 
+      if (selectedOrientacion) {
+        filters.orientacion = selectedOrientacion;
+      }
+
+      if (selectedEntrega) {
+        filters.entrega = selectedEntrega;
+      }
+
       if (selectedComuna) {
         filters.comuna = selectedComuna;
       }
@@ -281,15 +358,22 @@ function Home() {
         filters.max_precio = selectedPrecioMax;
       }
 
+      if (isSaleEventActive) {
+        filters.evento_sale = 1;
+      }
+
       const data = await PlantsService.getAll(filters);
 
       const totalCount = data.total ?? data.data?.length ?? 0;
 
       const mappedPlants = (data.data || []).map((plant) => mapPlant(plant));
+      const visiblePlants = isSaleEventActive
+        ? mappedPlants.filter((plant) => Number(plant.porcentajeMaximoUnidad) > 0)
+        : mappedPlants;
 
-      setPlants(mappedPlants);
+      setPlants(visiblePlants);
       setTotalPages(data.last_page || 1);
-      setTotalPlants(totalCount);
+      setTotalPlants(isSaleEventActive ? (data.total ?? visiblePlants.length) : totalCount);
     } catch (err) {
       const errorInfo = {
         type: err.type || 'unknown',
@@ -308,10 +392,13 @@ function Home() {
     selectedDormitorios,
     selectedBanos,
     selectedPiso,
+    selectedOrientacion,
+    selectedEntrega,
     selectedComuna,
     selectedRegion,
     selectedPrecioMin,
     selectedPrecioMax,
+    isSaleEventActive,
     mapPlant,
   ]);
 
@@ -405,9 +492,21 @@ function Home() {
         return;
       }
 
+      if (loading) {
+        setRoutePlantLoading(true);
+
+        return;
+      }
+
+      const normalizedRouteUnitName = routePlantParams.unitName.trim().toLowerCase();
+      const normalizedRouteUnitSlug = slugifySegment(routePlantParams.unitName);
+
       const plantInList = plants.find((plant) => (
         (plant.proyectoSlug || slugifySegment(plant.proyectoNombre)) === routePlantParams.projectSlug
-        && `${plant.nombre}`.trim().toLowerCase() === routePlantParams.unitName.trim().toLowerCase()
+        && (
+          `${plant.nombre}`.trim().toLowerCase() === normalizedRouteUnitName
+          || slugifySegment(plant.nombre) === normalizedRouteUnitSlug
+        )
       ));
 
       if (plantInList) {
@@ -486,7 +585,7 @@ function Home() {
     return () => {
       isMounted = false;
     };
-  }, [routePlantParams, plants, mapPlant]);
+  }, [routePlantParams, plants, loading, mapPlant]);
 
   // Animaciones del Hero con GSAP
   useEffect(() => {
@@ -510,34 +609,46 @@ function Home() {
       }
 
       // Título y descripción - fadeInDown (500ms)
-      tl.fromTo(['.hero-section h1', '.hero-section p'], {
-        y: -50,
-        opacity: 0,
-      }, {
-        y: 0,
-        opacity: 1,
-        duration: 0.8,
-        ease: 'power2.out',
-        stagger: 0.1
-      }, 0.5);
+      const heroTextTargets = heroRef.current.querySelectorAll('.hero-section h1, .hero-section p');
+
+      if (heroTextTargets.length > 0) {
+        tl.fromTo(heroTextTargets, {
+          y: -50,
+          opacity: 0,
+        }, {
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          ease: 'power2.out',
+          stagger: 0.1,
+        }, 0.5);
+      }
 
       // Header plantas - fadeIn (700ms)
-      tl.fromTo('.plants-header', {
-        opacity: 0,
-      }, {
-        opacity: 1,
-        duration: 1,
-        ease: 'power1.out'
-      }, 0.7);
+      const plantsHeader = heroRef.current.querySelector('.plants-header');
+
+      if (plantsHeader) {
+        tl.fromTo(plantsHeader, {
+          opacity: 0,
+        }, {
+          opacity: 1,
+          duration: 1,
+          ease: 'power1.out',
+        }, 0.7);
+      }
 
       // Filtros - fadeIn (1000ms)
-      tl.fromTo('.filters-details', {
-        opacity: 0,
-      }, {
-        opacity: 1,
-        duration: 1,
-        ease: 'power1.out'
-      }, 1);
+      const filtersDetails = heroRef.current.querySelector('.filters-details');
+
+      if (filtersDetails) {
+        tl.fromTo(filtersDetails, {
+          opacity: 0,
+        }, {
+          opacity: 1,
+          duration: 1,
+          ease: 'power1.out',
+        }, 1);
+      }
     }, heroRef);
 
     return () => ctx.revert();
@@ -549,6 +660,8 @@ function Home() {
     setSelectedDormitorios(tempDormitorios);
     setSelectedBanos(tempBanos);
     setSelectedPiso(tempPiso);
+    setSelectedOrientacion(tempOrientacion);
+    setSelectedEntrega(tempEntrega);
     setSelectedComuna(tempComuna);
     setSelectedRegion(tempRegion);
     setSelectedPrecioMin(tempPrecioMin);
@@ -562,6 +675,8 @@ function Home() {
     setTempDormitorios([]);
     setTempBanos([]);
     setTempPiso('');
+    setTempOrientacion('');
+    setTempEntrega('');
     setTempComuna('');
     setTempRegion('');
     setTempPrecioMin('');
@@ -570,6 +685,8 @@ function Home() {
     setSelectedDormitorios([]);
     setSelectedBanos([]);
     setSelectedPiso('');
+    setSelectedOrientacion('');
+    setSelectedEntrega('');
     setSelectedComuna('');
     setSelectedRegion('');
     setSelectedPrecioMin('');
@@ -602,7 +719,7 @@ function Home() {
   };
 
   // Confirmar checkout con pasarela seleccionada
-  const handleConfirmCheckout = async ({ plantId, gateway, sessionToken, userData }) => {
+  const handleConfirmCheckout = async ({ plantId, gateway, sessionToken, turnstileToken, userData }) => {
     if (!isAuthenticated) {
       setCheckoutError({
         type: 'auth',
@@ -616,7 +733,14 @@ function Home() {
     try {
       setCheckoutLoading(true);
       setCheckoutError(null);
-      const response = await CheckoutService.initiate(plantId, 1, gateway, userData, sessionToken);
+      const response = await CheckoutService.initiate(
+        plantId,
+        1,
+        gateway,
+        userData,
+        sessionToken,
+        turnstileToken,
+      );
 
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
@@ -668,6 +792,13 @@ function Home() {
 
   if (configLoading) {
     return (
+      <>
+        <SiteHeader
+          config={config}
+          currentPath={currentPath}
+          onNavigate={onNavigate}
+          onMenuClick={handleMenuNavigation}
+        />
       <div className="home-container">
         <div className="loading-skeletons wa-stack wa-gap-l">
           <wa-card appearance="filled">
@@ -741,11 +872,19 @@ function Home() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   if (error) {
     return (
+      <>
+        <SiteHeader
+          config={config}
+          currentPath={currentPath}
+          onNavigate={onNavigate}
+          onMenuClick={handleMenuNavigation}
+        />
       <div className="home-container">
         <wa-card>
             <div slot="header">
@@ -771,20 +910,28 @@ function Home() {
             </div>
         </wa-card>
       </div>
+      </>
     );
   }
 
   return (
     <>
+    <SiteHeader
+      config={config}
+      currentPath={currentPath}
+      onNavigate={onNavigate}
+      onMenuClick={handleMenuNavigation}
+    />
+
     {/* Banner Promocional */}
     <BannerPromo banner={config?.banner} />
 
     {/* Hero Section */}
     <div className='video-home wa-position-relative wa-overflow-hidden wa-justify-content-center box-shadow-1'>
         <div className="hero-section wa-position-absolute wa-z-index-1">
-            {config?.logo && (
+            {/* {config?.logo && (
             <img src={config.logo} alt={config?.site_name} className="hero-logo" />
-            )}
+            )} */}
             <h1>{config?.site_name}</h1>
             <p>{config?.site_description}</p>
         </div>
@@ -794,7 +941,7 @@ function Home() {
             Tu navegador no soporta el video.
         </video>
     </div>
-    <div className="home-container" ref={heroRef}>
+    <div className="home-container" ref={heroRef} id="menu-section">
         {/* Header de Plantas */}
         <div className="plants-header">
             <div className="wa-cluster wa-gap-s wa-align-items-center plants-header-main">
@@ -815,10 +962,10 @@ function Home() {
             </span>
                 <wa-card
                 appearance="filled"
-                style={{ '--spacing': 'var(--wa-space-xs)', 'background-color': 'var(--wa-color-surface-lowered)' }}
+                style={{ '--spacing': 'var(--wa-space-xs)', backgroundColor: 'var(--wa-color-surface-lowered)' }}
                 >
                     <div className="wa-grid wa-gap-m filters-inputs" style={{ '--min-column-size': '14rem' }}>
-                        <wa-select
+                        {/* <wa-select
                             placeholder="Todos los proyectos"
                             size="small"
                             value={tempProyecto}
@@ -835,7 +982,7 @@ function Home() {
                                 <wa-icon name="building" slot="start"></wa-icon>{proyecto.name}
                             </wa-option>
                             ))}
-                        </wa-select>
+                        </wa-select> */}
 
                         <wa-select
                             placeholder="Todos"
@@ -857,7 +1004,7 @@ function Home() {
                             <wa-option value="4D"><wa-icon name="bed" slot="start"></wa-icon>4 Dormitorios</wa-option>
                         </wa-select>
 
-                        <wa-select
+                        {/* <wa-select
                             placeholder="Todos"
                             size="small"
                             value={tempBanos}
@@ -873,7 +1020,7 @@ function Home() {
                             <wa-option value="1B"><wa-icon name="bath" slot="start"></wa-icon>1 Baño</wa-option>
                             <wa-option value="2B"><wa-icon name="bath" slot="start"></wa-icon>2 Baños</wa-option>
                             <wa-option value="3B"><wa-icon name="bath" slot="start"></wa-icon>3 Baños</wa-option>
-                        </wa-select>
+                        </wa-select> */}
 
                         <wa-select
                             with-clear
@@ -894,6 +1041,44 @@ function Home() {
                             </wa-option>
                             ))}
                         </wa-select>
+
+                          <wa-select
+                            with-clear
+                            placeholder="Todas"
+                            size="small"
+                            value={tempOrientacion}
+                            onChange={(e) => {
+                            const value = getSingleSelectValue(e);
+                            setTempOrientacion(value);
+                            }}
+                            clearable
+                          >
+                            <span slot='label'><wa-icon name="compass"></wa-icon> Orientación</span>
+                            {orientacionOptions.map((orientacion) => (
+                            <wa-option key={orientacion} value={orientacion}>
+                              <wa-icon name="compass" slot="start"></wa-icon>{orientacion}
+                            </wa-option>
+                            ))}
+                          </wa-select>
+
+                          <wa-select
+                            with-clear
+                            placeholder="Todas"
+                            size="small"
+                            value={tempEntrega}
+                            onChange={(e) => {
+                            const value = getSingleSelectValue(e);
+                            setTempEntrega(value);
+                            }}
+                            clearable
+                          >
+                            <span slot='label'><wa-icon name="key"></wa-icon> Entrega</span>
+                            {entregaOptions.map((entrega) => (
+                            <wa-option key={entrega} value={entrega}>
+                              <wa-icon name="key" slot="start"></wa-icon>{entrega}
+                            </wa-option>
+                            ))}
+                          </wa-select>
 
                         <wa-select
                             placeholder="Todas"
@@ -990,6 +1175,7 @@ function Home() {
       {/* Plantas Grid */}
       <PlantsGrid
         plants={plants}
+        isSaleEventActive={isSaleEventActive}
         loading={loading}
         checkoutLoading={checkoutLoading}
         onQuickCheckout={handleQuickCheckout}
@@ -1035,6 +1221,74 @@ function Home() {
       />
     </div>
 
+    <footer className="wa-stack wa-gap-l wa-mt-3xl">
+      {hasLegalText && (
+        <wa-card appearance="filled">
+          <div className="wa-stack wa-gap-s wa-align-items-center wa-text-align-center wa-font-size-3xs" style={{ padding: 'var(--wa-space-l)' }}>
+            <div dangerouslySetInnerHTML={{ __html: config.footer_legal_text }} />
+          </div>
+        </wa-card>
+      )}
+
+      <wa-card appearance="filled">
+        <section className="wa-stack wa-gap-l" style={{ padding: 'var(--wa-space-l)' }}>
+          <div className="wa-split wa-gap-m wa-align-items-center" style={{ flexWrap: 'wrap' }}>
+            <div className="wa-stack wa-gap-s">
+              {config?.logo && (
+                <img
+                  src={config.logo}
+                  alt={config?.site_name || 'Logo'}
+                  style={{ maxWidth: '190px', width: '100%', height: 'auto', objectFit: 'contain' }}
+                />
+              )}
+
+              <small className="wa-color-text-quiet">
+                Todos los derechos reservados {new Date().getFullYear()} {config?.site_name || 'iLeben'}
+              </small>
+            </div>
+
+            {socialLinks.length > 0 && (
+              <div className="wa-stack wa-gap-2xs wa-align-items-end" style={{ marginLeft: 'auto' }}>
+                <span>Síguenos en:</span>
+                <div className="wa-cluster wa-gap-xs">
+                  {socialLinks.map((socialItem) => (
+                    <wa-button
+                      variant="neutral"
+                      key={socialItem.key}
+                      href={socialItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={socialItem.label}
+                      pill
+                    >
+                      <wa-icon name={socialItem.icon} family="brands"></wa-icon>
+                    </wa-button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {footerMenuItems.length > 0 && (
+            <nav className="wa-cluster wa-gap-m wa-justify-content-center wa-text-align-center" aria-label="Menú legal del sitio">
+              {footerMenuItems.map((menuItem, index) => (
+                <wa-button
+                  key={`${menuItem.label}-${index}`}
+                  href={menuItem.url}
+                  target={menuItem.newTab ? '_blank' : undefined}
+                  rel={menuItem.newTab ? 'noopener noreferrer' : undefined}
+                  appearance="plain"
+                  className="wa-color-text-normal"
+                >
+                  {menuItem.label}
+                </wa-button>
+              ))}
+            </nav>
+          )}
+        </section>
+      </wa-card>
+    </footer>
+
     {routePlantLoading && (
       <wa-dialog open className="route-plant-loading-dialog">
         <span slot="label">
@@ -1052,7 +1306,6 @@ function Home() {
       onClick={toggleColorMode}
       className="theme-floating-toggle box-shadow-2"
       id="theme-toggle-button"
-      pill
     >
         <wa-icon name={colorMode === 'dark' ? 'sun' : 'cloud-moon'} label={colorMode === 'dark' ? 'Modo claro' : 'Modo oscuro'}></wa-icon>
     </wa-button>

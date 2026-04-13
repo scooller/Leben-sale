@@ -31,9 +31,12 @@ class PlantController extends Controller
         $dormValues = $this->normalizeInputValues($request->input('programa'));
         $banosValues = $this->normalizeInputValues($request->input('programa2'));
         $pisoValues = $this->normalizeInputValues($request->input('piso'));
+        $orientacionValues = $this->normalizeInputValues($request->input('orientacion'));
         $comunaValues = $this->normalizeInputValues($request->input('comuna'));
         $provinciaValues = $this->normalizeInputValues($request->input('provincia'));
         $regionValues = $this->normalizeInputValues($request->input('region'));
+        $entregaValues = $this->normalizeInputValues($request->input('entrega'));
+        $eventoSale = $this->normalizeBoolean($request->input('evento_sale'));
         $available = $this->normalizeBoolean($request->input('disponible', $request->input('available')));
 
         // Filtros
@@ -102,8 +105,16 @@ class PlantController extends Controller
             $query->whereIn('piso', $pisoValues);
         }
 
-        if (count($comunaValues) > 0 || count($provinciaValues) > 0 || count($regionValues) > 0) {
-            $query->whereHas('proyecto', function ($projectQuery) use ($comunaValues, $provinciaValues, $regionValues) {
+        if (count($orientacionValues) > 0) {
+            $query->whereIn('orientacion', $orientacionValues);
+        }
+
+        if ($eventoSale === true) {
+            $query->where('unidad_sale', true);
+        }
+
+        if (count($comunaValues) > 0 || count($provinciaValues) > 0 || count($regionValues) > 0 || count($entregaValues) > 0) {
+            $query->whereHas('proyecto', function ($projectQuery) use ($comunaValues, $provinciaValues, $regionValues, $entregaValues) {
                 if (count($comunaValues) > 0) {
                     $projectQuery->whereIn('comuna', $comunaValues);
                 }
@@ -114,6 +125,10 @@ class PlantController extends Controller
 
                 if (count($regionValues) > 0) {
                     $projectQuery->whereIn('region', $regionValues);
+                }
+
+                if (count($entregaValues) > 0) {
+                    $projectQuery->whereIn('etapa', $entregaValues);
                 }
             });
         }
@@ -230,14 +245,26 @@ class PlantController extends Controller
 
     public function locationFilters(): JsonResponse
     {
-        $locations = Proyecto::query()
+        $projects = Proyecto::query()
             ->where('is_active', true)
             ->whereHas('plantas', function ($plantsQuery) {
                 $plantsQuery->where('is_active', true);
             })
-            ->get(['region', 'comuna']);
+            ->get(['region', 'comuna', 'etapa']);
 
-        $regions = $locations
+        $orientaciones = Plant::query()
+            ->where('is_active', true)
+            ->whereHas('proyecto', function ($projectQuery) {
+                $projectQuery->where('is_active', true);
+            })
+            ->pluck('orientacion')
+            ->map(static fn (mixed $orientacion): string => trim((string) $orientacion))
+            ->filter(static fn (string $orientacion): bool => $orientacion !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $regions = $projects
             ->pluck('region')
             ->map(static fn (mixed $region): string => trim((string) $region))
             ->filter(static fn (string $region): bool => $region !== '')
@@ -245,7 +272,7 @@ class PlantController extends Controller
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
-        $comunas = $locations
+        $comunas = $projects
             ->pluck('comuna')
             ->map(static fn (mixed $comuna): string => trim((string) $comuna))
             ->filter(static fn (string $comuna): bool => $comuna !== '')
@@ -253,7 +280,7 @@ class PlantController extends Controller
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
-        $comunasByRegion = $locations
+        $comunasByRegion = $projects
             ->map(function (Proyecto $proyecto): array {
                 return [
                     'region' => trim((string) $proyecto->region),
@@ -270,10 +297,20 @@ class PlantController extends Controller
                     ->values();
             });
 
+        $entregas = $projects
+            ->pluck('etapa')
+            ->map(static fn (mixed $etapa): string => trim((string) $etapa))
+            ->filter(static fn (string $etapa): bool => $etapa !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
         return response()->json([
             'regions' => $regions,
             'comunas' => $comunas,
             'comunas_by_region' => $comunasByRegion,
+            'orientaciones' => $orientaciones,
+            'entregas' => $entregas,
         ]);
     }
 

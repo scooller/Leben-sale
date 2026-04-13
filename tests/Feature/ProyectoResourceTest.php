@@ -3,9 +3,17 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\ProyectoResource;
+use App\Filament\Resources\Proyectos\Schemas\ProyectoForm;
 use App\Models\Proyecto;
 use App\Models\User;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Component as LivewireComponent;
 use Tests\TestCase;
 
 class ProyectoResourceTest extends TestCase
@@ -95,5 +103,68 @@ class ProyectoResourceTest extends TestCase
         Proyecto::create([
             'name' => null,
         ]);
+    }
+
+    public function test_proyecto_form_hides_unused_financing_and_discount_fields(): void
+    {
+        $schema = ProyectoForm::configure(Schema::make($this->makeSchemaHost()));
+        $components = $schema->getFlatComponents(withActions: false, withHidden: true, withAbsoluteKeys: true);
+
+        foreach ([
+            'dscto_m_x_prod_principal_porc',
+            'dscto_m_x_prod_principal_uf',
+            'dscto_m_x_bodega_porc',
+            'dscto_m_x_bodega_uf',
+            'dscto_m_x_estac_porc',
+            'dscto_m_x_estac_uf',
+            'dscto_max_otros_porc',
+            'dscto_max_otros_prod_uf',
+            'dscto_maximo_aporte_leben',
+            'n_anos_1',
+            'n_anos_2',
+            'n_anos_3',
+            'n_anos_4',
+            'tasa',
+        ] as $field) {
+            $this->assertArrayNotHasKey($field, $components);
+        }
+    }
+
+    private function makeSchemaHost(): HasSchemas
+    {
+        return new class extends LivewireComponent implements HasSchemas
+        {
+            public function render()
+            {
+                return '<div></div>';
+            }
+
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
+            {
+                return null;
+            }
+
+            public function getOldSchemaState(string $statePath): mixed
+            {
+                return null;
+            }
+
+            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Component|Action|ActionGroup|null
+            {
+                return null;
+            }
+
+            public function getSchema(string $name): ?Schema
+            {
+                return null;
+            }
+
+            public function currentlyValidatingSchema(?Schema $schema): void {}
+
+            public function getDefaultTestingSchemaName(): ?string
+            {
+                return null;
+            }
+        };
     }
 }

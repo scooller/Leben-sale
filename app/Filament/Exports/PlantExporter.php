@@ -35,6 +35,8 @@ class PlantExporter extends Exporter
                 ->label('Precio Base'),
             ExportColumn::make('precio_lista')
                 ->label('Precio Lista'),
+            ExportColumn::make('porcentaje_maximo_unidad')
+                ->label('Porcentaje Máximo de Unidad'),
             ExportColumn::make('superficie_total_principal')
                 ->label('Sup. Total Principal'),
             ExportColumn::make('superficie_interior')
@@ -43,8 +45,6 @@ class PlantExporter extends Exporter
                 ->label('Sup. Útil'),
             ExportColumn::make('superficie_terraza')
                 ->label('Sup. Terraza'),
-            ExportColumn::make('superficie_vendible')
-                ->label('Sup. Vendible'),
             ExportColumn::make('is_active')
                 ->label('Activo'),
             ExportColumn::make('last_synced_at')

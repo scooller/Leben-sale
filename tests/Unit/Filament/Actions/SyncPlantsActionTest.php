@@ -96,9 +96,7 @@ class SyncPlantsActionTest extends TestCase
                         'superficie_total_principal' => 110.0,
                         'superficie_interior' => 90.0,
                         'superficie_util' => 90.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 20.0,
-                        'superficie_vendible' => 110.0,
                         'proyecto_id' => 'SF_PROJ_BOLD',
                     ],
                 ]);
@@ -148,9 +146,7 @@ class SyncPlantsActionTest extends TestCase
                         'superficie_total_principal' => 125.0,
                         'superficie_interior' => 95.0,
                         'superficie_util' => 95.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 30.0,
-                        'superficie_vendible' => 125.0,
                         'proyecto_id' => 'SF_PROJ_INN',
                     ],
                 ]);
@@ -202,9 +198,7 @@ class SyncPlantsActionTest extends TestCase
                         'superficie_total_principal' => 140.0,
                         'superficie_interior' => 105.0,
                         'superficie_util' => 105.0,
-                        'opportunity_id' => null,
                         'superficie_terraza' => 35.0,
-                        'superficie_vendible' => 140.0,
                         'proyecto_id' => 'SF_PROJ_INN_2',
                     ],
                 ]);
@@ -232,6 +226,52 @@ class SyncPlantsActionTest extends TestCase
             'salesforce_product_id' => 'SF_PLANT_201',
             'salesforce_proyecto_id' => $proyecto->salesforce_id,
             'salesforce_interior_image_url' => 'https://leben.my.salesforce-sites.com/servlet/servlet.ImageServer?id=015U10000033ln4IAA&oid=00D8c0000018fVyEAI&lastMod=1733948875000',
+        ]);
+    }
+
+    public function test_sync_plants_stores_porcentaje_maximo_unidad_from_salesforce(): void
+    {
+        $proyecto = Proyecto::factory()->create([
+            'salesforce_id' => 'SF_PROJ_PERCENT',
+        ]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('findPlants')
+                ->once()
+                ->andReturn([
+                    [
+                        'id' => 'SF_PLANT_PERCENT',
+                        'name' => '501',
+                        'product_code' => 'PLANT-501',
+                        'orientacion' => 'Poniente',
+                        'modelo_name' => null,
+                        'modelo_programa' => null,
+                        'programa' => '2D',
+                        'programa2' => '2B',
+                        'piso' => '5',
+                        'precio_base' => 6000.0,
+                        'precio_lista' => 6500.0,
+                        'porcentaje_maximo_unidad' => 17.5,
+                        'superficie_total_principal' => 80.0,
+                        'superficie_interior' => 70.0,
+                        'superficie_util' => 68.0,
+                        'superficie_terraza' => 10.0,
+                        'proyecto_id' => 'SF_PROJ_PERCENT',
+                    ],
+                ]);
+
+            $mock->shouldReceive('findPublicProjectDocuments')
+                ->once()
+                ->andReturn([]);
+        });
+
+        $result = SyncPlantsAction::execute();
+
+        $this->assertTrue($result['success']);
+
+        $this->assertDatabaseHas('plants', [
+            'salesforce_product_id' => 'SF_PLANT_PERCENT',
+            'porcentaje_maximo_unidad' => 17.5,
         ]);
     }
 }
