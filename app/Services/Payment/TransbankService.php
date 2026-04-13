@@ -11,6 +11,8 @@ use Transbank\Webpay\WebpayPlus\Transaction;
 
 class TransbankService implements PaymentGatewayInterface
 {
+    private const INTEGRATION_SIMPLE_COMMERCE_CODE = '597055555532';
+
     protected array $config;
 
     protected string $environment;
@@ -53,13 +55,24 @@ class TransbankService implements PaymentGatewayInterface
      */
     protected function resolveCommerceCode(?Payment $payment = null): string
     {
+        $defaultCommerceCode = $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+
+        if ($this->mallMode && $this->environment === 'integration' && $defaultCommerceCode === self::INTEGRATION_SIMPLE_COMMERCE_CODE) {
+            Log::warning('Transbank: Código de comercio de integración simple detectado en modo Mall. Se utilizará código Mall por defecto.', [
+                'configured_commerce_code' => $defaultCommerceCode,
+                'resolved_commerce_code' => WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE,
+            ]);
+
+            $defaultCommerceCode = WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE;
+        }
+
         // Si no estamos en mall mode o no hay payment, usar código default
         if (! $this->mallMode || ! $payment) {
             if ($this->mallMode && $this->environment === 'integration') {
-                return $this->commerceCode ?: WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE;
+                return $defaultCommerceCode ?: WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE;
             }
 
-            return $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+            return $defaultCommerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
         }
 
         // Cargar proyecto si existe
@@ -83,10 +96,10 @@ class TransbankService implements PaymentGatewayInterface
         ]);
 
         if ($this->mallMode && $this->environment === 'integration') {
-            return $this->commerceCode ?: WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE;
+            return $defaultCommerceCode ?: WebpayPlus::INTEGRATION_MALL_COMMERCE_CODE;
         }
 
-        return $this->commerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
+        return $defaultCommerceCode ?: WebpayPlus::INTEGRATION_COMMERCE_CODE;
     }
 
     /**

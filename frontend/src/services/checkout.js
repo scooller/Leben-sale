@@ -215,7 +215,10 @@ class CheckoutService {
       } else if (parsed.type === ErrorTypes.NETWORK) {
         userMessage = 'No se pudo conectar con el servidor de pagos. Verifica tu conexión.';
       } else if (parsed.type === ErrorTypes.SERVER) {
-        userMessage = 'Error en el servidor al procesar el pago. Intenta de nuevo.';
+        const serverDetail = typeof parsed.details === 'string' ? parsed.details.trim() : '';
+        userMessage = serverDetail
+          ? `Error del servidor: ${serverDetail}`
+          : 'Error en el servidor al procesar el pago. Intenta de nuevo.';
       }
 
       throw {
