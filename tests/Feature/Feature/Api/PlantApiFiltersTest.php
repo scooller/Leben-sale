@@ -47,6 +47,79 @@ class PlantApiFiltersTest extends TestCase
         $this->assertNotContains($plantInOtherProject->id, $responsePlantIds);
     }
 
+    public function test_it_filters_plants_by_project_slug(): void
+    {
+        $targetProject = Proyecto::factory()->create([
+            'name' => 'Edificio Argomedo',
+            'slug' => 'edificio-argomedo',
+        ]);
+        $otherProject = Proyecto::factory()->create([
+            'name' => 'Parque Central',
+            'slug' => 'parque-central',
+        ]);
+
+        $plantInTargetProject = $this->createPlant($targetProject->salesforce_id, true);
+        $plantInOtherProject = $this->createPlant($otherProject->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?project_slug=edificio-argomedo');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($plantInTargetProject->id, $responsePlantIds);
+        $this->assertNotContains($plantInOtherProject->id, $responsePlantIds);
+    }
+
+    public function test_it_filters_plants_by_catalog_slug_using_project_slug(): void
+    {
+        $targetProject = Proyecto::factory()->create([
+            'name' => 'Edificio Argomedo',
+            'slug' => 'edificio-argomedo',
+            'comuna' => 'Santiago',
+        ]);
+        $otherProject = Proyecto::factory()->create([
+            'name' => 'Parque Central',
+            'slug' => 'parque-central',
+            'comuna' => 'La Florida',
+        ]);
+
+        $plantInTargetProject = $this->createPlant($targetProject->salesforce_id, true);
+        $plantInOtherProject = $this->createPlant($otherProject->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?catalog_slug=edificio-argomedo');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($plantInTargetProject->id, $responsePlantIds);
+        $this->assertNotContains($plantInOtherProject->id, $responsePlantIds);
+    }
+
+    public function test_it_filters_plants_by_catalog_slug_using_comuna_slug(): void
+    {
+        $projectInLaFlorida = Proyecto::factory()->create([
+            'name' => 'Condominio Uno',
+            'slug' => 'condominio-uno',
+            'comuna' => 'La Florida',
+        ]);
+        $projectInProvidencia = Proyecto::factory()->create([
+            'name' => 'Torre Dos',
+            'slug' => 'torre-dos',
+            'comuna' => 'Providencia',
+        ]);
+
+        $plantInLaFlorida = $this->createPlant($projectInLaFlorida->salesforce_id, true);
+        $plantInProvidencia = $this->createPlant($projectInProvidencia->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?catalog_slug=la-florida');
+
+        $response->assertOk();
+        $responsePlantIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($plantInLaFlorida->id, $responsePlantIds);
+        $this->assertNotContains($plantInProvidencia->id, $responsePlantIds);
+    }
+
     public function test_it_filters_plants_by_availability(): void
     {
         $project = Proyecto::factory()->create();

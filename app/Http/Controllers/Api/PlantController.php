@@ -28,6 +28,8 @@ class PlantController extends Controller
 
         $projectValues = $this->normalizeInputValues($request->input('salesforce_proyecto_id'));
         $projectIdValues = $this->normalizeInputValues($request->input('proyecto_id', $request->input('project_id')));
+        $projectSlugValues = $this->normalizeInputValues($request->input('project_slug', $request->input('slug')));
+        $catalogSlugValues = $this->normalizeInputValues($request->input('catalog_slug'));
         $dormValues = $this->normalizeInputValues($request->input('programa'));
         $banosValues = $this->normalizeInputValues($request->input('programa2'));
         $pisoValues = $this->normalizeInputValues($request->input('piso'));
@@ -49,6 +51,49 @@ class PlantController extends Controller
             $query->whereHas('proyecto', function ($projectQuery) use ($projectIdValues) {
                 $projectQuery->whereIn('id', $projectIdValues);
             });
+        }
+
+        if (count($projectSlugValues) > 0) {
+            $query->whereHas('proyecto', function ($projectQuery) use ($projectSlugValues) {
+                $projectQuery->whereIn('slug', $projectSlugValues);
+            });
+        }
+
+        if (count($catalogSlugValues) > 0) {
+            $activeProjects = Proyecto::query()
+                ->where('is_active', true)
+                ->get(['slug', 'comuna']);
+
+            $matchedProjectSlugs = [];
+            $matchedComunas = [];
+
+            foreach ($catalogSlugValues as $catalogSlugValue) {
+                $normalizedCatalogSlug = Str::slug($catalogSlugValue);
+
+                $projectSlugMatchExists = $activeProjects->contains(
+                    fn (Proyecto $project): bool => $project->slug === $normalizedCatalogSlug
+                );
+
+                if ($projectSlugMatchExists) {
+                    $matchedProjectSlugs[] = $normalizedCatalogSlug;
+
+                    continue;
+                }
+
+                foreach ($activeProjects as $project) {
+                    if ($project->comuna && Str::slug($project->comuna) === $normalizedCatalogSlug) {
+                        $matchedComunas[] = $project->comuna;
+                    }
+                }
+            }
+
+            if (count($matchedProjectSlugs) > 0) {
+                $query->whereHas('proyecto', function ($projectQuery) use ($matchedProjectSlugs) {
+                    $projectQuery->whereIn('slug', array_values(array_unique($matchedProjectSlugs)));
+                });
+            } elseif (count($matchedComunas) > 0) {
+                $comunaValues = array_values(array_unique([...$comunaValues, ...$matchedComunas]));
+            }
         }
 
         if ($available !== null) {

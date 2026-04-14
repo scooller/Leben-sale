@@ -40,6 +40,19 @@ const parsePlantDetailPath = (pathname) => {
   };
 };
 
+const parseProjectCatalogPath = (pathname) => {
+  const matcher = new RegExp(`^${PLANT_DETAIL_BASE_PATH}/([^/]+)/?$`);
+  const matches = pathname.match(matcher);
+
+  if (!matches) {
+    return null;
+  }
+
+  return {
+    projectSlug: decodeURIComponent(matches[1]),
+  };
+};
+
 const getCurrentBrowserUrl = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
 const normalizeBrowserUrl = (url) => {
@@ -59,6 +72,15 @@ const normalizeBrowserUrl = (url) => {
 function Home({ onNavigate, currentPath }) {
   const { config, loading: configLoading, colorMode, toggleColorMode } = useSiteConfig();
   const isSaleEventActive = Boolean(config?.evento_sale);
+  const routeCatalogSlug = useMemo(() => {
+    const detailRoute = parsePlantDetailPath(currentPath || '/');
+
+    if (detailRoute?.projectSlug) {
+      return detailRoute.projectSlug;
+    }
+
+    return parseProjectCatalogPath(currentPath || '/')?.projectSlug || null;
+  }, [currentPath]);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -122,7 +144,7 @@ function Home({ onNavigate, currentPath }) {
   }, []);
 
   useEffect(() => {
-    if (currentPath !== '/plantas') {
+    if (currentPath !== '/plantas' && !currentPath.startsWith('/p/')) {
       return;
     }
 
@@ -161,13 +183,10 @@ function Home({ onNavigate, currentPath }) {
     return `${value}`;
   };
 
-  const filteredComunaOptions = useMemo(() => (
-    tempRegion
-      ? (comunasByRegion[tempRegion] || [])
-      : comunaOptions
-  ), [comunaOptions, comunasByRegion, tempRegion]);
+  const filteredComunaOptions = useMemo(() => comunaOptions, [comunaOptions]);
 
-  const activeFilterCount = selectedProyecto.length
+  const activeFilterCount = (routeCatalogSlug ? 1 : 0)
+    + selectedProyecto.length
     + selectedDormitorios.length
     + selectedBanos.length
     + (selectedPiso ? 1 : 0)
@@ -270,6 +289,7 @@ function Home({ onNavigate, currentPath }) {
     }
   }, [tempComuna, filteredComunaOptions]);
 
+
   const loadPlants = useCallback(async () => {
     try {
       setLoading(true);
@@ -280,6 +300,10 @@ function Home({ onNavigate, currentPath }) {
         perPage: 12,
         // available: true,
       };
+
+      if (routeCatalogSlug) {
+        filters.catalog_slug = routeCatalogSlug;
+      }
 
       if (selectedProyecto.length > 0) {
         filters.salesforce_proyecto_id = selectedProyecto;
@@ -355,6 +379,7 @@ function Home({ onNavigate, currentPath }) {
     }
   }, [
     page,
+    routeCatalogSlug,
     selectedProyecto,
     selectedDormitorios,
     selectedBanos,
@@ -1114,35 +1139,15 @@ function Home({ onNavigate, currentPath }) {
                           </wa-select>
 
                         <wa-select
-                            placeholder="Todas"
-                            size="small"
-                            value={tempRegion}
-                            onChange={(e) => {
-                            const value = getSingleSelectValue(e);
-                            setTempRegion(value);
-                            setTempComuna('');
-                            }}
-                            clearable
-                        >
-                            <span slot='label'><wa-icon name="map"></wa-icon> Región</span>
-                            {regionOptions.map((region) => (
-                            <wa-option key={region} value={region}>
-                                <wa-icon name="map" slot="start"></wa-icon>{region}
-                            </wa-option>
-                            ))}
-                        </wa-select>
-
-                        <wa-select
                             with-clear
                             size="small"
-                            placeholder={tempRegion ? 'Todas' : 'Primero selecciona una región'}
+                            placeholder="Todas"
                             value={tempComuna}
                             onChange={(e) => {
                             const value = getSingleSelectValue(e);
                             setTempComuna(value);
                             }}
                             clearable
-                            disabled={!tempRegion}
                         >
                             <span slot='label'><wa-icon name="map-location"></wa-icon> Comuna</span>
                             {filteredComunaOptions.map((comuna) => (

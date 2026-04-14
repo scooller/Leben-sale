@@ -102,8 +102,17 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, dialogRef, checko
         );
     };
     const goToContact = () => {
-        onNavigate?.('/contacto');
-        window.requestAnimationFrame(closeMobileMenu);
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        if (dialogRef?.current && typeof dialogRef.current.hide === 'function') {
+            dialogRef.current.hide();
+        }
+
+        window.history.pushState({}, '', '/contacto');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
   return (
