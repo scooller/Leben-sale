@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import siteConfigService from '../services/siteConfig';
-import WebAwesomeService from '../services/webAwesome';import { initializeTagManager } from '../utils/tagManager';
+import WebAwesomeService from '../services/webAwesome';
+import { initializeFacebookPixel, initializeTagManager } from '../utils/tagManager';
+
 export const SiteConfigContext = createContext(null);
 
 const COLOR_MODE_STORAGE_KEY = 'ileben-color-mode';
@@ -137,6 +139,12 @@ export const SiteConfigProvider = ({ children }) => {
 
       if (data?.seo?.tag_manager_id) {
         initializeTagManager(data.seo.tag_manager_id);
+      }
+
+      const facebookPixelId = data?.seo?.facebook_pixel_id || data?.seo?.meta_pixel_id;
+
+      if (facebookPixelId) {
+        initializeFacebookPixel(facebookPixelId);
       }
 
       setError(null);

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago Pendiente</title>
+    @include('payments.partials.tracking', ['eventName' => 'checkout_pending', 'paymentStatus' => 'pending', 'payment' => $payment])
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
