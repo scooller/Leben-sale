@@ -1,8 +1,40 @@
 import { Fancybox } from '@fancyapps/ui';
 import '@fancyapps/ui/dist/fancybox/fancybox.css';
 import { trackEvent } from '../utils/tagManager';
+import { useEffect, useRef } from 'react';
 
-function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = null, dialogRef, checkoutLoading, onCheckout }) {
+function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = null, dialogRef, checkoutLoading, onCheckout, onClose }) {
+    const closeNotifiedRef = useRef(false);
+
+    useEffect(() => {
+        const dialogElement = dialogRef?.current;
+
+        if (!dialogElement || typeof onClose !== 'function') {
+            return;
+        }
+
+        const notifyClose = () => {
+            if (closeNotifiedRef.current) {
+                return;
+            }
+
+            closeNotifiedRef.current = true;
+            onClose();
+
+            queueMicrotask(() => {
+                closeNotifiedRef.current = false;
+            });
+        };
+
+        dialogElement.addEventListener('wa-hide', notifyClose);
+        dialogElement.addEventListener('wa-after-hide', notifyClose);
+
+        return () => {
+            dialogElement.removeEventListener('wa-hide', notifyClose);
+            dialogElement.removeEventListener('wa-after-hide', notifyClose);
+        };
+    }, [dialogRef, onClose]);
+
     const sanitizePhone = (value) => `${value ?? ''}`.replace(/\D+/g, '');
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
@@ -135,7 +167,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                         />
                     </a>
                     {plant.projectLogoUrl && (
-                        <wa-badge variant="neutral" className="project-logo-badge" aria-label={`Logo de ${plant.proyectoNombre || 'proyecto'}`}>
+                        <wa-badge variant="neutral" appearance="filler" className="project-logo-badge" aria-label={`Logo de ${plant.proyectoNombre || 'proyecto'}`}>
                             <img
                                 src={plant.projectLogoUrl}
                                 alt={`Logo de ${plant.proyectoNombre || 'proyecto'}`}
@@ -146,6 +178,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                     {isSaleEventActive && saleLogoUrl && (
                         <wa-badge
                             variant="neutral"
+                            appearance="outlined"
                             className={`sale-logo-badge${plant.projectLogoUrl ? ' sale-logo-badge-with-project-logo' : ''}`}
                             aria-label="Logo sale"
                         >
@@ -379,6 +412,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                     <wa-button
                         variant="neutral"
                         data-dialog="close"
+                        onClick={onClose}
                     >
                         <wa-icon name="xmark" slot="start"></wa-icon>
                         Cerrar

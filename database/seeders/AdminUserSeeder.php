@@ -32,3 +32,4 @@ class AdminUserSeeder extends Seeder
         $this->command->info('   Tipo: Administrador');
     }
 }
+

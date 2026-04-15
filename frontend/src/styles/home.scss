@@ -242,7 +242,8 @@ html.wa-light #root{
 }
 
 .sale-logo-badge-with-project-logo {
-  top: calc(0.75rem + 48px);
+  bottom: 0.75rem;
+  top: auto;
 }
 
 .sale-logo-image {
@@ -535,7 +536,8 @@ html.wa-light #root{
   }
 
   .sale-logo-badge-with-project-logo {
-    top: calc(0.6rem + 42px);
+    bottom: 0.6rem;
+    top: auto;
   }
 
   .sale-logo-image {

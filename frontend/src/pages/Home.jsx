@@ -577,32 +577,49 @@ function Home({ onNavigate, currentPath }) {
       price: plant.precioFinal || plant.precioBase || null,
     });
 
-    setSelectedPlantDetail(plant);
-
     const currentUrl = getCurrentBrowserUrl();
     const nextPath = buildPlantDetailPath(plant);
 
-    if (currentUrl !== nextPath) {
-      const previousUrl = parsePlantDetailPath(window.location.pathname)
-        ? normalizeBrowserUrl(window.history.state?.previousUrl || '/')
-        : currentUrl;
+    const openPlantDetail = () => {
+      setSelectedPlantDetail(plant);
 
-      window.history.pushState({ plantDetail: true, previousUrl }, '', nextPath);
+      if (currentUrl !== nextPath) {
+        const previousUrl = parsePlantDetailPath(window.location.pathname)
+          ? normalizeBrowserUrl(window.history.state?.previousUrl || '/')
+          : currentUrl;
 
-      trackPageView({
-        path: nextPath,
-        title: `${config?.site_name || 'iLeben'} | Planta ${plant.nombre || plant.name || ''}`,
-      });
+        window.history.pushState({ plantDetail: true, previousUrl }, '', nextPath);
+
+        trackPageView({
+          path: nextPath,
+          title: `${config?.site_name || 'iLeben'} | Planta ${plant.nombre || plant.name || ''}`,
+        });
+      }
+    };
+
+    if (selectedPlantDetail?.id === plant.id) {
+      setSelectedPlantDetail(null);
+      queueMicrotask(openPlantDetail);
+
+      return;
     }
-  }, [buildPlantDetailPath, config?.site_name]);
+
+    openPlantDetail();
+  }, [buildPlantDetailPath, config?.site_name, selectedPlantDetail]);
 
   const handleClosePlantDetail = useCallback(() => {
     setSelectedPlantDetail(null);
     setRoutePlantLoading(false);
-    window.history.replaceState({}, '', '/');
+
+    const targetUrl = parsePlantDetailPath(window.location.pathname)
+      ? normalizeBrowserUrl(window.history.state?.previousUrl || '/plantas')
+      : normalizeBrowserUrl(window.location.pathname || '/');
+
+    window.history.replaceState({}, '', targetUrl);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+
     setRoutePlantParams(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [currentPath]);
 
   useEffect(() => {
     const handlePopState = () => {

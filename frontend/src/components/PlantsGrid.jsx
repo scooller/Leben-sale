@@ -220,11 +220,7 @@ function PlantsGrid({
       return;
     }
 
-    const handleAfterHide = (event) => {
-      if (event.target !== dialogElement) {
-        return;
-      }
-
+    const handleAfterHide = () => {
       closeActivePlant();
     };
 
@@ -336,7 +332,7 @@ function PlantsGrid({
                     }}
                   />
                   {isSaleEventActive && saleLogoUrl && (
-                    <wa-badge variant="neutral" className="sale-logo-badge" aria-label="Logo sale">
+                    <wa-badge variant="neutral" appearance="outlined" className="sale-logo-badge" aria-label="Logo sale">
                       <img
                         src={saleLogoUrl}
                         alt="Logo Sale"
@@ -482,6 +478,7 @@ function PlantsGrid({
         dialogRef={dialogRef}
         checkoutLoading={checkoutLoading}
         onCheckout={handleCheckoutFromDialog}
+        onClose={closeActivePlant}
       />
 
       {/* Paginación */}
