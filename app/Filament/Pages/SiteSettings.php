@@ -117,7 +117,13 @@ class SiteSettings extends Page implements HasForms
 
                                         Toggle::make('evento_sale')
                                             ->label('Evento Sale')
+                                            ->live()
                                             ->helperText('Cuando está activo, el frontend solo mostrará plantas con Porcentaje Máximo de Unidad y usará la etiqueta "Precio Sale".'),
+
+                                        CuratorPicker::make('logo_sale_id')
+                                            ->label('Logo Sale')
+                                            ->helperText('Logo usado en el grid y en el detalle de planta cuando Evento Sale está activo.')
+                                            ->visible(fn (Get $get): bool => (bool) $get('evento_sale')),
 
                                         Repeater::make('footer_menu')
                                             ->label('Menú del Footer')

@@ -109,6 +109,8 @@ class SyncPlantsJobTest extends TestCase
 
     public function test_job_does_not_create_plants_when_none_found(): void
     {
+        Proyecto::factory()->create(['salesforce_id' => 'SF_PROJ_EMPTY']);
+
         Forrest::shouldReceive('authenticate')->once();
 
         $this->mock(SalesforceService::class, function (MockInterface $mock) {

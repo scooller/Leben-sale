@@ -17,6 +17,7 @@ class SiteSetting extends Model
         'footer_menu',
         'footer_legal_text',
         'evento_sale',
+        'logo_sale_id',
         'logo',
         'logo_dark',
         'favicon',
@@ -122,6 +123,11 @@ class SiteSetting extends Model
     public function bannerImageMedia()
     {
         return $this->belongsTo(Media::class, 'banner_image_id');
+    }
+
+    public function logoSaleMedia()
+    {
+        return $this->belongsTo(Media::class, 'logo_sale_id');
     }
 
     /**
@@ -250,7 +256,7 @@ class SiteSetting extends Model
     public static function forFrontend(): array
     {
         $settings = static::current();
-        $settings->load(['logoMedia', 'logoDarkMedia', 'faviconMedia', 'iconMedia']);
+        $settings->load(['logoMedia', 'logoDarkMedia', 'faviconMedia', 'iconMedia', 'logoSaleMedia']);
 
         $extraSettings = is_array($settings->extra_settings) ? $settings->extra_settings : [];
         $homeHeroDesktopImage = Media::query()->find($extraSettings['home_hero_image_desktop_id'] ?? $extraSettings['home_hero_image_id'] ?? null)?->url;
@@ -265,6 +271,7 @@ class SiteSetting extends Model
             'footer_menu' => is_array($settings->footer_menu) ? $settings->footer_menu : [],
             'footer_legal_text' => $settings->footer_legal_text,
             'evento_sale' => (bool) $settings->evento_sale,
+            'logo_sale' => $settings->logoSaleMedia?->url ?? null,
             'logo' => $settings->logoMedia?->url ?? null,
             'logo_dark' => $settings->logoDarkMedia?->url ?? null,
             'favicon' => $settings->faviconMedia?->url ?? null,

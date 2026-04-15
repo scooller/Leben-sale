@@ -2,7 +2,7 @@ import { Fancybox } from '@fancyapps/ui';
 import '@fancyapps/ui/dist/fancybox/fancybox.css';
 import { trackEvent } from '../utils/tagManager';
 
-function PlantDetailDialog({ plant, isSaleEventActive = false, dialogRef, checkoutLoading, onCheckout }) {
+function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = null, dialogRef, checkoutLoading, onCheckout }) {
     const sanitizePhone = (value) => `${value ?? ''}`.replace(/\D+/g, '');
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
@@ -140,6 +140,19 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, dialogRef, checko
                                 src={plant.projectLogoUrl}
                                 alt={`Logo de ${plant.proyectoNombre || 'proyecto'}`}
                                 className="project-logo-image"
+                            />
+                        </wa-badge>
+                    )}
+                    {isSaleEventActive && saleLogoUrl && (
+                        <wa-badge
+                            variant="neutral"
+                            className={`sale-logo-badge${plant.projectLogoUrl ? ' sale-logo-badge-with-project-logo' : ''}`}
+                            aria-label="Logo sale"
+                        >
+                            <img
+                                src={saleLogoUrl}
+                                alt="Logo Sale"
+                                className="sale-logo-image"
                             />
                         </wa-badge>
                     )}

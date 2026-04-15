@@ -58,6 +58,8 @@ class SiteSettingFrontendConfigTest extends TestCase
         $this->assertSame('#112233', $payload['brand_color']);
         $this->assertArrayHasKey('evento_sale', $payload);
         $this->assertTrue($payload['evento_sale']);
+        $this->assertArrayHasKey('logo_sale', $payload);
+        $this->assertNull($payload['logo_sale']);
         $this->assertArrayHasKey('footer_menu', $payload);
         $this->assertSame('Bases Legales', $payload['footer_menu'][0]['label']);
         $this->assertSame('/bases-legales', $payload['footer_menu'][0]['url']);

@@ -1384,6 +1384,7 @@ function Home({ onNavigate, currentPath }) {
       <PlantsGrid
         plants={plants}
         isSaleEventActive={isSaleEventActive}
+        saleLogoUrl={config?.logo_sale || null}
         loading={loading}
         checkoutLoading={checkoutLoading}
         onQuickCheckout={handleQuickCheckout}

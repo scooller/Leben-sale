@@ -231,6 +231,28 @@ html.wa-light #root{
   object-fit: contain;
 }
 
+.sale-logo-badge {
+  align-items: center;
+  left: 0.75rem;
+  max-width: min(36%, 180px);
+  min-height: 42px;
+  position: absolute;
+  top: 0.75rem;
+  z-index: 2;
+}
+
+.sale-logo-badge-with-project-logo {
+  top: calc(0.75rem + 48px);
+}
+
+.sale-logo-image {
+  display: block;
+  height: auto;
+  max-height: 38px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 
 .plant-detail-media {
   position: relative;
@@ -501,6 +523,22 @@ html.wa-light #root{
   }
 
   .project-logo-image {
+    max-height: 30px;
+  }
+
+  .sale-logo-badge {
+    left: 0.6rem;
+    max-width: min(42%, 136px);
+    min-height: 36px;
+    padding: 0.25rem 0.4rem;
+    top: 0.6rem;
+  }
+
+  .sale-logo-badge-with-project-logo {
+    top: calc(0.6rem + 42px);
+  }
+
+  .sale-logo-image {
     max-height: 30px;
   }
 

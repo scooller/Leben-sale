@@ -15,6 +15,7 @@ gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 function PlantsGrid({
   plants,
   isSaleEventActive = false,
+  saleLogoUrl = null,
   loading,
   checkoutLoading,
   onQuickCheckout,
@@ -334,6 +335,15 @@ function PlantsGrid({
                       opacity: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 0.72 : 1,
                     }}
                   />
+                  {isSaleEventActive && saleLogoUrl && (
+                    <wa-badge variant="neutral" className="sale-logo-badge" aria-label="Logo sale">
+                      <img
+                        src={saleLogoUrl}
+                        alt="Logo Sale"
+                        className="sale-logo-image"
+                      />
+                    </wa-badge>
+                  )}
                   {plant.discountPercentage > 0 && (
                     <wa-animation name="flash" duration={5000} iterations={Infinity}>
                         <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
@@ -468,6 +478,7 @@ function PlantsGrid({
       <PlantDetailDialog
         plant={activePlant}
         isSaleEventActive={isSaleEventActive}
+        saleLogoUrl={saleLogoUrl}
         dialogRef={dialogRef}
         checkoutLoading={checkoutLoading}
         onCheckout={handleCheckoutFromDialog}

@@ -18,6 +18,7 @@ class PlantTest extends TestCase
             'salesforce_proyecto_id',
             'name',
             'product_code',
+            'tipo_producto',
             'orientacion',
             'programa',
             'programa2',
