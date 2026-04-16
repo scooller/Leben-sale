@@ -41,7 +41,9 @@ class ContactSubmissionController extends Controller
             app(FinMailNotificationService::class)->sendContactSubmissionReceivedToAdmin($submission);
         }
 
-        if ((bool) config('services.salesforce.case_enabled', false)) {
+        $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
+
+        if ($leadEnabled) {
             CreateSalesforceCaseJob::dispatch($submission);
         }
 

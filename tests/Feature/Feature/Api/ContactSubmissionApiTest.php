@@ -380,7 +380,7 @@ class ContactSubmissionApiTest extends TestCase
     {
         Queue::fake();
 
-        config()->set('services.salesforce.case_enabled', true);
+        config()->set('services.salesforce.lead_enabled', true);
 
         SiteSetting::current()->update([
             'contact_email' => null,
@@ -410,6 +410,7 @@ class ContactSubmissionApiTest extends TestCase
     {
         Queue::fake();
 
+        config()->set('services.salesforce.lead_enabled', false);
         config()->set('services.salesforce.case_enabled', false);
 
         SiteSetting::current()->update([

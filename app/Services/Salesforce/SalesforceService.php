@@ -47,33 +47,128 @@ class SalesforceService
      */
     public function createCase(array $payload): array
     {
+        Log::info('Salesforce: Enviando solicitud de creación de Case', [
+            'subject' => $payload['Subject'] ?? null,
+            'record_type_id' => $payload['RecordTypeId'] ?? null,
+            'origin' => $payload['Origin'] ?? null,
+            'payload_keys' => array_keys($payload),
+        ]);
+
         try {
             $result = Forrest::sobjects('Case', [
                 'method' => 'post',
                 'body' => $payload,
             ]);
 
-            Log::info('Salesforce: Case creado', [
-                'case_id' => $result['id'] ?? $result['Id'] ?? null,
+            $response = is_array($result) ? $result : [];
+
+            Log::info('Salesforce: Respuesta creación de Case', [
+                'case_id' => $response['id'] ?? $response['Id'] ?? null,
+                'success' => $response['success'] ?? null,
+                'errors' => $response['errors'] ?? null,
+                'subject' => $payload['Subject'] ?? null,
+                'response' => $response,
+            ]);
+
+            return $response;
+        } catch (\Throwable $firstException) {
+            Log::warning('Salesforce: Error creando Case, se intentará re-autenticación', [
+                'error' => $firstException->getMessage(),
                 'subject' => $payload['Subject'] ?? null,
             ]);
 
-            return is_array($result) ? $result : [];
-        } catch (\Throwable $e) {
-            Log::info('Salesforce: Re-autenticando Case debido a: '.$e->getMessage());
             $this->authenticate();
 
-            $result = Forrest::sobjects('Case', [
+            try {
+                $result = Forrest::sobjects('Case', [
+                    'method' => 'post',
+                    'body' => $payload,
+                ]);
+
+                $response = is_array($result) ? $result : [];
+
+                Log::info('Salesforce: Respuesta creación de Case tras re-autenticación', [
+                    'case_id' => $response['id'] ?? $response['Id'] ?? null,
+                    'success' => $response['success'] ?? null,
+                    'errors' => $response['errors'] ?? null,
+                    'subject' => $payload['Subject'] ?? null,
+                    'response' => $response,
+                ]);
+
+                return $response;
+            } catch (\Throwable $secondException) {
+                Log::error('Salesforce: Error creando Case tras re-autenticación', [
+                    'error' => $secondException->getMessage(),
+                    'subject' => $payload['Subject'] ?? null,
+                ]);
+
+                throw $secondException;
+            }
+        }
+    }
+
+    /**
+     * Crear un Lead en Salesforce.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createLead(array $payload): array
+    {
+        Log::info('Salesforce: Enviando solicitud de creación de Lead', [
+            'email' => $payload['Email'] ?? null,
+            'lead_source' => $payload['LeadSource'] ?? null,
+            'payload_keys' => array_keys($payload),
+        ]);
+
+        try {
+            $result = Forrest::sobjects('Lead', [
                 'method' => 'post',
                 'body' => $payload,
             ]);
 
-            Log::info('Salesforce: Case creado tras re-autenticación', [
-                'case_id' => $result['id'] ?? $result['Id'] ?? null,
-                'subject' => $payload['Subject'] ?? null,
+            $response = is_array($result) ? $result : [];
+
+            Log::info('Salesforce: Respuesta creación de Lead', [
+                'lead_id' => $response['id'] ?? $response['Id'] ?? null,
+                'success' => $response['success'] ?? null,
+                'errors' => $response['errors'] ?? null,
+                'response' => $response,
             ]);
 
-            return is_array($result) ? $result : [];
+            return $response;
+        } catch (\Throwable $firstException) {
+            Log::warning('Salesforce: Error creando Lead, se intentará re-autenticación', [
+                'error' => $firstException->getMessage(),
+                'email' => $payload['Email'] ?? null,
+            ]);
+
+            $this->authenticate();
+
+            try {
+                $result = Forrest::sobjects('Lead', [
+                    'method' => 'post',
+                    'body' => $payload,
+                ]);
+
+                $response = is_array($result) ? $result : [];
+
+                Log::info('Salesforce: Respuesta creación de Lead tras re-autenticación', [
+                    'lead_id' => $response['id'] ?? $response['Id'] ?? null,
+                    'success' => $response['success'] ?? null,
+                    'errors' => $response['errors'] ?? null,
+                    'response' => $response,
+                ]);
+
+                return $response;
+            } catch (\Throwable $secondException) {
+                Log::error('Salesforce: Error creando Lead tras re-autenticación', [
+                    'error' => $secondException->getMessage(),
+                    'email' => $payload['Email'] ?? null,
+                ]);
+
+                throw $secondException;
+            }
         }
     }
 

@@ -13,31 +13,61 @@ class SalesforceCaseMapper
      */
     public function map(ContactSubmission $submission): array
     {
+        return $this->mapLead($submission);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function mapLead(ContactSubmission $submission): array
+    {
         $settings = SiteSetting::current();
         $fields = is_array($submission->fields) ? $submission->fields : [];
         $fieldLabels = $this->buildFieldLabels($settings->contact_form_fields);
 
-        $subject = $this->fieldValue($fields, ['utm_campaign'])
-            ?? (string) ($settings->site_name ?: config('app.name'));
+        $fullName = $this->fieldValue($fields, ['name', 'nombre']) ?: $submission->name;
+        $firstName = $this->fieldValue($fields, ['first_name', 'nombre'])
+            ?: $this->extractFirstName($fullName);
+        $lastName = $this->fieldValue($fields, ['last_name', 'lastname', 'apellido'])
+            ?: $this->extractLastName($fullName)
+            ?: 'Sin Apellido';
+
+        $projectName = $this->fieldValue($fields, ['nombre_proyecto', 'proyecto', 'project_name', 'proyecto_formulario']);
+        $utmSource = $this->fieldValue($fields, ['utm_source']);
+        $utmMedium = $this->fieldValue($fields, ['utm_medium']);
+        $utmCampaign = $this->fieldValue($fields, ['utm_campaign']);
+        $utmContent = $this->fieldValue($fields, ['utm_content']);
+        $utmTerm = $this->fieldValue($fields, ['utm_term']);
+        $leadSource = $this->fieldValue($fields, ['medio', 'medio_de_llegada', 'lead_source', 'origen']) ?: $utmSource;
+        $email = $submission->email ?: $this->fieldValue($fields, ['email', 'correo']) ?: null;
+        $phone = $submission->phone ?: $this->fieldValue($fields, ['phone', 'telefono', 'fono', 'celular', 'whatsapp']);
+        $rut = $submission->rut ?: $this->fieldValue($fields, ['rut']);
+        $commune = $this->fieldValue($fields, ['comuna', 'commune']);
 
         $payload = [
-            'SuppliedName' => (string) ($settings->site_name ?: config('app.name')),
-            'SuppliedEmail' => $settings->contact_notification_email ?: $settings->contact_email ?: $submission->email,
-            'SuppliedPhone' => $submission->phone,
-            'ContactPhone' => $submission->phone ?: $this->fieldValue($fields, ['phone', 'telefono', 'fono', 'celular', 'whatsapp']),
-            'ContactEmail' => $submission->email ?: $this->fieldValue($fields, ['email', 'correo']),
+            'FirstName' => $firstName,
+            'LastName' => $lastName,
+            'Company' => (string) ($settings->site_name ?: config('app.name') ?: 'iLeben'),
+            'Phone' => $phone,
+            'MobilePhone' => $phone,
+            'Email' => $email,
+            'Email__c' => $email,
             'RUT__c' => $submission->rut ?: $this->fieldValue($fields, ['rut']),
-            'RecordTypeId' => config('services.salesforce.case_record_type_id'),
-            'Status' => (string) config('services.salesforce.case_status', 'Nuevo'),
-            'Origin' => (string) config('services.salesforce.case_origin', 'Web'),
-            'Subject' => $subject,
-            'Priority' => (string) config('services.salesforce.case_priority', 'Media'),
+            'Status' => (string) config('services.salesforce.lead_status', 'En Contacto'),
+            'OwnerId' => config('services.salesforce.lead_owner_id') ?: config('services.salesforce.case_owner_id'),
+            'LeadSource' => $leadSource,
             'Description' => $this->buildDescription($fields, $fieldLabels),
-            'OwnerId' => config('services.salesforce.case_owner_id'),
-            'SourceId' => config('services.salesforce.case_source_id'),
-            'Nombre_Proyecto__c' => $this->fieldValue($fields, ['nombre_proyecto', 'proyecto', 'project_name', 'proyecto_formulario']),
-            'Proyecto_Formulario__c' => $this->fieldValue($fields, ['proyecto_formulario', 'proyecto', 'project_name']),
-            'En_que_lugar__c' => $this->fieldValue($fields, ['comuna', 'commune']),
+            'Tipo_Ingreso__c' => 'Online',
+            'Nombre_Proyecto__c' => $projectName,
+            'Informacion_Cotizacion__c' => $projectName,
+            'Proyect_ID__c' => $projectName,
+            'Comuna__c' => $commune,
+            'Medio_de_Llegada__c' => $leadSource,
+            'utm_source__c' => $utmSource,
+            'utm_medium__c' => $utmMedium,
+            'utm_campaign__c' => $utmCampaign,
+            'utm_content__c' => $utmContent,
+            'utm_term__c' => $utmTerm,
         ];
 
         return array_filter($payload, static fn (mixed $value): bool => $value !== null && $value !== '');
@@ -162,5 +192,35 @@ class SalesforceCaseMapper
             ->trim()
             ->title()
             ->toString();
+    }
+
+    private function extractFirstName(?string $fullName): ?string
+    {
+        $normalized = trim((string) $fullName);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $parts = preg_split('/\s+/', $normalized) ?: [];
+
+        return $parts[0] ?? null;
+    }
+
+    private function extractLastName(?string $fullName): ?string
+    {
+        $normalized = trim((string) $fullName);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $parts = preg_split('/\s+/', $normalized) ?: [];
+
+        if (count($parts) <= 1) {
+            return null;
+        }
+
+        return implode(' ', array_slice($parts, 1));
     }
 }

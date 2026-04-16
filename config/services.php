@@ -61,6 +61,9 @@ return [
         'case_status' => env('SF_CASE_STATUS', 'Nuevo'),
         'case_priority' => env('SF_CASE_PRIORITY', 'Media'),
         'case_origin' => env('SF_CASE_ORIGIN', 'Web'),
+        'lead_enabled' => env('SF_LEAD_ENABLED', false),
+        'lead_owner_id' => env('SF_LEAD_OWNER_ID'),
+        'lead_status' => env('SF_LEAD_STATUS', 'En Contacto'),
     ],
 
     'slack' => [

@@ -24,7 +24,9 @@ class CreateSalesforceCaseJob implements ShouldQueue
      */
     public function handle(SalesforceService $salesforceService, SalesforceCaseMapper $mapper): void
     {
-        if (! (bool) config('services.salesforce.case_enabled', false)) {
+        $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
+
+        if (! $leadEnabled) {
             return;
         }
 
@@ -35,18 +37,25 @@ class CreateSalesforceCaseJob implements ShouldQueue
         }
 
         try {
-            $payload = $mapper->map($submission);
-            $response = $salesforceService->createCase($payload);
-            $caseId = (string) ($response['id'] ?? $response['Id'] ?? '');
+            // Flujo Case pausado temporalmente:
+            // $payload = $mapper->map($submission);
+            // $response = $salesforceService->createCase($payload);
+
+            $payload = $mapper->mapLead($submission);
+            $response = $salesforceService->createLead($payload);
+            $leadId = (string) ($response['id'] ?? $response['Id'] ?? '');
 
             $submission->update([
-                'salesforce_case_id' => $caseId !== '' ? $caseId : null,
+                'salesforce_case_id' => $leadId !== '' ? $leadId : null,
                 'salesforce_case_error' => null,
             ]);
 
-            Log::info('CreateSalesforceCaseJob: Case creado correctamente', [
+            Log::info('CreateSalesforceCaseJob: Lead creado correctamente', [
                 'contact_submission_id' => $submission->id,
-                'salesforce_case_id' => $caseId !== '' ? $caseId : null,
+                'salesforce_lead_id' => $leadId !== '' ? $leadId : null,
+                'salesforce_success' => $response['success'] ?? null,
+                'salesforce_errors' => $response['errors'] ?? null,
+                'salesforce_response' => $response,
             ]);
         } catch (\Throwable $exception) {
             $errorMessage = Str::limit($exception->getMessage(), 65535, '');
@@ -55,10 +64,41 @@ class CreateSalesforceCaseJob implements ShouldQueue
                 'salesforce_case_error' => $errorMessage,
             ]);
 
-            Log::error('CreateSalesforceCaseJob: Error al crear Case', [
+            Log::error('CreateSalesforceCaseJob: Error al crear Lead', [
                 'contact_submission_id' => $submission->id,
                 'error' => $exception->getMessage(),
+                ...$this->extractExceptionContext($exception),
             ]);
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractExceptionContext(\Throwable $exception): array
+    {
+        $context = [
+            'exception_class' => $exception::class,
+        ];
+
+        if (! method_exists($exception, 'getResponse')) {
+            return $context;
+        }
+
+        $response = $exception->getResponse();
+
+        if (! $response) {
+            return $context;
+        }
+
+        $body = (string) $response->getBody();
+        $decodedBody = \json_decode($body, true);
+
+        $context['salesforce_http_status'] = $response->getStatusCode();
+        $context['salesforce_error_response'] = is_array($decodedBody)
+            ? $decodedBody
+            : Str::limit($body, 4000, '');
+
+        return $context;
     }
 }

@@ -12,14 +12,10 @@ class SalesforceCaseMapperTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_maps_contact_submission_into_salesforce_case_payload(): void
+    public function test_it_maps_contact_submission_into_salesforce_lead_payload(): void
     {
-        config()->set('services.salesforce.case_record_type_id', '0128c000002wPrTAAU');
-        config()->set('services.salesforce.case_owner_id', '005U1000001DCCZIA4');
-        config()->set('services.salesforce.case_source_id', '02sU100000aMcxzIAC');
-        config()->set('services.salesforce.case_status', 'Nuevo');
-        config()->set('services.salesforce.case_priority', 'Media');
-        config()->set('services.salesforce.case_origin', 'Email');
+        config()->set('services.salesforce.lead_owner_id', '005U100000CAG4bIAH');
+        config()->set('services.salesforce.lead_status', 'En Contacto');
 
         SiteSetting::current()->update([
             'site_name' => 'iLeben',
@@ -42,28 +38,40 @@ class SalesforceCaseMapperTest extends TestCase
                 'project_name' => 'Edificio Indigo',
                 'comuna' => 'Puerto Varas',
                 'arrival_channel' => 'BlackInmobiliario',
+                'medio' => 'meta',
                 'utm_source' => 'direct',
+                'utm_medium' => 'organic',
                 'utm_campaign' => 'BlackFriday',
+                'utm_content' => 'AON_Mood_anuncio_5',
+                'utm_term' => 'clientes-potenciales',
             ],
             'submitted_at' => now(),
         ]);
 
-        $payload = app(SalesforceCaseMapper::class)->map($submission);
+        $payload = app(SalesforceCaseMapper::class)->mapLead($submission);
 
-        $this->assertSame('iLeben', $payload['SuppliedName'] ?? null);
-        $this->assertSame('inscripciones@ileben.cl', $payload['SuppliedEmail'] ?? null);
-        $this->assertSame('992285134', $payload['SuppliedPhone'] ?? null);
-        $this->assertSame('992285134', $payload['ContactPhone'] ?? null);
-        $this->assertSame('alejandro@example.com', $payload['ContactEmail'] ?? null);
+        $this->assertSame('Alejandro', $payload['FirstName'] ?? null);
+        $this->assertSame('Reveco', $payload['LastName'] ?? null);
+        $this->assertSame('iLeben', $payload['Company'] ?? null);
+        $this->assertSame('992285134', $payload['Phone'] ?? null);
+        $this->assertSame('992285134', $payload['MobilePhone'] ?? null);
+        $this->assertSame('alejandro@example.com', $payload['Email'] ?? null);
+        $this->assertSame('alejandro@example.com', $payload['Email__c'] ?? null);
         $this->assertSame('11.455.798-6', $payload['RUT__c'] ?? null);
-        $this->assertSame('BlackFriday', $payload['Subject'] ?? null);
-        $this->assertSame('Email', $payload['Origin'] ?? null);
-        $this->assertSame('Media', $payload['Priority'] ?? null);
-        $this->assertSame('0128c000002wPrTAAU', $payload['RecordTypeId'] ?? null);
-        $this->assertSame('02sU100000aMcxzIAC', $payload['SourceId'] ?? null);
+        $this->assertSame('meta', $payload['LeadSource'] ?? null);
+        $this->assertSame('En Contacto', $payload['Status'] ?? null);
+        $this->assertSame('005U100000CAG4bIAH', $payload['OwnerId'] ?? null);
+        $this->assertSame('Online', $payload['Tipo_Ingreso__c'] ?? null);
         $this->assertSame('Edificio Indigo', $payload['Nombre_Proyecto__c'] ?? null);
-        $this->assertSame('Edificio Indigo', $payload['Proyecto_Formulario__c'] ?? null);
-        $this->assertSame('Puerto Varas', $payload['En_que_lugar__c'] ?? null);
+        $this->assertSame('Edificio Indigo', $payload['Informacion_Cotizacion__c'] ?? null);
+        $this->assertSame('Edificio Indigo', $payload['Proyect_ID__c'] ?? null);
+        $this->assertSame('Puerto Varas', $payload['Comuna__c'] ?? null);
+        $this->assertSame('meta', $payload['Medio_de_Llegada__c'] ?? null);
+        $this->assertSame('direct', $payload['utm_source__c'] ?? null);
+        $this->assertSame('organic', $payload['utm_medium__c'] ?? null);
+        $this->assertSame('BlackFriday', $payload['utm_campaign__c'] ?? null);
+        $this->assertSame('AON_Mood_anuncio_5', $payload['utm_content__c'] ?? null);
+        $this->assertSame('clientes-potenciales', $payload['utm_term__c'] ?? null);
         $this->assertStringContainsString('Nombre: Alejandro', $payload['Description'] ?? '');
         $this->assertStringContainsString('Proyecto: Edificio Indigo', $payload['Description'] ?? '');
         $this->assertStringContainsString('UTM Source: direct', $payload['Description'] ?? '');
