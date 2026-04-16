@@ -14,6 +14,7 @@ use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Models\SentEmail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
@@ -171,8 +172,8 @@ class FinMailNotificationService
                 'rut' => new TokenValue($submission->rut ?: $this->extractFieldValue($fields, ['rut']) ?: '-'),
                 'telefono' => new TokenValue($submission->phone ?: $this->extractFieldValue($fields, ['telefono', 'phone', 'celular', 'whatsapp']) ?: '-'),
                 'email' => new TokenValue($submission->email ?: $this->extractFieldValue($fields, ['email', 'correo']) ?: '-'),
-                'comuna' => new TokenValue($this->extractFieldValue($fields, ['comuna']) ?: '-'),
-                'proyecto' => new TokenValue($this->extractFieldValue($fields, ['proyecto']) ?: '-'),
+                'comuna' => new TokenValue($this->extractFieldValue($fields, ['comuna', 'commune', 'district', 'project_commune']) ?: '-'),
+                'proyecto' => new TokenValue($this->extractFieldValue($fields, ['proyecto', 'project', 'project_name', 'nombre_proyecto']) ?: '-'),
                 'medio' => new TokenValue($this->extractFieldValue($fields, ['medio', 'origen', 'lead_source', 'utm_source']) ?: 'Black'),
                 'rango' => new TokenValue($this->extractFieldValue($fields, ['rango', 'renta', 'renta_liquida', 'income_range']) ?: '-'),
                 'codeudor' => new TokenValue($this->extractFieldValue($fields, ['codeudor', 'coudedor', 'co_deudor']) ?: '-'),
@@ -302,7 +303,7 @@ class FinMailNotificationService
             'rendered_body' => null,
             'attachments' => [],
             'status' => EmailStatus::Queued,
-            'sent_by' => auth()->user()?->getAuthIdentifier(),
+            'sent_by' => Auth::user()?->getAuthIdentifier(),
             'sendable_type' => $contextModel?->getMorphClass(),
             'sendable_id' => $contextModel?->getKey(),
         ]);
@@ -326,7 +327,7 @@ class FinMailNotificationService
         return array_values(array_filter(array_unique(array_map(
             static fn (mixed $email): string => trim((string) $email),
             $configuredRecipients,
-        )), static fn (string $email): bool => $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false));
+        )), static fn (string $email): bool => $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false));
     }
 
     private function resolveStatusLabel(string|PaymentStatus|null $status): string

@@ -200,8 +200,8 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'en' => 'Contact received (admin)',
                 ],
                 'subject' => [
-                    'es' => 'Nuevo lead de contacto: {{ nombre | "-" }} {{ apellido | "" }}',
-                    'en' => 'New contact lead: {{ nombre | "-" }} {{ apellido | "" }}',
+                    'es' => 'Campaña Sale',
+                    'en' => 'Sale Campaign',
                 ],
                 'preheader' => [
                     'es' => 'Se recibio una nueva consulta desde el formulario de contacto.',
@@ -243,12 +243,119 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'subject' => $template['subject'],
                     'preheader' => $template['preheader'],
                     'body' => $template['body'],
-                    'token_schema' => $template['token_schema'],
+                    'token_schema' => $this->normalizeTokenSchema($template['token_schema']),
                     'is_active' => true,
                     'is_locked' => false,
                 ]
             );
         }
+    }
+
+    /**
+     * @param  array<string|int, mixed>  $tokenSchema
+     * @return array<int, array{token:string,description:string,example:string}>
+     */
+    protected function normalizeTokenSchema(array $tokenSchema): array
+    {
+        $normalized = [];
+
+        foreach ($tokenSchema as $key => $definition) {
+            if (is_array($definition) && array_key_exists('token', $definition)) {
+                $token = trim((string) ($definition['token'] ?? ''));
+
+                if ($token === '') {
+                    continue;
+                }
+
+                $normalized[] = [
+                    'token' => $token,
+                    'description' => trim((string) ($definition['description'] ?? $this->defaultTokenDescription($token))),
+                    'example' => trim((string) ($definition['example'] ?? $this->defaultTokenExample($token))),
+                ];
+
+                continue;
+            }
+
+            if (is_array($definition)) {
+                foreach ($definition as $attribute) {
+                    $token = trim(sprintf('%s.%s', (string) $key, (string) $attribute), '.');
+
+                    if ($token === '') {
+                        continue;
+                    }
+
+                    $normalized[] = $this->makeTokenSchemaEntry($token);
+                }
+
+                continue;
+            }
+
+            $token = is_string($key) ? trim($key) : trim((string) $definition);
+
+            if ($token === '') {
+                continue;
+            }
+
+            $normalized[] = $this->makeTokenSchemaEntry($token);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @return array{token:string,description:string,example:string}
+     */
+    protected function makeTokenSchemaEntry(string $token): array
+    {
+        return [
+            'token' => $token,
+            'description' => $this->defaultTokenDescription($token),
+            'example' => $this->defaultTokenExample($token),
+        ];
+    }
+
+    protected function defaultTokenDescription(string $token): string
+    {
+        return match ($token) {
+            'nombre' => 'Nombre del contacto',
+            'apellido' => 'Apellido del contacto',
+            'rut' => 'RUT del contacto',
+            'telefono' => 'Telefono del contacto',
+            'email' => 'Correo del contacto',
+            'comuna' => 'Comuna seleccionada por el contacto',
+            'proyecto' => 'Proyecto seleccionado por el contacto',
+            'medio' => 'Origen o medio de llegada del lead',
+            'rango' => 'Rango de renta liquida declarado',
+            'codeudor' => 'Disponibilidad de codeudor',
+            'buscas' => 'Objetivo de compra del contacto',
+            'elaboral' => 'Estado laboral del contacto',
+            'mensaje' => 'Mensaje enviado desde el formulario',
+            'site_name' => 'Nombre del sitio configurado',
+            'site_url' => 'URL del sitio configurado',
+            default => 'Valor disponible para el token '.$token,
+        };
+    }
+
+    protected function defaultTokenExample(string $token): string
+    {
+        return match ($token) {
+            'nombre' => 'Juan',
+            'apellido' => 'Perez',
+            'rut' => '12345678-5',
+            'telefono' => '+56912345678',
+            'email' => 'juan@example.com',
+            'comuna' => 'Providencia',
+            'proyecto' => 'Edificio Andes',
+            'medio' => 'Meta Ads',
+            'rango' => 'Entre $1.000.000 y $1.500.000',
+            'codeudor' => 'Si',
+            'buscas' => 'Vivienda propia',
+            'elaboral' => 'Empleado dependiente',
+            'mensaje' => 'Quiero mas informacion del proyecto.',
+            'site_name' => 'iLeben',
+            'site_url' => 'https://sale.ileben.cl',
+            default => '',
+        };
     }
 
     /**

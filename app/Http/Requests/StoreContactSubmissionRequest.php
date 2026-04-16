@@ -84,6 +84,14 @@ class StoreContactSubmissionRequest extends FormRequest
             $rules["fields.{$key}"] = ['nullable', 'string', 'max:255'];
         }
 
+        foreach ($this->supplementalContactFields() as $key => $ruleset) {
+            if (array_key_exists("fields.{$key}", $rules)) {
+                continue;
+            }
+
+            $rules["fields.{$key}"] = $ruleset;
+        }
+
         return $rules;
     }
 
@@ -110,6 +118,10 @@ class StoreContactSubmissionRequest extends FormRequest
             $attributes["fields.{$key}"] = $label;
         }
 
+        foreach (array_keys($this->supplementalContactFields()) as $key) {
+            $attributes["fields.{$key}"] = $this->supplementalContactFieldLabels()[$key] ?? $key;
+        }
+
         return $attributes;
     }
 
@@ -125,6 +137,54 @@ class StoreContactSubmissionRequest extends FormRequest
             'utm_term' => 'UTM Term',
             'utm_content' => 'UTM Content',
             'utm_site' => 'UTM Site',
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function supplementalContactFields(): array
+    {
+        return [
+            'phone' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:255'],
+            'fono' => ['nullable', 'string', 'max:255'],
+            'celular' => ['nullable', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:255'],
+            'comuna' => ['nullable', 'string', 'max:255'],
+            'commune' => ['nullable', 'string', 'max:255'],
+            'district' => ['nullable', 'string', 'max:255'],
+            'project_commune' => ['nullable', 'string', 'max:255'],
+            'proyecto' => ['nullable', 'string', 'max:255'],
+            'project' => ['nullable', 'string', 'max:255'],
+            'project_name' => ['nullable', 'string', 'max:255'],
+            'nombre_proyecto' => ['nullable', 'string', 'max:255'],
+            'message' => ['nullable', 'string', 'max:5000'],
+            'mensaje' => ['nullable', 'string', 'max:5000'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function supplementalContactFieldLabels(): array
+    {
+        return [
+            'phone' => 'Telefono',
+            'telefono' => 'Telefono',
+            'fono' => 'Telefono',
+            'celular' => 'Celular',
+            'whatsapp' => 'WhatsApp',
+            'comuna' => 'Comuna',
+            'commune' => 'Comuna',
+            'district' => 'Comuna',
+            'project_commune' => 'Comuna del proyecto',
+            'proyecto' => 'Proyecto',
+            'project' => 'Proyecto',
+            'project_name' => 'Proyecto',
+            'nombre_proyecto' => 'Proyecto',
+            'message' => 'Mensaje',
+            'mensaje' => 'Mensaje',
         ];
     }
 

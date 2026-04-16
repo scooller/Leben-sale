@@ -45,8 +45,8 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $this->assertSame('Reserva de unidad confirmada', $reservationTemplate->getTranslation('name', 'es'));
         $this->assertStringContainsString('{{ reservation_amount', $reservationTemplate->getTranslation('body', 'es'));
         $this->assertStringContainsString('{{ reservation_currency', $reservationTemplate->getTranslation('body', 'es'));
-        $this->assertSame('string', data_get($reservationTemplate->token_schema, 'reservation_amount'));
-        $this->assertSame('string', data_get($reservationTemplate->token_schema, 'reservation_currency'));
+        $this->assertNotNull(collect($reservationTemplate->token_schema)->firstWhere('token', 'reservation_amount'));
+        $this->assertNotNull(collect($reservationTemplate->token_schema)->firstWhere('token', 'reservation_currency'));
         $this->assertSame('Actualizacion de estado de pago', $paymentTemplate->getTranslation('name', 'es'));
         $this->assertStringContainsString('{{ payment.amount', $paymentTemplate->getTranslation('body', 'es'));
         $this->assertStringContainsString('{{ payment.currency', $paymentTemplate->getTranslation('body', 'es'));
@@ -69,5 +69,11 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $this->assertStringContainsString('<span class="mensaje">{{ mensaje | "" }}</span>', $spanishBody);
         $this->assertStringNotContainsString('href="tel:{{ telefono | "-" }}"', $spanishBody);
         $this->assertStringNotContainsString('href="mailto:{{ email | "-" }}"', $spanishBody);
+
+        $tokenSchema = collect($template->token_schema);
+
+        $this->assertSame('telefono', $tokenSchema->firstWhere('token', 'telefono')['token'] ?? null);
+        $this->assertSame('comuna', $tokenSchema->firstWhere('token', 'comuna')['token'] ?? null);
+        $this->assertSame('proyecto', $tokenSchema->firstWhere('token', 'proyecto')['token'] ?? null);
     }
 }

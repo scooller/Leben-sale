@@ -19,7 +19,7 @@ class ContactSubmissionController extends Controller
 
         $name = $this->fieldValue($fields, ['name', 'nombre']);
         $email = $this->fieldValue($fields, ['email', 'correo']);
-        $phone = $this->fieldValue($fields, ['phone', 'telefono', 'celular']);
+        $phone = $this->fieldValue($fields, ['phone', 'telefono', 'fono', 'celular', 'whatsapp']);
         $rut = $this->fieldValue($fields, ['rut']);
 
         $recipientEmail = $settings->contact_notification_email ?: $settings->contact_email;

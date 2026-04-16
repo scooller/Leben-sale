@@ -146,6 +146,44 @@ class ContactSubmissionApiTest extends TestCase
         $this->assertStringContainsString('Proyecto', $template->getTranslation('body', 'es'));
         $this->assertStringContainsString('Medio de llegada', $template->getTranslation('body', 'es'));
         $this->assertStringContainsString('codeudor', strtolower($template->getTranslation('body', 'es')));
+        $this->assertSame('telefono', collect($template->token_schema)->firstWhere('token', 'telefono')['token'] ?? null);
+        $this->assertSame('comuna', collect($template->token_schema)->firstWhere('token', 'comuna')['token'] ?? null);
+        $this->assertSame('proyecto', collect($template->token_schema)->firstWhere('token', 'proyecto')['token'] ?? null);
+    }
+
+    public function test_it_accepts_commune_and_project_aliases_in_contact_submission_fields(): void
+    {
+        Mail::fake();
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        SiteSetting::current()->update([
+            'contact_form_fields' => [
+                ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+                ['key' => 'message', 'label' => 'Mensaje', 'type' => 'textarea', 'required' => true],
+            ],
+            'contact_notification_email' => 'leads@ileben.cl',
+        ]);
+
+        $response = $this->postJson('/api/v1/contact-submissions', [
+            'fields' => [
+                'name' => 'Juan Perez',
+                'email' => 'juan@example.com',
+                'message' => 'Quiero información del proyecto.',
+                'commune' => 'Providencia',
+                'project_name' => 'Edificio Andes',
+            ],
+        ]);
+
+        $response->assertCreated();
+
+        $submission = ContactSubmission::query()->latest('id')->first();
+
+        $this->assertNotNull($submission);
+        $this->assertSame('Providencia', $submission->fields['commune']);
+        $this->assertSame('Edificio Andes', $submission->fields['project_name']);
+
+        Mail::assertSent(TemplateMail::class);
     }
 
     public function test_admin_can_view_contact_submission_list_with_dynamic_columns(): void
