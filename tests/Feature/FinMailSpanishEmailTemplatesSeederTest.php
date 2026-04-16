@@ -53,4 +53,21 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $this->assertSame('Reserva manual creada', $manualReservationTemplate->getTranslation('name', 'es'));
         $this->assertSame('Comprobante manual recibido (admin)', $manualProofAdminTemplate->getTranslation('name', 'es'));
     }
+
+    public function test_contact_submission_template_wraps_cmr_fields_in_spans(): void
+    {
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        $template = EmailTemplate::query()->where('key', 'contact-submission-received-admin')->first();
+
+        $this->assertNotNull($template);
+
+        $spanishBody = $template->getTranslation('body', 'es');
+
+        $this->assertStringContainsString('<span class="telefono">{{ telefono | "-" }}</span>', $spanishBody);
+        $this->assertStringContainsString('<span class="email">{{ email | "-" }}</span>', $spanishBody);
+        $this->assertStringContainsString('<span class="mensaje">{{ mensaje | "" }}</span>', $spanishBody);
+        $this->assertStringNotContainsString('href="tel:{{ telefono | "-" }}"', $spanishBody);
+        $this->assertStringNotContainsString('href="mailto:{{ email | "-" }}"', $spanishBody);
+    }
 }
