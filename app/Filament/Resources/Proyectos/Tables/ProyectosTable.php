@@ -52,18 +52,6 @@ class ProyectosTable
                             ]);
                         })
                         ->successNotificationTitle('Plantas desactivadas'),
-                    // activateSelected Sale
-                    BulkAction::make('activateSelected')
-                        ->label('Activar en sale')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->requiresConfirmation()
-                        ->action(function (Collection $records): void {
-                            $records->each->update([
-                                'unidad_sale' => true,
-                            ]);
-                        })
-                        ->successNotificationTitle('Plantas Sale'),
                     DeleteBulkAction::make(),
                 ]),
             ]);
