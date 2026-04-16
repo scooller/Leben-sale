@@ -67,6 +67,36 @@ class SyncProjectsActionTest extends TestCase
         ]);
     }
 
+    public function test_sync_projects_does_not_update_is_active_on_existing_projects(): void
+    {
+        Proyecto::factory()->create([
+            'salesforce_id' => 'SF-ACTIVE-001',
+            'name' => 'Proyecto Estado Local',
+            'is_active' => false,
+        ]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('findProjects')
+                ->once()
+                ->andReturn([
+                    $this->projectPayload([
+                        'id' => 'SF-ACTIVE-001',
+                        'name' => 'Proyecto Estado Local Actualizado',
+                        'is_active' => true,
+                    ]),
+                ]);
+        });
+
+        $result = SyncProjectsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('proyectos', [
+            'salesforce_id' => 'SF-ACTIVE-001',
+            'name' => 'Proyecto Estado Local Actualizado',
+            'is_active' => false,
+        ]);
+    }
+
     public function test_sync_projects_handles_empty_results(): void
     {
         $this->mock(SalesforceService::class, function (MockInterface $mock) {

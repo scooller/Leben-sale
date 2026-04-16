@@ -85,7 +85,6 @@ class SyncProjectsAction
                     'fecha_entrega' => $proyectoData['fecha_entrega'],
                     'etapa' => $proyectoData['etapa'],
                     'horario_atencion' => $proyectoData['horario_atencion'],
-                    'is_active' => $proyectoData['is_active'] ?? true,
                     'valor_reserva_exigido_defecto_peso' => $proyectoData['valor_reserva_exigido_defecto_peso'],
                     'valor_reserva_exigido_min_peso' => $proyectoData['valor_reserva_exigido_min_peso'],
                     'entrega_inmediata' => $proyectoData['entrega_inmediata'],
@@ -120,6 +119,7 @@ class SyncProjectsAction
                     $proyecto = Proyecto::create(array_merge(
                         ['salesforce_id' => $proyectoData['id']],
                         $data,
+                        ['is_active' => $proyectoData['is_active'] ?? true],
                         ['tipo' => $data['tipo'] ?? []]
                     ));
                     $synced++;

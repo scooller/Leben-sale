@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Proyectos\Tables;
 
 use App\Models\Proyecto;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -11,6 +13,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 /*
 colores disponibles para badge:
@@ -26,9 +29,41 @@ class ProyectosTable
             ->filters(self::getFilters())
             ->recordActions([
                 EditAction::make(),
+                Action::make('toggleActive')
+                    ->label(fn (Proyecto $record): string => $record->is_active ? 'Desactivar' : 'Activar')
+                    ->icon(fn (Proyecto $record): string => $record->is_active ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->color(fn (Proyecto $record): string => $record->is_active ? 'warning' : 'success')
+                    ->action(fn (Proyecto $record): bool => $record->update([
+                        'is_active' => ! $record->is_active,
+                    ]))
+                    ->successNotificationTitle('Estado actualizado'),
+                EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('deactivateSelected')
+                        ->label('Desactivar seleccionadas')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            $records->each->update([
+                                'is_active' => false,
+                            ]);
+                        })
+                        ->successNotificationTitle('Plantas desactivadas'),
+                    // activateSelected Sale
+                    BulkAction::make('activateSelected')
+                        ->label('Activar en sale')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            $records->each->update([
+                                'unidad_sale' => true,
+                            ]);
+                        })
+                        ->successNotificationTitle('Plantas Sale'),
                     DeleteBulkAction::make(),
                 ]),
             ]);
@@ -77,6 +112,11 @@ class ProyectosTable
 
             TextColumn::make('rut')
                 ->label('RUT'),
+
+            TextColumn::make('plantas_count')
+                ->label('Plantas')
+                ->counts('plantas')
+                ->sortable(),
 
             // tipo
             TextColumn::make('tipo')
