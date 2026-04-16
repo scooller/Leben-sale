@@ -12,8 +12,8 @@ use Database\Seeders\FinMailSpanishEmailTemplatesSeeder;
 use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ContactSubmissionApiTest extends TestCase
@@ -378,7 +378,7 @@ class ContactSubmissionApiTest extends TestCase
 
     public function test_it_dispatches_salesforce_case_job_when_enabled(): void
     {
-        Queue::fake();
+        Bus::fake();
 
         config()->set('services.salesforce.lead_enabled', true);
 
@@ -403,12 +403,12 @@ class ContactSubmissionApiTest extends TestCase
 
         $response->assertCreated();
 
-        Queue::assertPushed(CreateSalesforceCaseJob::class);
+        Bus::assertDispatchedSync(CreateSalesforceCaseJob::class);
     }
 
     public function test_it_does_not_dispatch_salesforce_case_job_when_disabled(): void
     {
-        Queue::fake();
+        Bus::fake();
 
         config()->set('services.salesforce.lead_enabled', false);
         config()->set('services.salesforce.case_enabled', false);
@@ -433,6 +433,6 @@ class ContactSubmissionApiTest extends TestCase
 
         $response->assertCreated();
 
-        Queue::assertNotPushed(CreateSalesforceCaseJob::class);
+        Bus::assertNotDispatched(CreateSalesforceCaseJob::class);
     }
 }

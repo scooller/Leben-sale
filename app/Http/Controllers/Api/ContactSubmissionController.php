@@ -9,6 +9,7 @@ use App\Models\ContactSubmission;
 use App\Models\SiteSetting;
 use App\Services\FinMail\FinMailNotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ContactSubmissionController extends Controller
@@ -44,7 +45,20 @@ class ContactSubmissionController extends Controller
         $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
 
         if ($leadEnabled) {
-            CreateSalesforceCaseJob::dispatch($submission);
+            Log::info('ContactSubmissionController: Iniciando sincronización Salesforce Lead', [
+                'contact_submission_id' => $submission->id,
+                'email' => $submission->email,
+            ]);
+
+            CreateSalesforceCaseJob::dispatchSync($submission);
+
+            Log::info('ContactSubmissionController: Finalizó sincronización Salesforce Lead', [
+                'contact_submission_id' => $submission->id,
+            ]);
+        } else {
+            Log::warning('ContactSubmissionController: Salesforce Lead deshabilitado, no se enviará a Salesforce', [
+                'contact_submission_id' => $submission->id,
+            ]);
         }
 
         return response()->json([

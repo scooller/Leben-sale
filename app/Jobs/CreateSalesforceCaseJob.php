@@ -26,13 +26,24 @@ class CreateSalesforceCaseJob implements ShouldQueue
     {
         $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
 
+        Log::info('CreateSalesforceCaseJob: Inicio de ejecución', [
+            'contact_submission_id' => $this->submission->id,
+            'lead_enabled' => $leadEnabled,
+        ]);
+
         if (! $leadEnabled) {
+            Log::warning('CreateSalesforceCaseJob: Lead deshabilitado, se omite envío', [
+                'contact_submission_id' => $this->submission->id,
+            ]);
+
             return;
         }
 
         $submission = $this->submission->fresh();
 
         if (! $submission) {
+            Log::warning('CreateSalesforceCaseJob: Submission no encontrada al refrescar');
+
             return;
         }
 
