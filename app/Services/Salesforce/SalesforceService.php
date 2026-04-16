@@ -115,16 +115,18 @@ class SalesforceService
      */
     public function createLead(array $payload): array
     {
+        $currentPayload = $payload;
+
         Log::info('Salesforce: Enviando solicitud de creación de Lead', [
-            'email' => $payload['Email'] ?? null,
-            'lead_source' => $payload['LeadSource'] ?? null,
-            'payload_keys' => array_keys($payload),
+            'email' => $currentPayload['Email'] ?? null,
+            'lead_source' => $currentPayload['LeadSource'] ?? null,
+            'payload_keys' => array_keys($currentPayload),
         ]);
 
         try {
             $result = Forrest::sobjects('Lead', [
                 'method' => 'post',
-                'body' => $payload,
+                'body' => $currentPayload,
             ]);
 
             $response = is_array($result) ? $result : [];
@@ -138,6 +140,35 @@ class SalesforceService
 
             return $response;
         } catch (\Throwable $firstException) {
+            $invalidField = $this->extractInvalidLeadField($firstException);
+
+            if ($invalidField !== null && array_key_exists($invalidField, $currentPayload)) {
+                unset($currentPayload[$invalidField]);
+
+                Log::warning('Salesforce: Campo inválido removido del payload de Lead, reintentando', [
+                    'invalid_field' => $invalidField,
+                    'email' => $payload['Email'] ?? null,
+                    'payload_keys' => array_keys($currentPayload),
+                ]);
+
+                $result = Forrest::sobjects('Lead', [
+                    'method' => 'post',
+                    'body' => $currentPayload,
+                ]);
+
+                $response = is_array($result) ? $result : [];
+
+                Log::info('Salesforce: Respuesta creación de Lead tras remover campo inválido', [
+                    'lead_id' => $response['id'] ?? $response['Id'] ?? null,
+                    'success' => $response['success'] ?? null,
+                    'errors' => $response['errors'] ?? null,
+                    'response' => $response,
+                    'removed_field' => $invalidField,
+                ]);
+
+                return $response;
+            }
+
             Log::warning('Salesforce: Error creando Lead, se intentará re-autenticación', [
                 'error' => $firstException->getMessage(),
                 'email' => $payload['Email'] ?? null,
@@ -148,7 +179,7 @@ class SalesforceService
             try {
                 $result = Forrest::sobjects('Lead', [
                     'method' => 'post',
-                    'body' => $payload,
+                    'body' => $currentPayload,
                 ]);
 
                 $response = is_array($result) ? $result : [];
@@ -162,6 +193,35 @@ class SalesforceService
 
                 return $response;
             } catch (\Throwable $secondException) {
+                $invalidField = $this->extractInvalidLeadField($secondException);
+
+                if ($invalidField !== null && array_key_exists($invalidField, $currentPayload)) {
+                    unset($currentPayload[$invalidField]);
+
+                    Log::warning('Salesforce: Campo inválido removido tras re-auth, reintentando Lead', [
+                        'invalid_field' => $invalidField,
+                        'email' => $payload['Email'] ?? null,
+                        'payload_keys' => array_keys($currentPayload),
+                    ]);
+
+                    $result = Forrest::sobjects('Lead', [
+                        'method' => 'post',
+                        'body' => $currentPayload,
+                    ]);
+
+                    $response = is_array($result) ? $result : [];
+
+                    Log::info('Salesforce: Respuesta creación de Lead tras re-auth y remover campo inválido', [
+                        'lead_id' => $response['id'] ?? $response['Id'] ?? null,
+                        'success' => $response['success'] ?? null,
+                        'errors' => $response['errors'] ?? null,
+                        'response' => $response,
+                        'removed_field' => $invalidField,
+                    ]);
+
+                    return $response;
+                }
+
                 Log::error('Salesforce: Error creando Lead tras re-autenticación', [
                     'error' => $secondException->getMessage(),
                     'email' => $payload['Email'] ?? null,
@@ -170,6 +230,19 @@ class SalesforceService
                 throw $secondException;
             }
         }
+    }
+
+    private function extractInvalidLeadField(\Throwable $exception): ?string
+    {
+        $message = $exception->getMessage();
+
+        if (preg_match("/No such column '([^']+)' on sobject of type Lead/i", $message, $matches) !== 1) {
+            return null;
+        }
+
+        $field = trim((string) ($matches[1] ?? ''));
+
+        return $field !== '' ? $field : null;
     }
 
     /**

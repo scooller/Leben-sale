@@ -62,11 +62,14 @@ class SalesforceCaseMapperTest extends TestCase
         $this->assertSame('En Contacto', $payload['Status'] ?? null);
         $this->assertSame('005U100000CAG4bIAH', $payload['OwnerId'] ?? null);
         $this->assertSame('Online', $payload['Tipo_Ingreso__c'] ?? null);
-        $this->assertSame('Edificio Indigo', $payload['Nombre_Proyecto__c'] ?? null);
+        $this->assertSame(null, $payload['Proyecto__c'] ?? null);
         $this->assertSame('Edificio Indigo', $payload['Informacion_Cotizacion__c'] ?? null);
         $this->assertSame('Edificio Indigo', $payload['Proyect_ID__c'] ?? null);
         $this->assertSame('Puerto Varas', $payload['Comuna__c'] ?? null);
-        $this->assertSame('meta', $payload['Medio_de_Llegada__c'] ?? null);
+        $this->assertSame('Meta', $payload['Medio_de_Llegada__c'] ?? null);
+        $this->assertSame('BlackFriday', $payload['Nombre_de_la_Campa_a__c'] ?? null);
+        $this->assertSame('organic', $payload['Audiencia__c'] ?? null);
+        $this->assertSame('AON_Mood_anuncio_5', $payload['Pieza_Grafica__c'] ?? null);
         $this->assertSame('direct', $payload['utm_source__c'] ?? null);
         $this->assertSame('organic', $payload['utm_medium__c'] ?? null);
         $this->assertSame('BlackFriday', $payload['utm_campaign__c'] ?? null);
