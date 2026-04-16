@@ -42,6 +42,8 @@ class SiteSettingFrontendConfigTest extends TestCase
                 'home_hero_video_desktop_url' => 'https://cdn.example.com/home-desktop.mp4',
                 'home_hero_video_mobile_url' => 'https://cdn.example.com/home-mobile.mp4',
                 'contact_hero_alt' => 'Hero contacto',
+                'catalogo_no_disponible_titulo' => 'Volvemos pronto',
+                'catalogo_no_disponible_mensaje' => 'Estamos actualizando nuestras plantas. Vuelve en breve.',
             ],
             'footer_menu' => [
                 [
@@ -61,6 +63,10 @@ class SiteSettingFrontendConfigTest extends TestCase
         $this->assertTrue($payload['evento_sale']);
         $this->assertArrayHasKey('mostrar_plantas', $payload);
         $this->assertFalse($payload['mostrar_plantas']);
+        $this->assertArrayHasKey('catalogo_no_disponible_titulo', $payload);
+        $this->assertSame('Volvemos pronto', $payload['catalogo_no_disponible_titulo']);
+        $this->assertArrayHasKey('catalogo_no_disponible_mensaje', $payload);
+        $this->assertSame('Estamos actualizando nuestras plantas. Vuelve en breve.', $payload['catalogo_no_disponible_mensaje']);
         $this->assertArrayHasKey('logo_sale', $payload);
         $this->assertNull($payload['logo_sale']);
         $this->assertArrayHasKey('footer_menu', $payload);

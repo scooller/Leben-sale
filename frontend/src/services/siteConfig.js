@@ -11,18 +11,33 @@ class SiteConfigService {
 
   /**
    * Obtener la configuración del sitio desde la API
+   * @param {boolean} forceRefresh - Si es true, ignora caché en memoria
    * @returns {Promise<Object>}
    */
-  async getConfig() {
-    if (this.config) {
+  async getConfig(forceRefresh = false) {
+    if (!forceRefresh && this.config) {
       return this.config;
     }
 
     this.loading = true;
     try {
-      const response = await api.get('/site-config');
+      const response = await api.get('/site-config', {
+        params: forceRefresh ? { _t: Date.now() } : undefined,
+        headers: forceRefresh
+          ? {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+          : undefined,
+      });
+
       this.config = response.data;
+
       return this.config;
+    } catch (error) {
+      console.error('[SiteConfigService] error al cargar /site-config', error);
+      throw error;
     } finally {
       this.loading = false;
     }

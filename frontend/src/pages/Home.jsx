@@ -116,7 +116,10 @@ const normalizeBrowserUrl = (url) => {
 function Home({ onNavigate, currentPath }) {
   const { config, loading: configLoading, colorMode, toggleColorMode } = useSiteConfig();
   const isSaleEventActive = Boolean(config?.evento_sale);
-  const showPlants = Boolean(config?.mostrar_plantas ?? true);
+  const showPlants = Boolean(config?.mostrar_plantas ?? false);
+  const canRenderPlantsCatalog = showPlants;
+  const catalogUnavailableTitle = config?.catalogo_no_disponible_titulo || 'Próximamente';
+  const catalogUnavailableMessage = config?.catalogo_no_disponible_mensaje || 'El catálogo de plantas no está disponible por el momento.';
   const routeFilters = useMemo(() => {
     const explicitFilters = parseFilterPath(currentPath || '/');
 
@@ -346,7 +349,7 @@ function Home({ onNavigate, currentPath }) {
   }, []);
 
   useEffect(() => {
-    if (!showPlants) {
+    if (!canRenderPlantsCatalog) {
       return;
     }
 
@@ -364,10 +367,10 @@ function Home({ onNavigate, currentPath }) {
     };
 
     fetchLocationFilters();
-  }, [showPlants]);
+  }, [canRenderPlantsCatalog]);
 
   useEffect(() => {
-    if (!showPlants) {
+    if (!canRenderPlantsCatalog) {
       return;
     }
 
@@ -384,10 +387,10 @@ function Home({ onNavigate, currentPath }) {
     };
 
     fetchPisoOptions();
-  }, [showPlants]);
+  }, [canRenderPlantsCatalog]);
 
   useEffect(() => {
-    if (!showPlants) {
+    if (!canRenderPlantsCatalog) {
       return;
     }
 
@@ -405,7 +408,7 @@ function Home({ onNavigate, currentPath }) {
     };
 
     fetchProjects();
-  }, [showPlants]);
+  }, [canRenderPlantsCatalog]);
 
   useEffect(() => {
     const validComunas = tempComuna.filter((comuna) => filteredComunaOptions.includes(comuna));
@@ -428,7 +431,7 @@ function Home({ onNavigate, currentPath }) {
   }, [routeComunaSlugs.length, routeComunaValues, routeFilters.legacySlug, routeProjectSlugs.length, routeProjectValues]);
 
   const loadPlants = useCallback(async () => {
-    if (!showPlants) {
+    if (!canRenderPlantsCatalog) {
       setPlants([]);
       setTotalPages(1);
       setTotalPlants(0);
@@ -560,7 +563,7 @@ function Home({ onNavigate, currentPath }) {
     selectedPrecioMin,
     selectedPrecioMax,
     isSaleEventActive,
-    showPlants,
+    canRenderPlantsCatalog,
     mapPlant,
   ]);
 
@@ -667,7 +670,7 @@ function Home({ onNavigate, currentPath }) {
     let isMounted = true;
 
     const loadPlantFromRoute = async () => {
-      if (!showPlants) {
+      if (!canRenderPlantsCatalog) {
         setRoutePlantLoading(false);
         setSelectedPlantDetail(null);
 
@@ -772,7 +775,7 @@ function Home({ onNavigate, currentPath }) {
     return () => {
       isMounted = false;
     };
-  }, [routePlantParams, plants, loading, mapPlant, showPlants]);
+  }, [routePlantParams, plants, loading, mapPlant, canRenderPlantsCatalog]);
 
   // Animaciones del Hero con GSAP
   useEffect(() => {
@@ -1213,7 +1216,7 @@ function Home({ onNavigate, currentPath }) {
         </div>
 
         {/* Filtros */}
-        {showPlants ? (
+        {canRenderPlantsCatalog ? (
         <>
         <wa-details className="filters-details wa-mb-m">
             <span slot="summary">
@@ -1484,9 +1487,9 @@ function Home({ onNavigate, currentPath }) {
         <wa-card className="wa-mb-l">
           <wa-callout variant="brand">
             <wa-icon slot="icon" name="clock"></wa-icon>
-            <strong>Próximamente</strong>
+            <strong>{catalogUnavailableTitle}</strong>
             <div style={{ marginTop: '8px' }}>
-              El catálogo de plantas no está disponible por el momento.
+              {catalogUnavailableMessage}
             </div>
           </wa-callout>
         </wa-card>

@@ -125,6 +125,19 @@ class SiteSettings extends Page implements HasForms
                                             ->default(true)
                                             ->helperText('Cuando está desactivado, el frontend mostrará un mensaje de "Próximamente" en lugar del catálogo.'),
 
+                                        TextInput::make('extra_settings.catalogo_no_disponible_titulo')
+                                            ->label('Título cuando no se muestran plantas')
+                                            ->default('Próximamente')
+                                            ->maxLength(120)
+                                            ->helperText('Título que verá el usuario cuando "Mostrar plantas" esté desactivado.'),
+
+                                        Textarea::make('extra_settings.catalogo_no_disponible_mensaje')
+                                            ->label('Mensaje cuando no se muestran plantas')
+                                            ->default('El catálogo de plantas no está disponible por el momento.')
+                                            ->rows(3)
+                                            ->maxLength(500)
+                                            ->helperText('Texto visible en el frontend cuando "Mostrar plantas" esté desactivado.'),
+
                                         CuratorPicker::make('logo_sale_id')
                                             ->label('Logo Sale')
                                             ->helperText('Logo usado en el grid y en el detalle de planta cuando Evento Sale está activo.')

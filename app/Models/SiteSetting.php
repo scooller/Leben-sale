@@ -275,6 +275,8 @@ class SiteSetting extends Model
             'footer_legal_text' => $settings->footer_legal_text,
             'evento_sale' => (bool) $settings->evento_sale,
             'mostrar_plantas' => (bool) ($settings->mostrar_plantas ?? true),
+            'catalogo_no_disponible_titulo' => $extraSettings['catalogo_no_disponible_titulo'] ?? 'Próximamente',
+            'catalogo_no_disponible_mensaje' => $extraSettings['catalogo_no_disponible_mensaje'] ?? 'El catálogo de plantas no está disponible por el momento.',
             'logo_sale' => $settings->logoSaleMedia?->url ?? null,
             'logo' => $settings->logoMedia?->url ?? null,
             'logo_dark' => $settings->logoDarkMedia?->url ?? null,

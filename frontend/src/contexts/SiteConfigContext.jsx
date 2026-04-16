@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import siteConfigService from '../services/siteConfig';
 import WebAwesomeService from '../services/webAwesome';
 import { initializeFacebookPixel, initializeTagManager } from '../utils/tagManager';
@@ -51,21 +51,10 @@ export const SiteConfigProvider = ({ children }) => {
     setColorMode(colorMode === 'dark' ? 'light' : 'dark');
   };
 
-  useEffect(() => {
-    // Prevenir doble ejecución en React StrictMode
-    if (hasLoadedConfig.current) return;
-    hasLoadedConfig.current = true;
-
-    applyColorModeToDocument(resolveInitialColorMode());
-
-    loadConfig();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
-      const data = await siteConfigService.getConfig();
+      const data = await siteConfigService.getConfig(forceRefresh);
       setConfig(data);
 
       // Aplicar configuración al documento
@@ -150,11 +139,21 @@ export const SiteConfigProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       setError(err);
+      console.error('[SiteConfig] Error cargando configuracion', err);
     } finally {
       setLoading(false);
-      console.log('Site configuration loaded and applied successfully.');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Prevenir doble ejecución en React StrictMode
+    if (hasLoadedConfig.current) return;
+    hasLoadedConfig.current = true;
+
+    applyColorModeToDocument(resolveInitialColorMode());
+
+    loadConfig();
+  }, [loadConfig]);
 
   const value = {
     config,
