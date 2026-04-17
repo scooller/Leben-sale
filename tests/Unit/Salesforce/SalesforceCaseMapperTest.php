@@ -25,6 +25,12 @@ class SalesforceCaseMapperTest extends TestCase
                 ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
                 ['key' => 'project_name', 'label' => 'Proyecto', 'type' => 'text', 'required' => false],
                 ['key' => 'arrival_channel', 'label' => 'Medio de llegada', 'type' => 'text', 'required' => false],
+                ['key' => 'rango', 'label' => 'Rango de renta', 'type' => 'select', 'required' => false],
+                ['key' => 'codeudor', 'label' => 'Complementa renta', 'type' => 'select', 'required' => false],
+                ['key' => 'validacion_renta', 'label' => 'Validación renta', 'type' => 'select', 'required' => false],
+                ['key' => 'buscas', 'label' => 'Uso departamento', 'type' => 'select', 'required' => false],
+                ['key' => 'elaboral', 'label' => 'Estado laboral', 'type' => 'select', 'required' => false],
+                ['key' => 'comuna_inversion', 'label' => 'Comuna inversión', 'type' => 'text', 'required' => false],
             ],
         ]);
 
@@ -47,6 +53,12 @@ class SalesforceCaseMapperTest extends TestCase
                 'comuna' => 'Puerto Varas',
                 'arrival_channel' => 'BlackInmobiliario',
                 'medio' => 'meta',
+                'rango' => 'Entre $2.500.000 y $3.500.000',
+                'codeudor' => 'Si',
+                'validacion_renta' => 'Aprobada',
+                'buscas' => 'Inversión',
+                'elaboral' => 'Dependiente',
+                'comuna_inversion' => 'Ñuñoa',
                 'utm_source' => 'direct',
                 'utm_medium' => 'organic',
                 'utm_campaign' => 'BlackFriday',
@@ -75,6 +87,12 @@ class SalesforceCaseMapperTest extends TestCase
         $this->assertSame('Edificio Indigo', $payload['Informacion_Cotizacion__c'] ?? null);
         $this->assertSame('Edificio Indigo', $payload['Proyect_ID__c'] ?? null);
         $this->assertSame('Puerto Varas', $payload['Comuna__c'] ?? null);
+        $this->assertSame('Entre $2.500.000 y $3.500.000', $payload['Rango_de_renta_liquida__c'] ?? null);
+        $this->assertSame('Si', $payload['complementaRenta__c'] ?? null);
+        $this->assertSame('Aprobada', $payload['Validaci_n_Renta__c'] ?? null);
+        $this->assertSame('Inversión', $payload['usoDepartamento__c'] ?? null);
+        $this->assertSame('Dependiente', $payload['estadoLaboral__c'] ?? null);
+        $this->assertSame('Ñuñoa', $payload['comunaInversion__c'] ?? null);
         $this->assertSame('Meta', $payload['Medio_de_Llegada__c'] ?? null);
         $this->assertSame('BlackFriday', $payload['Nombre_de_la_Campa_a__c'] ?? null);
         $this->assertSame('organic', $payload['Audiencia__c'] ?? null);

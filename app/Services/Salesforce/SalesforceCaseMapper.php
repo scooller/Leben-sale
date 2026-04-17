@@ -43,6 +43,12 @@ class SalesforceCaseMapper
         $email = $submission->email ?: $this->fieldValue($fields, ['email', 'correo']) ?: null;
         $phone = $submission->phone ?: $this->fieldValue($fields, ['phone', 'telefono', 'fono', 'celular', 'whatsapp']);
         $commune = $this->fieldValue($fields, ['comuna', 'commune']);
+        $incomeRange = $this->fieldValue($fields, ['rango', 'renta', 'renta_liquida', 'income_range']);
+        $complementIncome = $this->fieldValue($fields, ['complementarenta', 'complementa_renta', 'complementa_renta_liquida', 'codeudor']);
+        $incomeValidation = $this->fieldValue($fields, ['validacion_renta', 'validacion_de_renta', 'validacionrenta', 'validaci_n_renta']);
+        $apartmentUsage = $this->fieldValue($fields, ['uso_departamento', 'usodepartamento', 'uso_departamento_inversion', 'buscas']);
+        $employmentStatus = $this->fieldValue($fields, ['estado_laboral', 'estadolaboral', 'elaboral']);
+        $investmentCommune = $this->fieldValue($fields, ['comuna_inversion', 'comunainversion', 'commune_investment']);
         $projectSalesforceId = $this->resolveProjectSalesforceId($fields, $projectName);
         $normalizedLeadSource = $this->normalizeLeadSource($leadSource);
         $ownerId = $this->normalizeSalesforceId(config('services.salesforce.lead_owner_id') ?: config('services.salesforce.case_owner_id'));
@@ -66,6 +72,12 @@ class SalesforceCaseMapper
             'Informacion_Cotizacion__c' => $projectName,
             'Proyect_ID__c' => $projectName,
             'Comuna__c' => $commune,
+            'Rango_de_renta_liquida__c' => $incomeRange,
+            'complementaRenta__c' => $complementIncome,
+            'Validaci_n_Renta__c' => $incomeValidation,
+            'usoDepartamento__c' => $apartmentUsage,
+            'estadoLaboral__c' => $employmentStatus,
+            'comunaInversion__c' => $investmentCommune,
             'Medio_de_Llegada__c' => $normalizedLeadSource,
             'Nombre_de_la_Campa_a__c' => $utmCampaign,
             'Audiencia__c' => $utmMedium,
