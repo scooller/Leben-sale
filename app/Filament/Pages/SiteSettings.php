@@ -12,6 +12,7 @@ use App\Filament\Widgets\PaymentStatusChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
 use App\Filament\Widgets\SyncProjectsWidget;
 use App\Filament\Widgets\UsersChartWidget;
+use App\Models\Proyecto;
 use App\Models\SiteSetting;
 use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
@@ -43,15 +44,26 @@ class SiteSettings extends Page implements HasForms
     /**
      * @return array<string, string>
      */
-    protected static function projectTypeOptions(): array
+    protected static function projectOptions(): array
     {
-        return [
-            'best' => 'Best',
-            'broker' => 'Broker',
-            'home' => 'Home',
-            'icon' => 'Icon',
-            'invest' => 'Invest',
-        ];
+        return Proyecto::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->orderBy('comuna')
+            ->get(['name', 'comuna'])
+            ->mapWithKeys(static function (Proyecto $proyecto): array {
+                $name = trim((string) $proyecto->name);
+                $comuna = trim((string) ($proyecto->comuna ?? ''));
+
+                if ($name === '') {
+                    return [];
+                }
+
+                $label = $comuna !== '' ? "{$name} ({$comuna})" : $name;
+
+                return [$name => $label];
+            })
+            ->toArray();
     }
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
@@ -631,14 +643,14 @@ class SiteSettings extends Page implements HasForms
                                                     ->default('text')
                                                     ->live(),
 
-                                                Select::make('project_types')
-                                                    ->label('Mostrar para tipo de proyecto')
-                                                    ->options(self::projectTypeOptions())
+                                                Select::make('projects')
+                                                    ->label('Mostrar para proyecto')
+                                                    ->options(self::projectOptions())
                                                     ->multiple()
                                                     ->searchable()
                                                     ->preload()
                                                     ->visible(fn (Get $get): bool => $get('type') !== 'select')
-                                                    ->helperText('Opcional. Si seleccionas tipos, este campo solo se mostrará cuando el tramo o proyecto seleccionado pertenezca a alguno de ellos.'),
+                                                    ->helperText('Opcional. Si seleccionas proyectos, este campo solo se mostrará cuando el proyecto seleccionado pertenezca a alguno de ellos.'),
 
                                                 TextInput::make('placeholder')
                                                     ->label('Placeholder')
@@ -657,14 +669,14 @@ class SiteSettings extends Page implements HasForms
                                                             ->required()
                                                             ->maxLength(100),
 
-                                                        Select::make('project_types')
-                                                            ->label('Mostrar para tipo de proyecto')
-                                                            ->options(self::projectTypeOptions())
+                                                        Select::make('projects')
+                                                            ->label('Mostrar para proyecto')
+                                                            ->options(self::projectOptions())
                                                             ->multiple()
                                                             ->searchable()
                                                             ->preload()
                                                             ->columnSpanFull()
-                                                            ->helperText('Opcional. Si seleccionas tipos, esta opción solo se usará para esos tipos de proyecto.'),
+                                                            ->helperText('Opcional. Si seleccionas proyectos, esta opción solo se usará para esos proyectos.'),
                                                     ])
                                                     ->visible(fn (Get $get): bool => $get('type') === 'select')
                                                     ->defaultItems(0)

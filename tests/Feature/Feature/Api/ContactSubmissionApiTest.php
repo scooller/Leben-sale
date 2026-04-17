@@ -289,7 +289,7 @@ class ContactSubmissionApiTest extends TestCase
             ->assertDontSee('Teléfono');
     }
 
-    public function test_it_ignores_required_conditional_field_when_selected_project_type_does_not_match(): void
+    public function test_it_ignores_required_conditional_field_when_selected_project_does_not_match(): void
     {
         Proyecto::factory()->create([
             'name' => 'Proyecto Icon',
@@ -306,7 +306,7 @@ class ContactSubmissionApiTest extends TestCase
                     'label' => 'Rango de renta',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
+                    'projects' => ['Proyecto Best'],
                     'options' => [
                         ['value' => '1', 'label' => 'Menor a $1.000.000'],
                     ],
@@ -327,7 +327,7 @@ class ContactSubmissionApiTest extends TestCase
             ->assertJsonMissingValidationErrors(['fields.rango']);
     }
 
-    public function test_it_ignores_required_conditional_field_when_selected_range_type_does_not_match(): void
+    public function test_it_ignores_required_conditional_field_when_selected_range_project_does_not_match(): void
     {
         SiteSetting::current()->update([
             'contact_form_fields' => [
@@ -338,8 +338,8 @@ class ContactSubmissionApiTest extends TestCase
                     'type' => 'select',
                     'required' => true,
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
-                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'projects' => ['Proyecto Best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'projects' => ['Proyecto Icon']],
                     ],
                 ],
                 [
@@ -347,7 +347,7 @@ class ContactSubmissionApiTest extends TestCase
                     'label' => 'Codeudor',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
+                    'projects' => ['Proyecto Best'],
                     'options' => [
                         ['value' => 'si', 'label' => 'Si'],
                     ],
@@ -367,8 +367,14 @@ class ContactSubmissionApiTest extends TestCase
             ->assertJsonMissingValidationErrors(['fields.codeudor', 'fields.rango']);
     }
 
-    public function test_it_requires_matching_conditional_field_when_selected_range_type_matches(): void
+    public function test_it_requires_matching_conditional_field_when_selected_range_project_matches(): void
     {
+        Proyecto::factory()->create([
+            'name' => 'Proyecto Best',
+            'comuna' => 'Santiago',
+            'is_active' => true,
+        ]);
+
         SiteSetting::current()->update([
             'contact_form_fields' => [
                 ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
@@ -378,8 +384,8 @@ class ContactSubmissionApiTest extends TestCase
                     'type' => 'select',
                     'required' => true,
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
-                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'projects' => ['Proyecto Best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'projects' => ['Proyecto Icon']],
                     ],
                 ],
                 [
@@ -387,7 +393,7 @@ class ContactSubmissionApiTest extends TestCase
                     'label' => 'Codeudor',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
+                    'projects' => ['Proyecto Best'],
                     'options' => [
                         ['value' => 'si', 'label' => 'Si'],
                     ],
@@ -399,6 +405,7 @@ class ContactSubmissionApiTest extends TestCase
             'fields' => [
                 'name' => 'Juan',
                 'rango' => 'best_1',
+                'proyecto' => 'Proyecto Best',
             ],
         ]);
 
@@ -426,8 +433,8 @@ class ContactSubmissionApiTest extends TestCase
                     'type' => 'select',
                     'required' => true,
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
-                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'projects' => ['Proyecto Best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'projects' => ['Proyecto Icon']],
                     ],
                 ],
             ],
