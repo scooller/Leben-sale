@@ -210,7 +210,7 @@ class SalesforceCaseMapperTest extends TestCase
         $this->assertSame('campaign', $payload['utm_campaign__c'] ?? null);
     }
 
-    public function test_it_replaces_legacy_auto_tagging_campaign_with_site_setting_default(): void
+    public function test_it_always_uses_site_setting_default_campaign_when_configured(): void
     {
         config()->set('services.salesforce.lead_owner_id', '005U100000CAG4bIAH');
         config()->set('services.salesforce.lead_status', 'En Contacto');
@@ -244,7 +244,7 @@ class SalesforceCaseMapperTest extends TestCase
                 'project_name' => 'Edificio Auto Tagging',
                 'utm_source' => 'direct',
                 'utm_medium' => 'organic',
-                'utm_campaign' => 'auto-tagging',
+                'utm_campaign' => 'otra-campana',
             ],
             'submitted_at' => now(),
         ]);

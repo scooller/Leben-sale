@@ -53,14 +53,20 @@ export const setUtmDefaultOverrides = (overrides = {}) => {
 
   const storedValues = readStoredUtms();
   const nextValues = { ...storedValues };
+  const forcedCampaignOverride = normalizeUtmValue(utmDefaultOverrides.utm_campaign);
 
   const legacyDefaultValuesByKey = {
-    utm_campaign: ['auto-tagging'],
+    utm_campaign: ['auto-tagging', 'campaign'],
     utm_content: ['none'],
     utm_term: ['none'],
   };
 
   UTM_PARAM_CONFIG.forEach((config) => {
+    if (config.key === 'utm_campaign' && forcedCampaignOverride !== '') {
+      nextValues[config.key] = forcedCampaignOverride;
+      return;
+    }
+
     const fallbackValue = resolveDefaultValue(config);
     const currentValue = normalizeUtmValue(nextValues[config.key]);
     const isLegacyValue = (legacyDefaultValuesByKey[config.key] || []).includes(currentValue.toLowerCase());
