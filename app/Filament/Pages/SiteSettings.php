@@ -637,6 +637,7 @@ class SiteSettings extends Page implements HasForms
                                                     ->multiple()
                                                     ->searchable()
                                                     ->preload()
+                                                    ->visible(fn (Get $get): bool => $get('type') !== 'select')
                                                     ->helperText('Opcional. Si seleccionas tipos, este campo solo se mostrará cuando el tramo o proyecto seleccionado pertenezca a alguno de ellos.'),
 
                                                 TextInput::make('placeholder')
@@ -655,6 +656,15 @@ class SiteSettings extends Page implements HasForms
                                                             ->label('Valor')
                                                             ->required()
                                                             ->maxLength(100),
+
+                                                        Select::make('project_types')
+                                                            ->label('Mostrar para tipo de proyecto')
+                                                            ->options(self::projectTypeOptions())
+                                                            ->multiple()
+                                                            ->searchable()
+                                                            ->preload()
+                                                            ->columnSpanFull()
+                                                            ->helperText('Opcional. Si seleccionas tipos, esta opción solo se usará para esos tipos de proyecto.'),
                                                     ])
                                                     ->visible(fn (Get $get): bool => $get('type') === 'select')
                                                     ->defaultItems(0)

@@ -407,7 +407,26 @@ class StoreContactSubmissionRequest extends FormRequest
                 continue;
             }
 
-            $projectTypes = array_merge($projectTypes, $this->normalizeProjectTypes($field['project_types'] ?? []));
+            foreach (($field['options'] ?? []) as $option) {
+                if (! is_array($option)) {
+                    continue;
+                }
+
+                $optionValue = trim((string) ($option['value'] ?? $option['label'] ?? ''));
+
+                if ($optionValue !== $selectedRange) {
+                    continue;
+                }
+
+                $optionProjectTypes = $this->normalizeProjectTypes($option['project_types'] ?? []);
+
+                $projectTypes = array_merge(
+                    $projectTypes,
+                    $optionProjectTypes !== []
+                        ? $optionProjectTypes
+                        : $this->normalizeProjectTypes($field['project_types'] ?? [])
+                );
+            }
         }
 
         return array_values(array_unique($projectTypes));

@@ -83,6 +83,7 @@ const normalizeFieldOptions = (options = []) => {
         return {
           value,
           label: label || value,
+          projectTypes: normalizeProjectTypes(option.project_types),
         };
       }
 
@@ -91,6 +92,7 @@ const normalizeFieldOptions = (options = []) => {
       return {
         value,
         label: value,
+        projectTypes: [],
       };
     })
     .filter((option) => option.value !== '');
@@ -108,6 +110,17 @@ const normalizeProjectTypes = (types) => {
   }
 
   return [];
+};
+
+const buildRangeOptionValue = (rangeValue, projectTypes) => {
+  const normalizedRangeValue = `${rangeValue ?? ''}`.trim();
+  const normalizedProjectTypes = normalizeProjectTypes(projectTypes);
+
+  if (normalizedProjectTypes.length === 0) {
+    return normalizedRangeValue;
+  }
+
+  return `${normalizedProjectTypes.join(',')}::${normalizedRangeValue}`;
 };
 
 function Contact({ onNavigate, currentPath }) {
@@ -221,11 +234,14 @@ function Contact({ onNavigate, currentPath }) {
           }
 
           const existingOption = optionMap.get(normalizedValue);
+          const optionProjectTypes = option.projectTypes.length > 0 ? option.projectTypes : field.projectTypes;
+          const mergedProjectTypes = [...new Set([...(existingOption?.projectTypes ?? []), ...optionProjectTypes])];
 
           optionMap.set(normalizedValue, {
-            value: normalizedValue,
+            value: buildRangeOptionValue(normalizedValue, mergedProjectTypes),
             label: `${option.label ?? normalizedValue}`.trim() || normalizedValue,
-            projectTypes: [...new Set([...(existingOption?.projectTypes ?? []), ...field.projectTypes])],
+            submissionValue: normalizedValue,
+            projectTypes: mergedProjectTypes,
           });
         });
       });
@@ -261,6 +277,16 @@ function Contact({ onNavigate, currentPath }) {
 
     return normalizeProjectTypes(selectedProject?.tipo);
   }, [projectCatalog, rangeFieldOptions, values.proyecto, values.rango]);
+
+  const selectedRangeSubmissionValue = useMemo(() => {
+    const selectedRange = `${values.rango ?? ''}`.trim();
+
+    if (selectedRange === '') {
+      return '';
+    }
+
+    return rangeFieldOptions.find((option) => option.value === selectedRange)?.submissionValue || selectedRange;
+  }, [rangeFieldOptions, values.rango]);
 
   const projectFieldOptions = useMemo(() => {
     if (hasRangeProjectTypeMapping && selectedProjectTypes.length === 0) {
@@ -442,14 +468,19 @@ function Contact({ onNavigate, currentPath }) {
     }
 
     try {
+      const submissionValues = {
+        ...values,
+        ...(selectedRangeSubmissionValue !== '' ? { rango: selectedRangeSubmissionValue } : {}),
+      };
+
       await contactSubmissionsService.create({
         ...storedUtmParams,
-        ...values,
+        ...submissionValues,
       });
 
       trackEvent('form_submit', {
         form_name: 'contact',
-        income_range: values.rango || null,
+        income_range: selectedRangeSubmissionValue || null,
         project: values.proyecto || null,
       });
 

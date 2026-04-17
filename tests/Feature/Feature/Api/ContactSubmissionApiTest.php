@@ -334,22 +334,12 @@ class ContactSubmissionApiTest extends TestCase
                 ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
                 [
                     'key' => 'rango',
-                    'label' => 'Rango Best',
+                    'label' => 'Rango de renta',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1'],
-                    ],
-                ],
-                [
-                    'key' => 'rango',
-                    'label' => 'Rango Icon',
-                    'type' => 'select',
-                    'required' => true,
-                    'project_types' => ['icon'],
-                    'options' => [
-                        ['value' => 'icon_1', 'label' => 'Icon 1'],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
                     ],
                 ],
                 [
@@ -384,22 +374,12 @@ class ContactSubmissionApiTest extends TestCase
                 ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
                 [
                     'key' => 'rango',
-                    'label' => 'Rango Best',
+                    'label' => 'Rango de renta',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1'],
-                    ],
-                ],
-                [
-                    'key' => 'rango',
-                    'label' => 'Rango Icon',
-                    'type' => 'select',
-                    'required' => true,
-                    'project_types' => ['icon'],
-                    'options' => [
-                        ['value' => 'icon_1', 'label' => 'Icon 1'],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
                     ],
                 ],
                 [
@@ -442,22 +422,12 @@ class ContactSubmissionApiTest extends TestCase
                 ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
                 [
                     'key' => 'rango',
-                    'label' => 'Rango Best',
+                    'label' => 'Rango de renta',
                     'type' => 'select',
                     'required' => true,
-                    'project_types' => ['best'],
                     'options' => [
-                        ['value' => 'best_1', 'label' => 'Best 1'],
-                    ],
-                ],
-                [
-                    'key' => 'rango',
-                    'label' => 'Rango Icon',
-                    'type' => 'select',
-                    'required' => true,
-                    'project_types' => ['icon'],
-                    'options' => [
-                        ['value' => 'icon_1', 'label' => 'Icon 1'],
+                        ['value' => 'best_1', 'label' => 'Best 1', 'project_types' => ['best']],
+                        ['value' => 'icon_1', 'label' => 'Icon 1', 'project_types' => ['icon']],
                     ],
                 ],
             ],
