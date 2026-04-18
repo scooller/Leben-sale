@@ -9,7 +9,6 @@ const FBQ_STANDARD_EVENTS = {
   plant_click: 'ViewContent',
   reserve_click: 'AddToCart',
   checkout_start: 'InitiateCheckout',
-  form_submit: 'Lead',
   reservation_success: 'Purchase',
 };
 

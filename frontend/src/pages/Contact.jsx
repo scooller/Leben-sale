@@ -552,6 +552,10 @@ function Contact({ onNavigate, currentPath }) {
         project: values.proyecto || null,
       });
 
+      if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+        window.fbq('track', 'Lead');
+      }
+
       setSubmitSuccess('Tu mensaje fue enviado correctamente.');
       setFieldErrors({});
 

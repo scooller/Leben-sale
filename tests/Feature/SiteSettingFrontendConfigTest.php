@@ -37,6 +37,8 @@ class SiteSettingFrontendConfigTest extends TestCase
             ],
             'contact_notification_email' => 'ventas@ileben.cl',
             'tag_manager_id' => 'GTM-TEST123',
+            'header_scripts' => '<script>window.headerTracking = true;</script>',
+            'footer_scripts' => '<script>window.footerTracking = true;</script>',
             'extra_settings' => [
                 'home_hero_type' => 'video',
                 'home_hero_video_desktop_url' => 'https://cdn.example.com/home-desktop.mp4',
@@ -88,6 +90,10 @@ class SiteSettingFrontendConfigTest extends TestCase
         $this->assertArrayHasKey('seo', $payload);
         $this->assertSame('GTM-TEST123', $payload['seo']['tag_manager_id']);
         $this->assertSame('campaign', $payload['seo']['utm_campaign_default']);
+        $this->assertArrayHasKey('header_scripts', $payload);
+        $this->assertSame('<script>window.headerTracking = true;</script>', $payload['header_scripts']);
+        $this->assertArrayHasKey('footer_scripts', $payload);
+        $this->assertSame('<script>window.footerTracking = true;</script>', $payload['footer_scripts']);
         $this->assertArrayHasKey('hero', $payload);
         $this->assertSame('video', $payload['hero']['home']['type']);
         $this->assertArrayHasKey('image_desktop', $payload['hero']['home']);

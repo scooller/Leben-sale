@@ -76,6 +76,79 @@ class SiteConfigService {
     styleElement.textContent = css;
   }
 
+  injectManagedScripts(scripts, { containerId, target = 'head' }) {
+    if (typeof document === 'undefined') return;
+
+    const normalizedScripts = `${scripts ?? ''}`.trim();
+    const existingContainer = document.getElementById(containerId);
+
+    if (normalizedScripts === '') {
+      if (existingContainer) {
+        existingContainer.remove();
+      }
+
+      return;
+    }
+
+    const targetElement = target === 'footer'
+      ? (document.body || document.documentElement)
+      : document.head;
+
+    if (!targetElement) return;
+
+    const container = existingContainer || document.createElement('div');
+    container.id = containerId;
+    container.setAttribute('data-managed-site-script', target);
+
+    if (!existingContainer) {
+      targetElement.appendChild(container);
+    }
+
+    container.replaceChildren();
+
+    const hasMarkup = /<[^>]+>/.test(normalizedScripts);
+
+    if (!hasMarkup) {
+      const inlineScript = document.createElement('script');
+      inlineScript.text = normalizedScripts;
+      container.appendChild(inlineScript);
+
+      return;
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = normalizedScripts;
+
+    const fragment = template.content.cloneNode(true);
+
+    fragment.querySelectorAll('script').forEach((scriptNode) => {
+      const executableScript = document.createElement('script');
+
+      [...scriptNode.attributes].forEach(({ name, value }) => {
+        executableScript.setAttribute(name, value);
+      });
+
+      executableScript.text = scriptNode.text;
+      scriptNode.replaceWith(executableScript);
+    });
+
+    container.appendChild(fragment);
+  }
+
+  injectHeaderScripts(scripts) {
+    this.injectManagedScripts(scripts, {
+      containerId: 'site-header-scripts',
+      target: 'head',
+    });
+  }
+
+  injectFooterScripts(scripts) {
+    this.injectManagedScripts(scripts, {
+      containerId: 'site-footer-scripts',
+      target: 'footer',
+    });
+  }
+
   /**
    * Establecer favicon
    * @param {string} faviconUrl - URL del favicon

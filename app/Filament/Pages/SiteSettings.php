@@ -749,14 +749,6 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('CSS que se inyectará en el frontend'),
                                     ]),
 
-                                Section::make('JavaScript Personalizado')
-                                    ->schema([
-                                        Textarea::make('custom_js')
-                                            ->label('JavaScript Adicional')
-                                            ->rows(10)
-                                            ->helperText('JavaScript que se ejecutará en el frontend'),
-                                    ]),
-
                                 Section::make('Scripts Adicionales')
                                     ->schema([
                                         Textarea::make('header_scripts')

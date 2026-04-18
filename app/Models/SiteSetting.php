@@ -329,6 +329,8 @@ class SiteSetting extends Model
                 'youtube' => $settings->youtube_url,
             ],
             'custom_css' => $settings->custom_css,
+            'header_scripts' => $settings->header_scripts,
+            'footer_scripts' => $settings->footer_scripts,
             'maintenance_mode' => $settings->maintenance_mode,
             'maintenance_message' => $settings->maintenance_message,
             'hero' => [
