@@ -116,7 +116,9 @@ export const SiteConfigProvider = ({ children }) => {
         siteConfigService.injectCustomCSS(data.custom_css);
       }
 
-      siteConfigService.injectHeaderScripts(data.header_scripts);
+      if (!window.__ilebenHeaderScriptsLoaded) {
+        siteConfigService.injectHeaderScripts(data.header_scripts);
+      }
       siteConfigService.injectFooterScripts(data.footer_scripts);
 
       if (data.favicon) {

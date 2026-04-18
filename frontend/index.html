@@ -4,6 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <script>
+      (function () {
+        if (typeof window === 'undefined' || typeof document === 'undefined') return;
+        window.__ilebenConfigCache = null;
+        window.__ilebenHeaderScriptsLoaded = false;
+        fetch('/api/v1/site-config', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+        })
+          .then(r => r.json())
+          .then(data => {
+            window.__ilebenConfigCache = data;
+            if (data?.header_scripts) {
+              window.__ilebenHeaderScriptsLoaded = true;
+              const container = document.createElement('div');
+              container.id = 'site-header-scripts';
+              container.setAttribute('data-managed-site-script', 'head');
+              const hasMarkup = /<[^>]+>/.test(data.header_scripts);
+              if (!hasMarkup) {
+                const s = document.createElement('script');
+                s.text = data.header_scripts;
+                container.appendChild(s);
+              } else {
+                const t = document.createElement('template');
+                t.innerHTML = data.header_scripts;
+                const frag = t.content.cloneNode(true);
+                frag.querySelectorAll('script').forEach(sn => {
+                  const es = document.createElement('script');
+                  [...sn.attributes].forEach(({name, value}) => es.setAttribute(name, value));
+                  es.setAttribute('async', 'false');
+                  es.text = sn.text;
+                  sn.replaceWith(es);
+                });
+                container.appendChild(frag);
+              }
+              document.head.appendChild(container);
+            }
+          })
+          .catch(e => console.warn('[iLeben] Early config preload failed:', e));
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

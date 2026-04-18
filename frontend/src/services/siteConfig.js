@@ -111,6 +111,7 @@ class SiteConfigService {
     if (!hasMarkup) {
       const inlineScript = document.createElement('script');
       inlineScript.text = normalizedScripts;
+      inlineScript.setAttribute('data-managed-injected', 'true');
       container.appendChild(inlineScript);
 
       return;
@@ -128,6 +129,8 @@ class SiteConfigService {
         executableScript.setAttribute(name, value);
       });
 
+      executableScript.setAttribute('async', 'false');
+      executableScript.setAttribute('data-managed-injected', 'true');
       executableScript.text = scriptNode.text;
       scriptNode.replaceWith(executableScript);
     });
