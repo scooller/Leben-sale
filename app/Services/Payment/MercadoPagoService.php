@@ -290,12 +290,81 @@ class MercadoPagoService implements PaymentGatewayInterface
 
     /**
      * Verificar firma del webhook
+     *
+     * Valida la firma del webhook según la documentación de MercadoPago:
+     * https://www.mercadopago.com/developers/es/docs/webhooks/additional-info/security
+     *
+     * @param  string  $xSignatureHeader  Header x-signature de la solicitud (format: ts={timestamp},v1={signature})
+     * @param  string  $rawBody  Body raw de la solicitud (JSON sin parsear)
+     * @return bool True si la firma es válida, false en caso contrario
      */
-    protected function verifyWebhookSignature(array $payload, string $signature): bool
+    public function verifyWebhookSignature(string $xSignatureHeader, string $rawBody): bool
     {
-        // TODO: Implementar verificación según docs de MercadoPago
-        // https://www.mercadopago.com/developers/es/docs/webhooks/additional-info/security
-        return true;
+        if (empty($this->webhookSecret) || empty($xSignatureHeader)) {
+            Log::warning('MercadoPago: Webhook signature verification skipped - missing secret or header');
+
+            return false;
+        }
+
+        try {
+            // Parsear el header x-signature (formato: ts={timestamp},v1={signature})
+            $signatureParts = [];
+            foreach (explode(',', $xSignatureHeader) as $part) {
+                $kv = explode('=', trim($part), 2);
+                if (count($kv) === 2) {
+                    $signatureParts[$kv[0]] = $kv[1];
+                }
+            }
+
+            $timestamp = $signatureParts['ts'] ?? null;
+            $providedSignature = $signatureParts['v1'] ?? null;
+
+            if (! $timestamp || ! $providedSignature) {
+                Log::warning('MercadoPago: Invalid signature header format', [
+                    'header' => $xSignatureHeader,
+                ]);
+
+                return false;
+            }
+
+            // Verificar que el timestamp no sea antiguo (máximo 10 minutos)
+            $currentTime = time();
+            $timeDiff = abs($currentTime - (int) $timestamp);
+
+            if ($timeDiff > 600) { // 10 minutos = 600 segundos
+                Log::warning('MercadoPago: Webhook timestamp too old', [
+                    'timestamp' => $timestamp,
+                    'current_time' => $currentTime,
+                    'diff_seconds' => $timeDiff,
+                ]);
+
+                return false;
+            }
+
+            // Construir el string a verificar: {timestamp}.{body}
+            $dataToVerify = "{$timestamp}.{$rawBody}";
+
+            // Calcular HMAC-SHA256
+            $calculatedSignature = hash_hmac('sha256', $dataToVerify, $this->webhookSecret);
+
+            // Comparar firmas (usar comparison seguro contra timing attacks)
+            $isValid = hash_equals($calculatedSignature, $providedSignature);
+
+            if (! $isValid) {
+                Log::warning('MercadoPago: Invalid webhook signature', [
+                    'expected' => substr($calculatedSignature, 0, 10).'...',
+                    'provided' => substr($providedSignature, 0, 10).'...',
+                ]);
+            }
+
+            return $isValid;
+        } catch (\Exception $e) {
+            Log::error('MercadoPago: Error verifying webhook signature', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

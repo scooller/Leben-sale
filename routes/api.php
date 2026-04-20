@@ -102,11 +102,11 @@ Route::prefix('v1')->group(function () {
     });
 
     // Contacto público
-    Route::post('/contact-submissions', [App\Http\Controllers\Api\ContactSubmissionController::class, 'store']);
+    Route::post('/contact-submissions', [App\Http\Controllers\Api\ContactSubmissionController::class, 'store'])->middleware('throttle:10,1');
 
     // Autenticación
-    Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
-    Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
+    Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register'])->middleware('throttle:5,1');
 
     // Estado publico de pago para pantalla de resultado en frontend
     Route::get('/payments/public-status/{id}', [App\Http\Controllers\Api\PaymentController::class, 'publicStatus']);

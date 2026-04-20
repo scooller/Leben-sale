@@ -68,13 +68,28 @@ function PaymentGatewayDialog({
     return `${body}-${dv}`;
   };
 
-  // Validación de email
-  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+  // Validación de email robusta
+  const isValidEmail = (value) => {
+    const trimmed = `${value || ''}`.trim();
+    if (!trimmed || trimmed.length > 100) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
 
-  // Validación de teléfono
+  // Validación de teléfono (solo 9 dígitos para Chile)
   const isValidPhone = (value) => {
     const digits = value.replace(/\D/g, '');
-    return digits.length >= 8 && digits.length <= 15;
+    return digits.length === 9;
+  };
+
+  // Sanitizar teléfono (solo dígitos)
+  const sanitizePhone = (value) => {
+    return value.replace(/\D/g, '').slice(0, 9);
+  };
+
+  // Validación de nombre
+  const isValidName = (value) => {
+    const trimmed = `${value || ''}`.trim();
+    return trimmed.length >= 3 && trimmed.length <= 100;
   };
 
   // Validación de RUT chileno
@@ -114,7 +129,7 @@ function PaymentGatewayDialog({
   const isEmailValid = checkoutEmail ? isValidEmail(checkoutEmail) : false;
   const isPhoneValid = checkoutPhone ? isValidPhone(checkoutPhone) : false;
   const isRutValid = checkoutRut ? isValidRut(checkoutRut) : false;
-  const isNameValid = checkoutName.trim().length >= 3;
+  const isNameValid = isValidName(checkoutName);
 
   const setFieldTouched = (field) => {
     setTouched((previous) => ({ ...previous, [field]: true }));
@@ -667,73 +682,94 @@ function PaymentGatewayDialog({
                     <wa-icon name="id-card"></wa-icon>
                     <strong>Datos del comprador</strong>
                   </div>
+                    <div className="wa-stack wa-gap-3xs">
+                      <wa-input
+                          label="Nombre completo"
+                          value={checkoutName}
+                          onChange={(e) => {
+                          setFieldTouched('name');
+                          setCheckoutName(e.target.value.slice(0, 100));
+                          }}
+                          onBlur={() => setFieldTouched('name')}
+                          minlength="3"
+                          maxlength="100"
+                          required
+                          placeholder="Juan Pérez"
+                      ></wa-input>
+                      {checkoutName && (
+                        <small className="wa-caption-s validation-hint info">{checkoutName.length}/100 caracteres</small>
+                      )}
+                      {touched.name && !isNameValid && (
+                        <small className="wa-caption-s validation-hint error">Ingresa tu nombre (mínimo 3 caracteres, máximo 100).</small>
+                      )}
+                    </div>
 
-                  <wa-scroller orientation="vertical" style={{ maxHeight: '35dvh' }}>
-                    <wa-input
-                        label="Nombre completo"
-                        value={checkoutName}
-                        onChange={(e) => {
-                        setFieldTouched('name');
-                        setCheckoutName(e.target.value);
-                        }}
-                        onBlur={() => setFieldTouched('name')}
-                        minlength="3"
-                        required
-                    ></wa-input>
-                    {touched.name && !isNameValid && (
-                        <small className="wa-caption-s validation-hint error">Debe tener al menos 3 caracteres.</small>
-                    )}
+                    <div className="wa-stack wa-gap-3xs">
+                      <wa-input
+                          type="email"
+                          label="Correo electronico"
+                          value={checkoutEmail}
+                          onChange={(e) => {
+                          setFieldTouched('email');
+                          setCheckoutEmail(e.target.value.slice(0, 100));
+                          }}
+                          onBlur={() => setFieldTouched('email')}
+                          maxlength="100"
+                          autocomplete="email"
+                          required
+                          placeholder="ejemplo@correo.com"
+                      ></wa-input>
+                      {checkoutEmail && (
+                        <small className="wa-caption-s validation-hint info">{checkoutEmail.length}/100 caracteres</small>
+                      )}
+                      {touched.email && !isEmailValid && (
+                        <small className="wa-caption-s validation-hint error">Correo electronico invalido (ej: ejemplo@correo.com).</small>
+                      )}
+                    </div>
 
-                    <wa-input
-                        type="email"
-                        label="Correo electronico"
-                        value={checkoutEmail}
-                        onChange={(e) => {
-                        setFieldTouched('email');
-                        setCheckoutEmail(e.target.value);
-                        }}
-                        onBlur={() => setFieldTouched('email')}
-                        autocomplete="email"
-                        required
-                    ></wa-input>
-                    {touched.email && !isEmailValid && (
-                        <small className="wa-caption-s validation-hint error">Ingresa un correo valido (ejemplo@correo.com).</small>
-                    )}
+                    <div className="wa-stack wa-gap-3xs">
+                      <wa-input
+                          type="tel"
+                          label="Telefono"
+                          placeholder="912345678"
+                          value={checkoutPhone}
+                          onChange={(e) => {
+                          setFieldTouched('phone');
+                          setCheckoutPhone(sanitizePhone(e.target.value));
+                          }}
+                          onBlur={() => setFieldTouched('phone')}
+                          maxlength="9"
+                          autocomplete="tel"
+                          required
+                      >
+                          <div slot="start" className="wa-input-prefix">+56</div>
+                      </wa-input>
+                      {checkoutPhone && (
+                        <small className="wa-caption-s validation-hint info">{checkoutPhone.length}/9 digitos</small>
+                      )}
+                      {touched.phone && !isPhoneValid && (
+                        <small className="wa-caption-s validation-hint error">Ingresa 9 digitos validos (ej: 912345678).</small>
+                      )}
+                    </div>
 
-                    <wa-input
-                        type="number"
-                        label="Telefono"
-                        placeholder="9 1234 5678"
-                        maxlength="9"
-                        value={checkoutPhone}
-                        onChange={(e) => {
-                        setFieldTouched('phone');
-                        setCheckoutPhone(e.target.value);
-                        }}
-                        onBlur={() => setFieldTouched('phone')}
-                        autocomplete="tel"
-                        required
-                    >
-                        <div slot="start" className="wa-input-prefix">+56</div>
-                    </wa-input>
-                    {touched.phone && !isPhoneValid && (
-                      <small className="wa-caption-s validation-hint error">Debe contener entre 8 y 15 digitos.</small>
-                    )}
-
-                    <wa-input
-                        label="RUT"
-                        placeholder="12345678-9"
-                        value={checkoutRut}
-                        onChange={handleRutChange}
-                        onBlur={() => setFieldTouched('rut')}
-                        pattern="^[0-9]{7,8}-[0-9K]$"
-                        maxlength="10"
-                        required
-                    ></wa-input>
-                    <small className="wa-caption-s validation-hint info">Formato: 12345678-9 (sin puntos).</small>
-                    {touched.rut && !isRutValid && (
-                        <small className="wa-caption-s validation-hint error">RUT invalido. Revisa digito verificador.</small>
-                    )}
+                    <div className="wa-stack wa-gap-3xs">
+                      <wa-input
+                          label="RUT"
+                          placeholder="12345678-9"
+                          value={checkoutRut}
+                          onChange={handleRutChange}
+                          onBlur={() => setFieldTouched('rut')}
+                          pattern="^[0-9]{7,8}-[0-9K]$"
+                          maxlength="10"
+                          required
+                      ></wa-input>
+                      <small className={`wa-caption-s validation-hint ${!touched.rut || isRutValid || !checkoutRut ? 'info' : 'error'}`}>
+                        {!touched.rut || !checkoutRut ? 'Formato: 12345678-9 (sin puntos)' : `${checkoutRut.length}/10 caracteres`}
+                      </small>
+                      {touched.rut && !isRutValid && checkoutRut && (
+                        <small className="wa-caption-s validation-hint error">RUT invalido. Revisa el digito verificador.</small>
+                      )}
+                    </div>
 
                     {isTurnstileEnabled && (
                       <div className="turnstile-wrapper wa-stack wa-gap-2xs">
@@ -747,7 +783,6 @@ function PaymentGatewayDialog({
                         )}
                       </div>
                     )}
-                  </wa-scroller>
                 </div>
               </wa-card>
             </div>

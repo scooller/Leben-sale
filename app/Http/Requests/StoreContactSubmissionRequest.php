@@ -164,7 +164,7 @@ class StoreContactSubmissionRequest extends FormRequest
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int, string|ValidationRule|Closure>
      */
     private function turnstileValidationRules(): array
     {
@@ -172,7 +172,21 @@ class StoreContactSubmissionRequest extends FormRequest
             return ['nullable', 'string'];
         }
 
-        return ['required', 'string', 'max:2048'];
+        return [
+            'required',
+            'string',
+            'max:2048',
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (blank($value)) {
+                    return;
+                }
+
+                $service = new TurnstileVerificationService;
+                if (! $service->verify((string) $value, $this->ip())) {
+                    $fail('La validación de Turnstile falló. Por favor, intenta nuevamente.');
+                }
+            },
+        ];
     }
 
     private function isTurnstileEnabled(): bool

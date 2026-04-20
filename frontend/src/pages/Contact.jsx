@@ -149,6 +149,7 @@ function Contact({ onNavigate, currentPath }) {
   const [turnstileReady, setTurnstileReady] = useState(typeof window !== 'undefined' && Boolean(window.turnstile));
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
+  const [turnstileLoading, setTurnstileLoading] = useState(false);
 
   const storedUtmParams = useMemo(() => getStoredUtmParams(), []);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
@@ -456,81 +457,110 @@ function Contact({ onNavigate, currentPath }) {
   }, []);
 
   useEffect(() => {
-    if (!isTurnstileEnabled || window.turnstile) {
+    if (!isTurnstileEnabled) {
+      return;
+    }
+
+    if (window.turnstile) {
+      setTurnstileReady(true);
       return;
     }
 
     const existingScript = document.querySelector('script[data-turnstile-script="true"]');
 
-    if (existingScript) {
-      const handleScriptLoad = () => {
-        setTurnstileReady(true);
-        setTurnstileError('');
-      };
-      const handleScriptError = () => setTurnstileError('No se pudo cargar la verificacion de seguridad. Intenta nuevamente.');
-
-      existingScript.addEventListener('load', handleScriptLoad);
-      existingScript.addEventListener('error', handleScriptError);
-
-      return () => {
-        existingScript.removeEventListener('load', handleScriptLoad);
-        existingScript.removeEventListener('error', handleScriptError);
-      };
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.setAttribute('data-turnstile-script', 'true');
+      document.head.appendChild(script);
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    script.setAttribute('data-turnstile-script', 'true');
+    let checkAttempts = 0;
+    const maxAttempts = 50;
 
-    const handleScriptLoad = () => {
-      setTurnstileReady(true);
-      setTurnstileError('');
-    };
+    const checkTurnstile = setInterval(() => {
+      checkAttempts += 1;
 
-    const handleScriptError = () => {
-      setTurnstileError('No se pudo cargar la verificacion de seguridad. Intenta nuevamente.');
-    };
+      if (window.turnstile) {
+        clearInterval(checkTurnstile);
+        setTurnstileReady(true);
+        setTurnstileError('');
+        return;
+      }
 
-    script.addEventListener('load', handleScriptLoad);
-    script.addEventListener('error', handleScriptError);
-    document.head.appendChild(script);
+      if (checkAttempts >= maxAttempts) {
+        clearInterval(checkTurnstile);
+        setTurnstileError('No se pudo cargar la verificacion de seguridad. Intenta nuevamente.');
+        setTurnstileLoading(false);
+      }
+    }, 100);
 
-    return () => {
-      script.removeEventListener('load', handleScriptLoad);
-      script.removeEventListener('error', handleScriptError);
-    };
+    return () => clearInterval(checkTurnstile);
   }, [isTurnstileEnabled]);
 
   useEffect(() => {
-    if (!isTurnstileEnabled || !turnstileReady || !turnstileContainerRef.current || !window.turnstile) {
+    if (!isTurnstileEnabled || !turnstileReady || !window.turnstile || formFields.length === 0) {
       return;
     }
 
-    setTurnstileToken('');
+    let attempts = 0;
+    const maxAttempts = 20;
+    let timeoutId;
 
-    if (turnstileWidgetIdRef.current) {
-      window.turnstile.reset(turnstileWidgetIdRef.current);
-      return;
-    }
+    const tryRender = () => {
+      attempts += 1;
 
-    turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
-      sitekey: turnstileSiteKey,
-      callback: (token) => {
-        setTurnstileToken(token);
-        setTurnstileError('');
-      },
-      'expired-callback': () => {
-        setTurnstileToken('');
-        setTurnstileError('La verificacion expiro. Completa Turnstile nuevamente.');
-      },
-      'error-callback': () => {
-        setTurnstileToken('');
-        setTurnstileError('No se pudo validar Turnstile. Intenta nuevamente.');
-      },
+      if (!turnstileContainerRef.current) {
+        if (attempts < maxAttempts) {
+          timeoutId = setTimeout(tryRender, 50);
+          return;
+        } else {
+          setTurnstileLoading(false);
+          return;
+        }
+      }
+
+      setTurnstileToken('');
+
+      if (turnstileWidgetIdRef.current) {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+        setTurnstileLoading(false);
+        return;
+      }
+
+      try {
+        const containerElement = turnstileContainerRef.current;
+        turnstileWidgetIdRef.current = window.turnstile.render(containerElement, {
+          sitekey: turnstileSiteKey,
+          callback: (token) => {
+            setTurnstileToken(token);
+            setTurnstileError('');
+          },
+          'expired-callback': () => {
+            setTurnstileToken('');
+            setTurnstileError('La verificacion expiro. Completa Turnstile nuevamente.');
+          },
+          'error-callback': () => {
+            setTurnstileToken('');
+            setTurnstileError('No se pudo validar Turnstile. Intenta nuevamente.');
+          },
+        });
+        setTurnstileLoading(false);
+      } catch (error) {
+        setTurnstileLoading(false);
+      }
+    };
+
+    const frameId = requestAnimationFrame(() => {
+      tryRender();
     });
-  }, [isTurnstileEnabled, turnstileReady, turnstileSiteKey]);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isTurnstileEnabled, turnstileReady, turnstileSiteKey, formFields.length]);
 
   useEffect(() => {
     if (values.comuna && !comunaFieldOptions.some((option) => option.value === values.comuna)) {
@@ -989,7 +1019,11 @@ function Contact({ onNavigate, currentPath }) {
 
               {isTurnstileEnabled && (
                 <div className="turnstile-wrapper">
-                  <div ref={turnstileContainerRef}></div>
+                  <div ref={turnstileContainerRef} data-turnstile-container="true"></div>
+
+                  {turnstileLoading && (
+                    <wa-skeleton role="status" aria-label="Cargando verificación de seguridad"></wa-skeleton>
+                  )}
 
                   {turnstileError && (
                     <small className="wa-color-danger">{turnstileError}</small>
@@ -1012,8 +1046,9 @@ function Contact({ onNavigate, currentPath }) {
               )}
 
               <wa-button type="submit" variant="brand" disabled={submitting}>
-                <wa-icon name="paper-plane" slot="start"></wa-icon>
-                {submitting ? 'Enviando...' : 'Enviar mensaje'}
+                {submitting ?
+                <><wa-icon name="circle-notch" slot="start" animation="spin"></wa-icon> Enviando...</> :
+                <><wa-icon name="paper-plane" slot="start"></wa-icon> Enviar mensaje</>}
               </wa-button>
             </form>
           </div>

@@ -62,10 +62,20 @@
 
 .turnstile-wrapper {
   margin-top: var(--wa-space-2xs);
+  position: relative;
 }
 
 .turnstile-wrapper > div {
   min-height: 66px;
+}
+
+.turnstile-wrapper wa-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 66px;
+  display: block;
 }
 
 .contact-form wa-button {

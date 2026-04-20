@@ -222,6 +222,21 @@ class PaymentWebhookController extends Controller
     public function mercadopagoWebhook(Request $request)
     {
         try {
+            // Verificar firma del webhook antes de procesar
+            $xSignature = $request->header('x-signature');
+            $rawBody = $request->getContent();
+
+            $mercadoPagoService = PaymentGateway::driver('mercadopago');
+
+            if (! $mercadoPagoService->verifyWebhookSignature($xSignature ?? '', $rawBody)) {
+                Log::warning('MercadoPago: Webhook rechazado - firma inválida', [
+                    'x-signature' => $xSignature ? substr($xSignature, 0, 20).'...' : 'missing',
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json(['error' => 'Invalid signature'], 403);
+            }
+
             $data = $request->all();
 
             Log::info('MercadoPago: Webhook recibido', $data);
@@ -240,7 +255,7 @@ class PaymentWebhookController extends Controller
                 }
 
                 // Obtener información del pago desde Mercado Pago
-                $paymentInfo = PaymentGateway::driver('mercadopago')->getTransactionStatus($paymentId);
+                $paymentInfo = $mercadoPagoService->getTransactionStatus($paymentId);
 
                 // Buscar el pago en nuestra base de datos
                 $payment = Payment::where('gateway_tx_id', $paymentId)

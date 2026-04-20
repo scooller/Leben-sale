@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  envPrefix: ['VITE_', 'AUTH_'],
+  envPrefix: ['VITE_'],
   plugins: [
     react({
       babel: {
@@ -25,6 +25,7 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 600, // Aumentar el límite si es necesario
+    // Aumentar el límite para CSS (el theme es legítimamente grande)
+    chunkSizeWarningLimit: 750,
   },
 })
