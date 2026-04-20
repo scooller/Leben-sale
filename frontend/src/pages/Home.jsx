@@ -1265,6 +1265,8 @@ function Home({ onNavigate, currentPath }) {
   const homeHeroType = homeHero?.type === 'image' && homeHeroDesktopImage ? 'image' : 'video';
   const homeHeroDesktopVideo = homeHero?.video_desktop_url || 'https://viveelsur.ileben.cl/wp-content/uploads/2025/12/Banner-Hero-Desktop.mp4';
   const homeHeroMobileVideo = homeHero?.video_mobile_url || 'https://viveelsur.ileben.cl/wp-content/uploads/2025/12/Banner-Hero-MobileV2.mp4';
+  const homeHeroPoster = homeHero?.video_poster_url || homeHeroDesktopImage || homeHeroMobileImage || undefined;
+  const homeHeroDisclaimer = config?.hero?.contact?.alt || '';
 
   return (
     <>
@@ -1287,12 +1289,15 @@ function Home({ onNavigate, currentPath }) {
             <img src={homeHeroDesktopImage} alt={config?.site_name || 'Hero'} className="hero-video" />
           </picture>
         ) : (
-          <video autoPlay muted loop playsInline className="hero-video">
+          <video autoPlay muted loop playsInline className="hero-video" poster={homeHeroPoster}>
               <source src={homeHeroMobileVideo} type="video/mp4" media="(max-width: 768px)" />
               <source src={homeHeroDesktopVideo} type="video/mp4" media="(min-width: 769px)" />
               Tu navegador no soporta el video.
           </video>
         )}
+        {homeHeroDisclaimer ? (
+          <wa-badge className="hero-disclaimer" appearance="filled" variant="neutral" pill><sup>*</sup>{homeHeroDisclaimer}</wa-badge>
+        ) : null}
     </div>
     <div className="home-container" ref={heroRef} id="menu-section">
         {/* Header de Plantas */}

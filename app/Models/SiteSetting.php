@@ -271,6 +271,7 @@ class SiteSetting extends Model
         $extraSettings = is_array($settings->extra_settings) ? $settings->extra_settings : [];
         $homeHeroDesktopImage = Media::query()->find($extraSettings['home_hero_image_desktop_id'] ?? $extraSettings['home_hero_image_id'] ?? null)?->url;
         $homeHeroMobileImage = Media::query()->find($extraSettings['home_hero_image_mobile_id'] ?? $extraSettings['home_hero_image_id'] ?? null)?->url;
+        $homeHeroVideoPoster = Media::query()->find($extraSettings['home_hero_video_poster_id'] ?? null)?->url;
         $contactHeroDesktopImage = Media::query()->find($extraSettings['contact_hero_image_desktop_id'] ?? $extraSettings['contact_hero_image_id'] ?? null)?->url;
         $contactHeroMobileImage = Media::query()->find($extraSettings['contact_hero_image_mobile_id'] ?? $extraSettings['contact_hero_image_id'] ?? null)?->url;
 
@@ -359,6 +360,7 @@ class SiteSetting extends Model
                     'image_mobile' => $homeHeroMobileImage,
                     'video_desktop_url' => $extraSettings['home_hero_video_desktop_url'] ?? null,
                     'video_mobile_url' => $extraSettings['home_hero_video_mobile_url'] ?? null,
+                    'video_poster_url' => $homeHeroVideoPoster,
                 ],
                 'contact' => [
                     'image' => $contactHeroDesktopImage,

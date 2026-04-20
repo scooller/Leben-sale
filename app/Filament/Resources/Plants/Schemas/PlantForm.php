@@ -53,7 +53,7 @@ class PlantForm
                     ->label('Precio Base')
                     ->numeric()
                     ->prefix('$')
-                    ->disabled(),
+                    ->helperText('Intentar no modificar, se perdera al sincronizar.'),
                 TextInput::make('precio_lista')
                     ->label('Precio Lista')
                     ->numeric()
@@ -63,7 +63,7 @@ class PlantForm
                     ->label('Porcentaje Máximo de Unidad')
                     ->numeric()
                     ->suffix('%')
-                    ->disabled(),
+                    ->helperText('Solo para plantas con programa "Departamento". Intentar no modificar, se perdera al sincronizar.'),
                 Toggle::make('unidad_sale')
                     ->label('Unidad Sale')
                     ->helperText('Define si esta unidad debe mostrarse cuando la configuración sale está activa.'),

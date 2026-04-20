@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\SiteSetting;
+use Awcodes\Curator\Models\Media;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +16,20 @@ class SiteSettingFrontendConfigTest extends TestCase
      */
     public function test_for_frontend_includes_brand_color(): void
     {
+        $posterMedia = Media::query()->create([
+            'disk' => 'curator',
+            'directory' => null,
+            'visibility' => 'public',
+            'name' => 'home-poster',
+            'path' => 'home-poster.jpg',
+            'width' => 1920,
+            'height' => 1080,
+            'size' => 245760,
+            'type' => 'image/jpeg',
+            'ext' => 'jpg',
+            'title' => 'Home poster',
+        ]);
+
         SiteSetting::current()->update([
             'brand_color' => '#112233',
             'evento_sale' => true,
@@ -43,6 +58,7 @@ class SiteSettingFrontendConfigTest extends TestCase
                 'home_hero_type' => 'video',
                 'home_hero_video_desktop_url' => 'https://cdn.example.com/home-desktop.mp4',
                 'home_hero_video_mobile_url' => 'https://cdn.example.com/home-mobile.mp4',
+                'home_hero_video_poster_id' => $posterMedia->id,
                 'contact_hero_alt' => 'Hero contacto',
                 'catalogo_no_disponible_titulo' => 'Volvemos pronto',
                 'catalogo_no_disponible_mensaje' => 'Estamos actualizando nuestras plantas. Vuelve en breve.',
@@ -111,6 +127,7 @@ class SiteSettingFrontendConfigTest extends TestCase
         $this->assertArrayHasKey('image_desktop', $payload['hero']['home']);
         $this->assertArrayHasKey('image_mobile', $payload['hero']['home']);
         $this->assertSame('https://cdn.example.com/home-desktop.mp4', $payload['hero']['home']['video_desktop_url']);
+        $this->assertStringContainsString('home-poster.jpg', (string) $payload['hero']['home']['video_poster_url']);
         $this->assertArrayHasKey('image_desktop', $payload['hero']['contact']);
         $this->assertArrayHasKey('image_mobile', $payload['hero']['contact']);
         $this->assertSame('Hero contacto', $payload['hero']['contact']['alt']);

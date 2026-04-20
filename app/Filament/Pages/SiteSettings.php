@@ -264,6 +264,11 @@ class SiteSettings extends Page implements HasForms
                                             ->url()
                                             ->placeholder('https://.../banner-mobile.mp4')
                                             ->visible(fn (Get $get): bool => ($get('extra_settings.home_hero_type') ?? 'video') === 'video'),
+
+                                        CuratorPicker::make('extra_settings.home_hero_video_poster_id')
+                                            ->label('Poster del video Hero Home')
+                                            ->helperText('Imagen usada mientras carga el video o si no puede reproducirse.')
+                                            ->visible(fn (Get $get): bool => ($get('extra_settings.home_hero_type') ?? 'video') === 'video'),
                                     ])
                                     ->columns(1),
 
@@ -279,8 +284,8 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Tamaño recomendado: 1080x1350px o proporcional.'),
 
                                         TextInput::make('extra_settings.contact_hero_alt')
-                                            ->label('Texto alternativo')
-                                            ->placeholder('Contacto')
+                                            ->label('Texto disclaimer para hero de contacto')
+                                            ->placeholder('Ejemplo: "Porcentaje corresponde a la unidad X"')
                                             ->maxLength(255),
                                     ])
                                     ->columns(1),
