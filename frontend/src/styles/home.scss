@@ -153,8 +153,7 @@ html.wa-light #root{
     .plant-image{
       display: block;
       width: 100%;
-        border-bottom: 1px solid rgba(var(--wa-color-white-rgb), 0.1);
-        padding-bottom: var(--wa-space-m);
+      border-bottom: 1px solid rgba(var(--wa-color-white-rgb), 0.1);
     }
 
     [slot='header-actions'] {
@@ -230,6 +229,15 @@ html.wa-light #root{
 }
 
 .sale-logo-badge {
+  align-items: center;
+  left: 0.75rem;
+  max-width: min(36%, 180px);
+  min-height: 42px;
+  position: absolute;
+  bottom: 0.75rem;
+  z-index: 2;
+}
+.plant-comuna-badge {
   align-items: center;
   left: 0.75rem;
   max-width: min(36%, 180px);

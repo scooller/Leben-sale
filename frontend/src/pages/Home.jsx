@@ -311,6 +311,17 @@ function Home({ onNavigate, currentPath }) {
     + (selectedPrecioMin ? 1 : 0)
     + (selectedPrecioMax ? 1 : 0);
 
+  const buildPlantDetailPath = useCallback((plant) => {
+    const projectSlug = plant?.proyectoSlug || slugifySegment(plant?.proyectoNombre || plant?.proyecto?.name);
+    const unitName = `${plant?.nombre || plant?.name || ''}`.trim();
+
+    if (!projectSlug || !unitName) {
+      return '/';
+    }
+
+    return `${PLANT_DETAIL_BASE_PATH}/${encodeURIComponent(projectSlug)}/${encodeURIComponent(unitName)}`;
+  }, []);
+
   useEffect(() => {
     const seoConfig = config?.seo || {};
     const siteName = config?.site_name || 'iLeben';
@@ -664,17 +675,6 @@ function Home({ onNavigate, currentPath }) {
   useEffect(() => {
     loadPlants();
   }, [loadPlants]);
-
-  const buildPlantDetailPath = useCallback((plant) => {
-    const projectSlug = plant?.proyectoSlug || slugifySegment(plant?.proyectoNombre || plant?.proyecto?.name);
-    const unitName = `${plant?.nombre || plant?.name || ''}`.trim();
-
-    if (!projectSlug || !unitName) {
-      return '/';
-    }
-
-    return `${PLANT_DETAIL_BASE_PATH}/${encodeURIComponent(projectSlug)}/${encodeURIComponent(unitName)}`;
-  }, []);
 
   const handleSelectPlantDetail = useCallback((plant) => {
     if (!plant) {

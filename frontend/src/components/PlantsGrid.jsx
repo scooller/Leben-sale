@@ -321,26 +321,29 @@ function PlantsGrid({
           {plants.map((plant) => (
             <wa-card key={plant.id} className="plant-card box-shadow-2" appearance="filled">
                 <div slot="media" className="plant-media">
-                  <img
+                    <img
                     src={plant.imageUrl}
                     alt={plant.nombre}
                     onClick={() => openPlantDetail(plant)}
                     className="plant-image"
                     style={{
-                      cursor: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 'not-allowed' : 'pointer',
-                      opacity: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 0.72 : 1,
+                        cursor: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 'not-allowed' : 'pointer',
+                        opacity: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 0.72 : 1,
                     }}
-                  />
-                  {isSaleEventActive && saleLogoUrl && (
+                    />
+                    {plant.proyectoComuna && (
+                    <wa-badge variant="neutral" className="plant-comuna-badge"><wa-icon slot="start" name="map-location"></wa-icon>{plant.proyectoComuna}</wa-badge>
+                    )}
+                    {isSaleEventActive && saleLogoUrl && (
                     <wa-badge variant="neutral" appearance="outlined" className="sale-logo-badge" aria-label="Logo sale">
-                      <img
+                        <img
                         src={saleLogoUrl}
                         alt="Logo Sale"
                         className="sale-logo-image"
-                      />
+                        />
                     </wa-badge>
-                  )}
-                  {plant.discountPercentage > 0 && (
+                    )}
+                    {plant.discountPercentage > 0 && (
                     <wa-animation name="flash" duration={5000} iterations={Infinity}>
                         <div className="discount-seal" aria-label={`Descuento ${plant.discountPercentage}%`}>
                             <span className="discount-seal-value">{plant.discountPercentage}</span>
@@ -350,7 +353,7 @@ function PlantsGrid({
                             </span>
                         </div>
                     </wa-animation>
-                  )}
+                    )}
                 </div>
                 <div slot="header" className="plant-header-wrapper">
                     <div className="wa-cluster wa-gap-m wa-align-items-center plant-header wa-heading-l">
@@ -360,14 +363,11 @@ function PlantsGrid({
                 </div>
 
                 <div slot="header-actions" className="wa-cluster wa-gap-xs">
-                  {plant.tipoProducto && (
-                  <wa-badge variant="neutral">{plant.tipoProducto}</wa-badge>
-                  )}
-                  {plant.proyectoEtapa && (
-                  <wa-badge variant="success" style={{ fontSize: 'var(--wa-font-size-xs)' }}>{plant.proyectoEtapa}</wa-badge>
-                  )}
-                    {plant.proyectoComuna && (
-                    <wa-badge variant={plant.isPaid ? 'neutral' : 'brand'}><wa-icon slot="start" name="map-location"></wa-icon>{plant.proyectoComuna}</wa-badge>
+                    {plant.tipoProducto && (
+                    <wa-badge variant="neutral">{plant.tipoProducto}</wa-badge>
+                    )}
+                    {plant.proyectoEtapa && (
+                    <wa-badge variant="success" style={{ fontSize: 'var(--wa-font-size-xs)' }}>{plant.proyectoEtapa}</wa-badge>
                     )}
                     {plant.isPaid && (
                     <wa-badge variant="neutral"><wa-icon name="shop-slash" slot="start"></wa-icon>Pagada</wa-badge>

@@ -89,7 +89,8 @@ class ProyectosTable
 
             TextColumn::make('region')
                 ->label('Región')
-                ->searchable(),
+                ->searchable()
+                ->toggleable(isToggledHiddenByDefault: true),
 
             TextColumn::make('asesores.full_name')
                 ->label('Asesores')
@@ -99,7 +100,8 @@ class ProyectosTable
                 ->expandableLimitedList(),
 
             TextColumn::make('rut')
-                ->label('RUT'),
+                ->label('RUT')
+                ->toggleable(isToggledHiddenByDefault: true),
 
             TextColumn::make('plantas_count')
                 ->label('Plantas')
@@ -126,14 +128,15 @@ class ProyectosTable
                 ->label('Código Comercio')
                 ->sortable()
                 ->searchable()
-                ->toggleable(isToggledHiddenByDefault: true),
+                ->toggleable(isToggledHiddenByDefault: false),
 
             IconColumn::make('entrega_inmediata')
                 ->label('Entrega Inmediata')
                 ->boolean()
                 ->trueIcon(Heroicon::OutlinedFire)
                 ->falseIcon(Heroicon::OutlinedMoon)
-                ->color(fn (bool $state): string => $state ? 'amber' : 'gray'),
+                ->color(fn (bool $state): string => $state ? 'amber' : 'gray')
+                ->toggleable(isToggledHiddenByDefault: false),
 
             // active
             IconColumn::make('is_active')
