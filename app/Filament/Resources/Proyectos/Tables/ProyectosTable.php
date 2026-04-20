@@ -124,11 +124,17 @@ class ProyectosTable
                 ->searchable(),
 
             // codigo comercio
-            TextColumn::make('codigo_comercio')
+            TextColumn::make('transbank_commerce_code')
                 ->label('Código Comercio')
                 ->sortable()
                 ->searchable()
                 ->toggleable(isToggledHiddenByDefault: false),
+
+            TextColumn::make('manual_payment_link')
+                ->label('Enlace de Pago Manual')
+                ->sortable()
+                ->searchable()
+                ->toggleable(isToggledHiddenByDefault: true),
 
             IconColumn::make('entrega_inmediata')
                 ->label('Entrega Inmediata')
