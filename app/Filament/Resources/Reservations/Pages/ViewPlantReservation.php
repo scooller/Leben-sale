@@ -8,6 +8,7 @@ use App\Enums\ReservationStatus;
 use App\Filament\Resources\Reservations\PlantReservationResource;
 use App\Services\PlantReservationService;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -43,6 +44,10 @@ class ViewPlantReservation extends ViewRecord
 
                     $this->record->refresh();
                 }),
+            DeleteAction::make()
+                ->label('Eliminar reserva')
+                ->modalHeading('Eliminar reserva')
+                ->modalDescription('Esta accion eliminara definitivamente este registro de reserva.'),
         ];
     }
 }

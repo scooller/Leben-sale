@@ -19,6 +19,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class CheckoutController extends Controller
 {
@@ -85,7 +86,7 @@ class CheckoutController extends Controller
                 $validated['quantity'],
                 $validated['email'],
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar el checkout',
                 'error' => $e->getMessage(),
@@ -247,6 +248,7 @@ class CheckoutController extends Controller
                     'description' => $description,
                     'session_id' => $requestPayload['session_id'],
                     'reservation_session_token' => $reservation?->session_token,
+                    'public_status_token' => (string) Str::uuid(),
                     'transbank_child_buy_order' => $requestPayload['child_buy_order'] ?? null,
                     'transbank_child_commerce_code' => $requestPayload['child_commerce_code'] ?? null,
                     'billing_email' => $billing['email'] ?? null,
@@ -277,11 +279,12 @@ class CheckoutController extends Controller
                 'redirect_url' => $response['url'],
                 'token' => $response['token'],
                 'payment_id' => $payment->id,
+                'payment_status_token' => data_get($payment->metadata, 'public_status_token'),
                 'amount' => $amount,
                 'description' => $description,
                 'environment' => $transbankEnv,
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar pago con Transbank',
                 'error' => $e->getMessage(),
@@ -317,7 +320,7 @@ class CheckoutController extends Controller
                 'amount' => $amount,
                 'description' => $description,
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'message' => 'Error al iniciar pago con Mercado Pago',
                 'error' => $e->getMessage(),

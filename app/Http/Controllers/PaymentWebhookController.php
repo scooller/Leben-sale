@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Facades\PaymentGateway;
 use App\Models\Payment;
 use App\Services\PlantReservationService;
+use BackedEnum;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentWebhookController extends Controller
 {
@@ -36,24 +40,51 @@ class PaymentWebhookController extends Controller
                 'redirect_url_provided' => $redirectUrl !== '',
             ]);
 
-            return redirect()->route('payment.failed')
-                ->with('error', 'No se pudo preparar la redirección a Transbank.');
+            return $this->redirectToFrontendResult('failed', null, [
+                'error' => 'No se pudo preparar la redirección a Transbank.',
+            ]);
         }
 
-        if (! str_starts_with($redirectUrl, 'https://webpay3gint.transbank.cl/')
-            && ! str_starts_with($redirectUrl, 'https://webpay3g.transbank.cl/')) {
+        if (! $this->isValidTransbankRedirectUrl($redirectUrl)) {
             Log::warning('Transbank: URL de redirección inválida detectada', [
                 'redirect_url' => $redirectUrl,
             ]);
 
-            return redirect()->route('payment.failed')
-                ->with('error', 'URL de pago inválida.');
+            return $this->redirectToFrontendResult('failed', null, [
+                'error' => 'URL de pago invalida.',
+            ]);
         }
 
         return response()->view('payments.transbank-redirect', [
             'token' => $token,
             'redirectUrl' => $redirectUrl,
         ]);
+    }
+
+    private function isValidTransbankRedirectUrl(string $redirectUrl): bool
+    {
+        if ($redirectUrl === '') {
+            return false;
+        }
+
+        $parts = parse_url($redirectUrl);
+
+        if (! is_array($parts)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if ($scheme !== 'https' || $host === '') {
+            return false;
+        }
+
+        // Permite hosts oficiales de Webpay y subdominios futuros bajo transbank.cl.
+        return in_array($host, [
+            'webpay3gint.transbank.cl',
+            'webpay3g.transbank.cl',
+        ], true) || Str::endsWith($host, '.transbank.cl');
     }
 
     /**
@@ -91,13 +122,15 @@ class PaymentWebhookController extends Controller
                             $this->reservationService->releaseForPlant((int) $payment->plant_id, 'payment_cancelled');
                         }
 
-                        return redirect()->route('payment.failed', ['payment' => $payment->id])
-                            ->with('error', 'El pago fue cancelado o expiró en Transbank.');
+                        return $this->redirectToFrontendResult('cancelled', $payment, [
+                            'error' => 'El pago fue cancelado o expiro en Transbank.',
+                        ]);
                     }
                 }
 
-                return redirect()->route('payment.failed')
-                    ->with('error', 'Transacción cancelada o token no proporcionado por Transbank.');
+                return $this->redirectToFrontendResult('failed', null, [
+                    'error' => 'Transaccion cancelada o token no proporcionado por Transbank.',
+                ]);
             }
 
             Log::info('Transbank: Procesando retorno', ['token' => $token]);
@@ -116,8 +149,9 @@ class PaymentWebhookController extends Controller
                     'session_id' => $response['session_id'],
                 ]);
 
-                return redirect()->route('payment.failed')
-                    ->with('error', 'Pago no encontrado');
+                return $this->redirectToFrontendResult('failed', null, [
+                    'error' => 'Pago no encontrado',
+                ]);
             }
 
             // Actualizar el pago según el código de respuesta
@@ -141,8 +175,9 @@ class PaymentWebhookController extends Controller
                     $this->reservationService->completeForPlant((int) $payment->plant_id);
                 }
 
-                return redirect()->route('payment.success', ['payment' => $payment->id])
-                    ->with('success', 'Pago completado exitosamente');
+                return $this->redirectToFrontendResult('ok', $payment, [
+                    'message' => 'Pago completado exitosamente',
+                ]);
             } else {
                 // Transacción rechazada
                 $payment->update([
@@ -163,17 +198,19 @@ class PaymentWebhookController extends Controller
                     $this->reservationService->releaseForPlant((int) $payment->plant_id, 'payment_rejected');
                 }
 
-                return redirect()->route('payment.failed', ['payment' => $payment->id])
-                    ->with('error', 'Pago rechazado por el banco');
+                return $this->redirectToFrontendResult('failed', $payment, [
+                    'error' => 'Pago rechazado por el banco',
+                ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Transbank: Error procesando retorno', [
                 'error' => $e->getMessage(),
                 'token' => $request->input('token_ws'),
             ]);
 
-            return redirect()->route('payment.failed')
-                ->with('error', 'Error al procesar el pago: '.$e->getMessage());
+            return $this->redirectToFrontendResult('failed', null, [
+                'error' => 'Error al procesar el pago: '.$e->getMessage(),
+            ]);
         }
     }
 
@@ -254,7 +291,7 @@ class PaymentWebhookController extends Controller
             Log::info('MercadoPago: Tipo de webhook no procesado', ['type' => $type]);
 
             return response()->json(['success' => true]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('MercadoPago: Error procesando webhook', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
@@ -286,29 +323,62 @@ class PaymentWebhookController extends Controller
                 ->first();
 
             if (! $payment) {
-                return redirect()->route('payment.failed')
-                    ->with('error', 'Pago no encontrado');
+                return $this->redirectToFrontendResult('failed', null, [
+                    'error' => 'Pago no encontrado',
+                ]);
             }
 
             // Redirigir según el estado
             if ($status === 'approved') {
-                return redirect()->route('payment.success', ['payment' => $payment->id])
-                    ->with('success', 'Pago completado exitosamente');
+                return $this->redirectToFrontendResult('ok', $payment, [
+                    'message' => 'Pago completado exitosamente',
+                ]);
             } elseif ($status === 'pending') {
-                return redirect()->route('payment.pending', ['payment' => $payment->id])
-                    ->with('info', 'Pago pendiente de confirmación');
+                return $this->redirectToFrontendResult('pending', $payment, [
+                    'message' => 'Pago pendiente de confirmacion',
+                ]);
             } else {
-                return redirect()->route('payment.failed', ['payment' => $payment->id])
-                    ->with('error', 'Pago rechazado o cancelado');
+                return $this->redirectToFrontendResult('failed', $payment, [
+                    'error' => 'Pago rechazado o cancelado',
+                ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('MercadoPago: Error procesando retorno', [
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route('payment.failed')
-                ->with('error', 'Error al procesar el pago');
+            return $this->redirectToFrontendResult('failed', null, [
+                'error' => 'Error al procesar el pago',
+            ]);
         }
+    }
+
+    private function redirectToFrontendResult(string $result, ?Payment $payment = null, array $extraParams = []): RedirectResponse
+    {
+        $params = [
+            'result' => $result,
+        ];
+
+        if ($payment !== null) {
+            $params['payment_id'] = (string) $payment->id;
+            $params['status'] = $payment->status instanceof BackedEnum ? $payment->status->value : (string) $payment->status;
+            $params['gateway'] = $payment->gateway instanceof BackedEnum ? $payment->gateway->value : (string) $payment->gateway;
+
+            $statusToken = (string) data_get($payment->metadata, 'public_status_token', '');
+            if ($statusToken !== '') {
+                $params['status_token'] = $statusToken;
+            }
+        }
+
+        $queryParams = array_filter(array_merge($params, $extraParams), fn ($value): bool => filled($value));
+
+        $baseUrl = (string) config('payments.frontend_result_url', 'https://sale.ileben.cl/pago');
+
+        if (str_contains($baseUrl, '?')) {
+            return redirect()->away($baseUrl.'&'.http_build_query($queryParams));
+        }
+
+        return redirect()->away($baseUrl.'?'.http_build_query($queryParams));
     }
 
     /**

@@ -83,6 +83,7 @@ return [
 
     'currency' => env('PAYMENT_CURRENCY', 'CLP'),
     'timezone' => env('PAYMENT_TIMEZONE', 'America/Santiago'),
+    'frontend_result_url' => env('PAYMENT_FRONTEND_RESULT_URL', 'https://sale.ileben.cl/pago'),
 
     // Tiempo máximo de espera para confirmación después de redirección (minutos)
     'confirmation_timeout' => 10,

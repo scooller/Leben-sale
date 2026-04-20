@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class PaymentController extends Controller
@@ -69,6 +70,44 @@ class PaymentController extends Controller
             ->findOrFail($id);
 
         return response()->json($payment);
+    }
+
+    /**
+     * Display a public-safe payment status using payment id + status token.
+     */
+    public function publicStatus(Request $request, string $id): JsonResponse
+    {
+        $statusToken = (string) $request->query('token', '');
+
+        if ($statusToken === '') {
+            return response()->json([
+                'message' => 'Token de estado no proporcionado.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $payment = Payment::query()->findOrFail($id);
+        $expectedToken = (string) data_get($payment->metadata, 'public_status_token', '');
+
+        if ($expectedToken === '' || ! Str::isUuid($expectedToken) || ! \hash_equals($expectedToken, $statusToken)) {
+            return response()->json([
+                'message' => 'Token de estado inválido.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $status = $payment->status instanceof PaymentStatus
+            ? $payment->status
+            : PaymentStatus::fromValue((string) $payment->status);
+
+        return response()->json([
+            'id' => $payment->id,
+            'gateway' => $payment->gateway instanceof \BackedEnum ? $payment->gateway->value : (string) $payment->gateway,
+            'gateway_tx_id' => $payment->gateway_tx_id,
+            'amount' => (float) $payment->amount,
+            'currency' => $payment->currency,
+            'status' => $status?->value,
+            'status_label' => $status?->label(),
+            'updated_at' => $payment->updated_at?->toISOString(),
+        ]);
     }
 
     /**

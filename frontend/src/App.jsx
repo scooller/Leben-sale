@@ -4,6 +4,7 @@ import MaintenanceMode from './components/MaintenanceMode';
 import ErrorNotification from './components/ErrorNotification';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
+import Payment from './pages/Payment';
 import { APP_HTTP_ERROR_EVENT } from './utils/errorHandler';
 import { trackPageView } from './utils/tagManager';
 import { captureUtmParamsFromUrl } from './utils/utmSession';
@@ -33,6 +34,10 @@ const getInitialPathname = () => {
 const resolvePageTitle = (pathname, siteName = 'iLeben') => {
   if (pathname === '/contacto') {
     return `${siteName} | Contacto`;
+  }
+
+  if (pathname === '/pago') {
+    return `${siteName} | Pago`;
   }
 
   if (pathname.startsWith('/p/')) {
@@ -150,6 +155,8 @@ function AppContent() {
       <main>
         {currentPath === '/contacto' ? (
           <Contact onNavigate={navigate} currentPath={currentPath} />
+        ) : currentPath === '/pago' ? (
+          <Payment onNavigate={navigate} currentPath={currentPath} />
         ) : (
           <Home onNavigate={navigate} currentPath={currentPath} />
         )}

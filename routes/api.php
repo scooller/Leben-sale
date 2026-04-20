@@ -108,6 +108,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
+    // Estado publico de pago para pantalla de resultado en frontend
+    Route::get('/payments/public-status/{id}', [App\Http\Controllers\Api\PaymentController::class, 'publicStatus']);
+
     // Catálogo público (el bloqueo por mostrar_plantas se maneja en frontend)
     Route::middleware(['token.origin'])->group(function () {
         Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);

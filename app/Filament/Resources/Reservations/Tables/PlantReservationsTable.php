@@ -9,6 +9,8 @@ use App\Filament\Resources\Reservations\PlantReservationResource;
 use App\Services\PlantReservationService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -82,6 +84,11 @@ class PlantReservationsTable
                     ->action(function ($record): void {
                         app(PlantReservationService::class)->releaseById($record->id, 'admin', 'Released from admin panel');
                     }),
+                DeleteAction::make()
+                    ->label('Eliminar')
+                    ->modalHeading('Eliminar reserva')
+                    ->modalDescription('Esta accion eliminara definitivamente la reserva seleccionada.')
+                    ->successNotificationTitle('Reserva eliminada'),
             ])
             ->toolbarActions([
                 BulkAction::make('releaseSelected')
@@ -108,6 +115,11 @@ class PlantReservationsTable
                             ->body("Se liberaron {$releasedCount} reservas activas.")
                             ->send();
                     }),
+                DeleteBulkAction::make()
+                    ->label('Eliminar seleccionadas')
+                    ->modalHeading('Eliminar reservas seleccionadas')
+                    ->modalDescription('Esta accion eliminara definitivamente las reservas seleccionadas.')
+                    ->successNotificationTitle('Reservas eliminadas'),
             ]);
     }
 }
