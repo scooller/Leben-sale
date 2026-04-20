@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'token.origin' => \App\Http\Middleware\EnsureTokenOriginIsAuthorized::class,
+            'catalog.preview' => \App\Http\Middleware\EnsureCatalogPreviewOrAuthenticated::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

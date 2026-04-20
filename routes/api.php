@@ -108,6 +108,17 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
+    // Catálogo visible para usuarios autenticados o previews válidos
+    Route::middleware(['catalog.preview', 'token.origin'])->group(function () {
+        Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);
+        Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
+
+        Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
+        Route::get('/plantas/filtros-ubicacion', [App\Http\Controllers\Api\PlantController::class, 'locationFilters']);
+        Route::get('/plantas/proyecto/{projectSlug}/unidad/{unitName}', [App\Http\Controllers\Api\PlantController::class, 'showByProjectSlugAndUnitName']);
+        Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
+    });
+
     // Endpoints públicos mínimos
 });
 
@@ -121,16 +132,6 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.origin'])->group(functio
 
     // Checkout
     Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'initiate']);
-
-    // Proyectos
-    Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);
-    Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
-
-    // Plantas
-    Route::get('/plantas', [App\Http\Controllers\Api\PlantController::class, 'index']);
-    Route::get('/plantas/filtros-ubicacion', [App\Http\Controllers\Api\PlantController::class, 'locationFilters']);
-    Route::get('/plantas/proyecto/{projectSlug}/unidad/{unitName}', [App\Http\Controllers\Api\PlantController::class, 'showByProjectSlugAndUnitName']);
-    Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
 
     // Pasarelas disponibles
     Route::get('/payment-gateways', [App\Http\Controllers\Api\CheckoutController::class, 'availableGateways']);
