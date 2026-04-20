@@ -84,10 +84,23 @@ class TransbankMallTest extends TestCase
      */
     public function test_proyecto_transbank_commerce_code_resolution(): void
     {
-        $proyecto = Proyecto::factory()->create(['name' => 'Commerce Test '.uniqid()]);
+        $proyecto = Proyecto::factory()->create([
+            'name' => 'Commerce Test '.uniqid(),
+            'transbank_commerce_code' => '597055555540',
+        ]);
 
-        // Without codes in config, should return null
-        $this->assertNull($proyecto->transbank_commerce_code);
+        // Must prioritize persisted DB value.
+        $this->assertSame('597055555540', $proyecto->transbank_commerce_code);
+
+        // If DB value is missing, it should fallback to config by slug.
+        config()->set('payments.gateways.transbank.commerce_codes', [
+            $proyecto->slug => '597055555541',
+        ]);
+
+        $proyecto->update(['transbank_commerce_code' => null]);
+        $proyecto->refresh();
+
+        $this->assertSame('597055555541', $proyecto->transbank_commerce_code);
     }
 
     /**

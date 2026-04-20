@@ -102,10 +102,17 @@ class Proyecto extends Model
 
     /**
      * Obtener el código de comercio Transbank para este proyecto
-     * Busca en la configuración bajo la clave del slug
+     * Prioriza el valor persistido en DB y, si no existe,
+     * usa el fallback configurado por slug.
      */
     public function getTransbankCommerceCodeAttribute(): ?string
     {
+        $storedValue = $this->getRawOriginal('transbank_commerce_code');
+
+        if (filled($storedValue)) {
+            return $storedValue;
+        }
+
         $codes = config('payments.gateways.transbank.commerce_codes', []);
 
         return $codes[$this->slug] ?? null;
