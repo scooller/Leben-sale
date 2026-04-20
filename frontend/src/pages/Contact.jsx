@@ -470,6 +470,10 @@ function Contact({ onNavigate, currentPath }) {
   const validateField = (field, candidateValue) => {
     const nextValue = `${candidateValue ?? ''}`.trim();
 
+    if (field.key === CONTACT_PROJECT_FIELD.key && nextValue === '') {
+      return 'Debes seleccionar un proyecto.';
+    }
+
     if (field.type === 'rut' && nextValue !== '' && !isValidRut(nextValue)) {
       return 'RUT inválido. Revisa el dígito verificador.';
     }
@@ -639,6 +643,7 @@ function Contact({ onNavigate, currentPath }) {
     const value = values[field.key] || '';
     const errorMessage = fieldErrors[field.key];
     const fieldIcon = resolveFieldIcon(field);
+    const isProjectField = field.key === CONTACT_PROJECT_FIELD.key;
 
     if (field.type === 'textarea') {
       return (
@@ -665,7 +670,7 @@ function Contact({ onNavigate, currentPath }) {
           <wa-select
             value={value}
             placeholder={field.placeholder || 'Selecciona una opción'}
-            required={field.required}
+            required={field.required || isProjectField}
             disabled={field.disabled}
             clearable={!field.required}
             onChange={(event) => handleFieldChange(field, event.target.value || '')}

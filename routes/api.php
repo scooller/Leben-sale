@@ -108,8 +108,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
-    // Catálogo visible para usuarios autenticados o previews válidos
-    Route::middleware(['catalog.preview', 'token.origin'])->group(function () {
+    // Catálogo público (el bloqueo por mostrar_plantas se maneja en frontend)
+    Route::middleware(['token.origin'])->group(function () {
         Route::get('/proyectos', [App\Http\Controllers\Api\ProyectoController::class, 'index']);
         Route::get('/proyectos/{id}', [App\Http\Controllers\Api\ProyectoController::class, 'show']);
 

@@ -25,7 +25,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const previewToken = resolvePreviewToken();
   const userToken = localStorage.getItem('auth_token');
-  const token = userToken || (previewToken ? null : defaultAuthToken);
+  const token = userToken || defaultAuthToken;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
