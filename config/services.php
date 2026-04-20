@@ -40,6 +40,10 @@ return [
         'webhook_secret' => env('MERCADOPAGO_WEBHOOK_SECRET'),
     ],
 
+    'turnstile' => [
+        'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY'),
+    ],
+
     'salesforce' => [
         'auth_method' => env('SF_AUTH_METHOD', 'UserPassword'),
         'consumer_key' => env('SF_CONSUMER_KEY'),

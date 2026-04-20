@@ -60,6 +60,14 @@
   margin-top: var(--wa-space-s);
 }
 
+.turnstile-wrapper {
+  margin-top: var(--wa-space-2xs);
+}
+
+.turnstile-wrapper > div {
+  min-height: 66px;
+}
+
 .contact-form wa-button {
   justify-self: flex-start;
 }

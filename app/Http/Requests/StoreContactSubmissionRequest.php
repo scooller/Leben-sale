@@ -3,11 +3,13 @@
 namespace App\Http\Requests;
 
 use App\Models\SiteSetting;
+use App\Services\TurnstileVerificationService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreContactSubmissionRequest extends FormRequest
 {
@@ -33,6 +35,7 @@ class StoreContactSubmissionRequest extends FormRequest
     {
         $rules = [
             'fields' => ['required', 'array'],
+            'turnstile_token' => $this->turnstileValidationRules(),
         ];
 
         foreach ($this->configuredFields() as $field) {
@@ -111,6 +114,7 @@ class StoreContactSubmissionRequest extends FormRequest
     {
         $attributes = [
             'fields' => 'campos del formulario',
+            'turnstile_token' => 'verificacion de seguridad',
         ];
 
         foreach ($this->configuredFields() as $field) {
@@ -132,6 +136,48 @@ class StoreContactSubmissionRequest extends FormRequest
         }
 
         return $attributes;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        if (! $this->isTurnstileEnabled()) {
+            return;
+        }
+
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->has('turnstile_token')) {
+                return;
+            }
+
+            $token = trim((string) $this->input('turnstile_token', ''));
+
+            if ($token === '') {
+                return;
+            }
+
+            $isValid = app(TurnstileVerificationService::class)->verify($token, $this->ip());
+
+            if (! $isValid) {
+                $validator->errors()->add('turnstile_token', 'No pudimos verificar la validacion de seguridad. Intenta nuevamente.');
+            }
+        });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function turnstileValidationRules(): array
+    {
+        if (! $this->isTurnstileEnabled()) {
+            return ['nullable', 'string'];
+        }
+
+        return ['required', 'string', 'max:2048'];
+    }
+
+    private function isTurnstileEnabled(): bool
+    {
+        return filled(config('services.turnstile.secret_key'));
     }
 
     /**

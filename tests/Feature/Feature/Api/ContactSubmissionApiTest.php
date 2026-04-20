@@ -13,6 +13,7 @@ use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -133,6 +134,98 @@ class ContactSubmissionApiTest extends TestCase
         $response
             ->assertStatus(422)
             ->assertJsonValidationErrors(['fields.rut', 'fields.reason']);
+    }
+
+    public function test_it_requires_turnstile_token_when_turnstile_is_enabled(): void
+    {
+        config()->set('services.turnstile.secret_key', 'test-secret');
+
+        SiteSetting::current()->update([
+            'contact_form_fields' => [
+                ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+            ],
+        ]);
+
+        $response = $this->postJson('/api/v1/contact-submissions', [
+            'fields' => [
+                'name' => 'Juan Perez',
+                'email' => 'juan@example.com',
+            ],
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['turnstile_token']);
+    }
+
+    public function test_it_rejects_contact_submission_when_turnstile_validation_fails(): void
+    {
+        config()->set('services.turnstile.secret_key', 'test-secret');
+
+        Http::fake([
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+                'success' => false,
+            ], 200),
+        ]);
+
+        SiteSetting::current()->update([
+            'contact_form_fields' => [
+                ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+            ],
+        ]);
+
+        $response = $this->postJson('/api/v1/contact-submissions', [
+            'fields' => [
+                'name' => 'Juan Perez',
+                'email' => 'juan@example.com',
+            ],
+            'turnstile_token' => 'invalid-token',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['turnstile_token']);
+    }
+
+    public function test_it_accepts_contact_submission_when_turnstile_validation_succeeds(): void
+    {
+        Mail::fake();
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        config()->set('services.turnstile.secret_key', 'test-secret');
+
+        Http::fake([
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+                'success' => true,
+            ], 200),
+        ]);
+
+        SiteSetting::current()->update([
+            'contact_form_fields' => [
+                ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+            ],
+            'contact_notification_email' => 'leads@ileben.cl',
+        ]);
+
+        $response = $this->postJson('/api/v1/contact-submissions', [
+            'fields' => [
+                'name' => 'Juan Perez',
+                'email' => 'juan@example.com',
+            ],
+            'turnstile_token' => 'valid-token',
+        ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('message', 'Tu mensaje fue enviado correctamente.');
+
+        $this->assertDatabaseHas('contact_submissions', [
+            'name' => 'Juan Perez',
+            'email' => 'juan@example.com',
+        ]);
     }
 
     public function test_finmail_seeder_creates_contact_template_with_requested_fields(): void

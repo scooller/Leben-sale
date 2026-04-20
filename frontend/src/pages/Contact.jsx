@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import contactSubmissionsService from '../services/contactSubmissions';
 import { trackEvent } from '../utils/tagManager';
@@ -144,8 +144,15 @@ function Contact({ onNavigate, currentPath }) {
   const [submitError, setSubmitError] = useState('');
   const [projectCatalog, setProjectCatalog] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const turnstileContainerRef = useRef(null);
+  const turnstileWidgetIdRef = useRef(null);
+  const [turnstileReady, setTurnstileReady] = useState(typeof window !== 'undefined' && Boolean(window.turnstile));
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState('');
 
   const storedUtmParams = useMemo(() => getStoredUtmParams(), []);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
   const socialLinks = useMemo(() => {
     const social = config?.social || {};
@@ -449,6 +456,83 @@ function Contact({ onNavigate, currentPath }) {
   }, []);
 
   useEffect(() => {
+    if (!isTurnstileEnabled || window.turnstile) {
+      return;
+    }
+
+    const existingScript = document.querySelector('script[data-turnstile-script="true"]');
+
+    if (existingScript) {
+      const handleScriptLoad = () => {
+        setTurnstileReady(true);
+        setTurnstileError('');
+      };
+      const handleScriptError = () => setTurnstileError('No se pudo cargar la verificacion de seguridad. Intenta nuevamente.');
+
+      existingScript.addEventListener('load', handleScriptLoad);
+      existingScript.addEventListener('error', handleScriptError);
+
+      return () => {
+        existingScript.removeEventListener('load', handleScriptLoad);
+        existingScript.removeEventListener('error', handleScriptError);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.setAttribute('data-turnstile-script', 'true');
+
+    const handleScriptLoad = () => {
+      setTurnstileReady(true);
+      setTurnstileError('');
+    };
+
+    const handleScriptError = () => {
+      setTurnstileError('No se pudo cargar la verificacion de seguridad. Intenta nuevamente.');
+    };
+
+    script.addEventListener('load', handleScriptLoad);
+    script.addEventListener('error', handleScriptError);
+    document.head.appendChild(script);
+
+    return () => {
+      script.removeEventListener('load', handleScriptLoad);
+      script.removeEventListener('error', handleScriptError);
+    };
+  }, [isTurnstileEnabled]);
+
+  useEffect(() => {
+    if (!isTurnstileEnabled || !turnstileReady || !turnstileContainerRef.current || !window.turnstile) {
+      return;
+    }
+
+    setTurnstileToken('');
+
+    if (turnstileWidgetIdRef.current) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
+      return;
+    }
+
+    turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+      sitekey: turnstileSiteKey,
+      callback: (token) => {
+        setTurnstileToken(token);
+        setTurnstileError('');
+      },
+      'expired-callback': () => {
+        setTurnstileToken('');
+        setTurnstileError('La verificacion expiro. Completa Turnstile nuevamente.');
+      },
+      'error-callback': () => {
+        setTurnstileToken('');
+        setTurnstileError('No se pudo validar Turnstile. Intenta nuevamente.');
+      },
+    });
+  }, [isTurnstileEnabled, turnstileReady, turnstileSiteKey]);
+
+  useEffect(() => {
     if (values.comuna && !comunaFieldOptions.some((option) => option.value === values.comuna)) {
       setValues((current) => ({
         ...current,
@@ -513,6 +597,18 @@ function Contact({ onNavigate, currentPath }) {
 
     setSubmitSuccess('');
     setSubmitError('');
+
+    if (isTurnstileEnabled && !turnstileToken) {
+      setSubmitError('Completa la verificacion de seguridad antes de enviar el formulario.');
+
+      trackEvent('form_error', {
+        form_name: 'contact',
+        reason: 'missing_turnstile_token',
+      });
+
+      return;
+    }
+
     setSubmitting(true);
 
     const nextFieldErrors = {};
@@ -547,7 +643,7 @@ function Contact({ onNavigate, currentPath }) {
       await contactSubmissionsService.create({
         ...storedUtmParams,
         ...submissionValues,
-      });
+      }, turnstileToken);
 
       trackEvent('form_submit', {
         form_name: 'contact',
@@ -558,6 +654,13 @@ function Contact({ onNavigate, currentPath }) {
 
       setSubmitSuccess('Tu mensaje fue enviado correctamente.');
       setFieldErrors({});
+
+      if (window.turnstile && turnstileWidgetIdRef.current) {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+      }
+
+      setTurnstileToken('');
+      setTurnstileError('');
 
       const resetValues = {
         [CONTACT_RANGE_FIELD.key]: '',
@@ -575,18 +678,31 @@ function Contact({ onNavigate, currentPath }) {
       const nextErrors = {};
 
       Object.entries(backendErrors).forEach(([key, messages]) => {
-        if (!key.startsWith('fields.') || !Array.isArray(messages) || !messages[0]) {
+        if (!Array.isArray(messages) || !messages[0]) {
           return;
         }
 
-        nextErrors[key.replace('fields.', '')] = messages[0];
+        if (key.startsWith('fields.')) {
+          nextErrors[key.replace('fields.', '')] = messages[0];
+        }
       });
 
       if (Object.keys(nextErrors).length > 0) {
         setFieldErrors((current) => ({ ...current, ...nextErrors }));
       }
 
-      const message = error?.response?.data?.message || 'No pudimos enviar tu mensaje. Intenta nuevamente.';
+      if (backendErrors.turnstile_token?.[0]) {
+        setTurnstileToken('');
+        setTurnstileError(backendErrors.turnstile_token[0]);
+
+        if (window.turnstile && turnstileWidgetIdRef.current) {
+          window.turnstile.reset(turnstileWidgetIdRef.current);
+        }
+      }
+
+      const message = backendErrors.turnstile_token?.[0]
+        || error?.response?.data?.message
+        || 'No pudimos enviar tu mensaje. Intenta nuevamente.';
 
       trackEvent('form_error', {
         form_name: 'contact',
@@ -870,6 +986,16 @@ function Contact({ onNavigate, currentPath }) {
                   ? CONTACT_PROJECT_FIELD.placeholder
                   : 'Selecciona primero una comuna',
               })}
+
+              {isTurnstileEnabled && (
+                <div className="turnstile-wrapper">
+                  <div ref={turnstileContainerRef}></div>
+
+                  {turnstileError && (
+                    <small className="wa-color-danger">{turnstileError}</small>
+                  )}
+                </div>
+              )}
 
               {submitSuccess && (
                 <wa-callout variant="success">
