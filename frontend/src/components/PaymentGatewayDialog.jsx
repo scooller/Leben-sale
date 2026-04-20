@@ -704,6 +704,7 @@ function PaymentGatewayDialog({
                         type="number"
                         label="Telefono"
                         placeholder="9 1234 5678"
+                        maxlength="9"
                         value={checkoutPhone}
                         onChange={(e) => {
                         setFieldTouched('phone');

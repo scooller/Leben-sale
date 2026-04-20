@@ -46,11 +46,11 @@ class CheckoutController extends Controller
             }
 
             $user = $request->user();
+            // Solo actualizar nombre y teléfono; email y RUT son datos de facturación
+            // del pago y no deben sobreescribir el perfil (pueden pertenecer a otra cuenta)
             $user->update([
                 'name' => $validated['name'],
-                'email' => $validated['email'],
                 'phone' => $validated['phone'],
-                'rut' => $validated['rut'],
             ]);
 
             // Obtener la planta con su proyecto
@@ -70,12 +70,12 @@ class CheckoutController extends Controller
             $description = "{$validated['quantity']}x {$plant->name}";
 
             if ($validated['gateway'] === 'manual') {
-                return $this->initiateManual($user, $plant, $reservation, $amount, $description);
+                return $this->initiateManual($user, $plant, $reservation, $amount, $description, $validated);
             }
 
             // Iniciar transacción según la pasarela
             if ($validated['gateway'] === 'transbank') {
-                return $this->initiateTransbank($user, $plant, $reservation, $amount, $description, $validated['quantity']);
+                return $this->initiateTransbank($user, $plant, $reservation, $amount, $description, $validated['quantity'], $validated);
             }
 
             return $this->initiateMercadoPago(
@@ -96,7 +96,8 @@ class CheckoutController extends Controller
     /**
      * Iniciar pago manual.
      */
-    private function initiateManual(User $user, Plant $plant, ?PlantReservation $reservation, float $amount, string $description): JsonResponse
+    /** @param array<string, mixed> $billing */
+    private function initiateManual(User $user, Plant $plant, ?PlantReservation $reservation, float $amount, string $description, array $billing = []): JsonResponse
     {
         if (! $this->projectHasManualPaymentData($plant->proyecto)) {
             return response()->json([
@@ -147,6 +148,8 @@ class CheckoutController extends Controller
                 'manual_payment_expires_at' => $expiresAt?->toISOString(),
                 'manual_payment_proof_submitted' => false,
                 'manual_payment_link' => $config['payment_link'] ?? null,
+                'billing_email' => $billing['email'] ?? null,
+                'billing_rut' => $billing['rut'] ?? null,
             ],
         ]);
 
@@ -181,7 +184,8 @@ class CheckoutController extends Controller
     /**
      * Iniciar pago con Transbank
      */
-    private function initiateTransbank(User $user, Plant $plant, ?PlantReservation $reservation, float $amount, string $description, int $quantity): JsonResponse
+    /** @param array<string, mixed> $billing */
+    private function initiateTransbank(User $user, Plant $plant, ?PlantReservation $reservation, float $amount, string $description, int $quantity, array $billing = []): JsonResponse
     {
         try {
             $config = config('payments.gateways.transbank', []);
@@ -245,6 +249,8 @@ class CheckoutController extends Controller
                     'reservation_session_token' => $reservation?->session_token,
                     'transbank_child_buy_order' => $requestPayload['child_buy_order'] ?? null,
                     'transbank_child_commerce_code' => $requestPayload['child_commerce_code'] ?? null,
+                    'billing_email' => $billing['email'] ?? null,
+                    'billing_rut' => $billing['rut'] ?? null,
                 ],
             ]);
 

@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CheckoutInitiateRequest extends FormRequest
 {
@@ -31,16 +30,25 @@ class CheckoutInitiateRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($this->user()?->id),
             ],
             'phone' => ['required', 'string', 'max:20'],
             'rut' => [
                 'required',
                 'string',
                 'max:12',
-                Rule::unique('users', 'rut')->ignore($this->user()?->id),
             ],
             'session_token' => ['nullable', 'string', 'max:64', 'required_if:gateway,manual'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.unique' => 'El correo electrónico ya está registrado en otra cuenta.',
+            'rut.unique' => 'El RUT ya está registrado en otra cuenta.',
         ];
     }
 
