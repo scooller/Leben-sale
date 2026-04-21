@@ -238,9 +238,6 @@ return [
             'navigation_group' => 'Sistema',
             'navigation_sort' => 100,
             'polling_interval' => null,
-            'new_users' => [
-                'limit' => 10,
-            ],
         ],
     ],
 
