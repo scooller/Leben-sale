@@ -107,7 +107,7 @@ class ContactSubmissionsTable
                 ->label('Canal')
                 ->placeholder('Sin canal')
                 ->badge()
-                ->color('info')
+                ->color(fn ($record): string => $record->channel?->slug_badge_color ?: 'gray')
                 ->sortable()
                 ->toggleable(),
             TextColumn::make('rut')
