@@ -32,7 +32,7 @@ class ListApiTokens extends ListRecords
                         ->label('Usuario')
                         ->options(
                             User::query()
-                                ->where('user_type', 'admin')
+                                ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
                                 ->orderBy('name')
                                 ->pluck('email', 'id')
                                 ->all()
@@ -58,7 +58,7 @@ class ListApiTokens extends ListRecords
                 ])
                 ->action(function (array $data): void {
                     $user = User::query()
-                        ->where('user_type', 'admin')
+                        ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
                         ->findOrFail($data['tokenable_id']);
 
                     $newToken = $user->createToken(

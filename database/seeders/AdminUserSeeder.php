@@ -14,7 +14,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         // Crear o actualizar usuario administrador
-        User::updateOrCreate(
+        $admin = User::updateOrCreate(
             ['email' => 'web@ileben.cl'],
             [
                 'name' => 'Administrador',
@@ -26,10 +26,11 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
+        $admin->syncRoles(['admin']);
+
         $this->command->info('✅ Usuario administrador creado/verificado:');
         $this->command->info('   Email: web@ileben.cl');
         $this->command->info('   Password: Admin123!');
         $this->command->info('   Tipo: Administrador');
     }
 }
-

@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, LogsModelActivity, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, LogsModelActivity, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -66,7 +67,12 @@ class User extends Authenticatable implements FilamentUser
      */
     public function isAdmin(): bool
     {
-        return $this->user_type === 'admin';
+        return $this->hasRole('admin') || $this->user_type === 'admin';
+    }
+
+    public function isMarketing(): bool
+    {
+        return $this->hasRole('marketing') || $this->user_type === 'marketing';
     }
 
     /**
@@ -74,11 +80,11 @@ class User extends Authenticatable implements FilamentUser
      */
     public function isCustomer(): bool
     {
-        return $this->user_type === 'customer';
+        return $this->hasRole('cliente') || in_array($this->user_type, ['customer', 'cliente'], true);
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isAdmin();
+        return $this->isAdmin() || $this->isMarketing();
     }
 }

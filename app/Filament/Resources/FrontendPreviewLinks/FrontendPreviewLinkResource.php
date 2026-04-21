@@ -46,12 +46,12 @@ class FrontendPreviewLinkResource extends Resource
 
     public static function canCreate(): bool
     {
-        return static::userCanManagePreviewLinks();
+        return static::userCanManagePreviewLinks() && (Auth::user()?->isAdmin() ?? false);
     }
 
     public static function canDelete($record): bool
     {
-        return static::userCanManagePreviewLinks();
+        return static::userCanManagePreviewLinks() && (Auth::user()?->isAdmin() ?? false);
     }
 
     public static function canEdit($record): bool
@@ -85,6 +85,6 @@ class FrontendPreviewLinkResource extends Resource
     {
         $user = Auth::user();
 
-        return $user instanceof User && $user->isAdmin();
+        return $user instanceof User && ($user->isAdmin() || $user->isMarketing());
     }
 }

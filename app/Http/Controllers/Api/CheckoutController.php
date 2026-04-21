@@ -494,7 +494,7 @@ class CheckoutController extends Controller
         $rut = $this->billingRut($billing);
         $safeRut = $rut !== null && User::query()->where('rut', $rut)->exists() ? null : $rut;
 
-        return User::query()->create([
+        $user = User::query()->create([
             'name' => $this->billingName($billing) ?? $email,
             'email' => $email,
             'user_type' => 'customer',
@@ -503,6 +503,14 @@ class CheckoutController extends Controller
             'password' => $email,
             'email_verified_at' => now(),
         ]);
+
+        try {
+            $user->assignRole('cliente');
+        } catch (Throwable) {
+            // Keep checkout running even if roles are not yet seeded.
+        }
+
+        return $user;
     }
 
     /**

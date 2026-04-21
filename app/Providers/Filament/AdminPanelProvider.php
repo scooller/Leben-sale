@@ -17,6 +17,7 @@ use App\Filament\Widgets\ShortLinksVisitsChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
 use App\Filament\Widgets\SyncProjectsWidget;
 use App\Filament\Widgets\UsersChartWidget;
+use App\Http\Middleware\EnsureMarketingPanelAccess;
 use App\Models\SiteSetting;
 use BinaryBuilds\CommandRunner\CommandRunnerPlugin;
 use Filament\FontProviders\LocalFontProvider;
@@ -165,6 +166,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureMarketingPanelAccess::class,
             ]);
     }
 

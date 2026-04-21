@@ -44,6 +44,31 @@ class PlantReservationResource extends Resource
         return $count > 0 ? 'warning' : 'gray';
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
+
     public static function table(Table $table): Table
     {
         return PlantReservationsTable::configure($table);

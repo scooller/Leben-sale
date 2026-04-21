@@ -49,11 +49,13 @@ class UserForm
                             ->label('Tipo de Usuario')
                             ->options([
                                 'customer' => 'Cliente',
+                                'cliente' => 'Cliente',
+                                'marketing' => 'Marketing',
                                 'admin' => 'Administrador',
                             ])
                             ->default('customer')
                             ->required()
-                            ->helperText('Los administradores tienen acceso total al panel'),
+                            ->helperText('Solo Administrador y Marketing pueden acceder al panel'),
 
                         TextInput::make('password')
                             ->label('Contraseña')

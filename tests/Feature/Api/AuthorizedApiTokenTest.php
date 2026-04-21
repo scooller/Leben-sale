@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Models\PersonalAccessToken;
+use App\Models\Plant;
 use App\Models\User;
+use App\Services\PlantReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -80,5 +82,35 @@ class AuthorizedApiTokenTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('id', $tokenData['user']->id);
+    }
+
+    public function test_api_token_cannot_release_reservation_of_another_user(): void
+    {
+        $tokenData = $this->createApiToken('https://cliente.example.com');
+
+        $owner = User::factory()->create();
+        $plant = Plant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $reservation = app(PlantReservationService::class)->reserve($plant->id, $owner->id);
+
+        $response = $this
+            ->withHeaders([
+                'Authorization' => 'Bearer '.$tokenData['token'],
+                'Origin' => 'https://cliente.example.com',
+            ])
+            ->deleteJson('/api/v1/reservations/'.$reservation->session_token);
+
+        $response
+            ->assertForbidden()
+            ->assertJson([
+                'message' => 'No tienes permisos para liberar esta reserva.',
+            ]);
+
+        $this->assertDatabaseHas('plant_reservations', [
+            'id' => $reservation->id,
+            'status' => 'active',
+        ]);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlantReservation;
 use App\Services\PlantReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,6 +64,17 @@ class PlantReservationController extends Controller
      */
     public function release(Request $request, string $sessionToken): JsonResponse
     {
+        $reservation = PlantReservation::query()
+            ->where('session_token', $sessionToken)
+            ->where('status', 'active')
+            ->first();
+
+        if ($reservation && ! (($request->user()?->isAdmin() ?? false) || $reservation->user_id === $request->user()?->id)) {
+            return response()->json([
+                'message' => 'No tienes permisos para liberar esta reserva.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $released = $this->reservationService->releaseByToken($sessionToken, 'user');
 
         if (! $released) {

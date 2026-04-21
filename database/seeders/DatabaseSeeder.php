@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         // Crear usuarios del sistema
         $this->call([
+            RolesAndPermissionsSeeder::class,
             AdminUserSeeder::class,
             UserSeeder::class,
             FinMailSpanishEmailTemplatesSeeder::class,

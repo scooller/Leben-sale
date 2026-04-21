@@ -59,10 +59,11 @@
     55 => 'Phiki\\Adapters\\Laravel\\PhikiServiceProvider',
     56 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     57 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
-    58 => 'Spatie\\LaravelSettings\\LaravelSettingsServiceProvider',
-    59 => 'Spatie\\Translatable\\TranslatableServiceProvider',
-    60 => 'App\\Providers\\AppServiceProvider',
-    61 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    58 => 'Spatie\\Permission\\PermissionServiceProvider',
+    59 => 'Spatie\\LaravelSettings\\LaravelSettingsServiceProvider',
+    60 => 'Spatie\\Translatable\\TranslatableServiceProvider',
+    61 => 'App\\Providers\\AppServiceProvider',
+    62 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'eager' => 
   array (
@@ -108,10 +109,11 @@
     39 => 'Phiki\\Adapters\\Laravel\\PhikiServiceProvider',
     40 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     41 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
-    42 => 'Spatie\\LaravelSettings\\LaravelSettingsServiceProvider',
-    43 => 'Spatie\\Translatable\\TranslatableServiceProvider',
-    44 => 'App\\Providers\\AppServiceProvider',
-    45 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    42 => 'Spatie\\Permission\\PermissionServiceProvider',
+    43 => 'Spatie\\LaravelSettings\\LaravelSettingsServiceProvider',
+    44 => 'Spatie\\Translatable\\TranslatableServiceProvider',
+    45 => 'App\\Providers\\AppServiceProvider',
+    46 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'deferred' => 
   array (

@@ -33,11 +33,15 @@ class UsersTable
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'admin' => 'danger',
+                        'marketing' => 'warning',
+                        'cliente' => 'success',
                         'customer' => 'success',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'admin' => 'Administrador',
+                        'marketing' => 'Marketing',
+                        'cliente' => 'Cliente',
                         'customer' => 'Cliente',
                         default => $state,
                     })
@@ -76,6 +80,8 @@ class UsersTable
                     ->label('Tipo de Usuario')
                     ->options([
                         'customer' => 'Cliente',
+                        'cliente' => 'Cliente',
+                        'marketing' => 'Marketing',
                         'admin' => 'Administrador',
                     ]),
             ])

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ContactSubmissions\ContactSubmissions;
 
+use App\Filament\Resources\ContactSubmissions\ContactSubmissions\Pages\CreateContactSubmission;
 use App\Filament\Resources\ContactSubmissions\ContactSubmissions\Pages\EditContactSubmission;
 use App\Filament\Resources\ContactSubmissions\ContactSubmissions\Pages\ListContactSubmissions;
 use App\Filament\Resources\ContactSubmissions\ContactSubmissions\Pages\ViewContactSubmission;
@@ -56,12 +57,31 @@ class ContactSubmissionResource extends Resource
 
     public static function canCreate(): bool
     {
-        return false;
+        return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
     }
 
     public static function canEdit($record): bool
     {
+        if (! ((auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false))) {
+            return false;
+        }
+
         return filled($record->salesforce_case_error) || ! filled($record->salesforce_case_id);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
     }
 
     public static function getNavigationBadge(): ?string
@@ -73,6 +93,7 @@ class ContactSubmissionResource extends Resource
     {
         return [
             'index' => ListContactSubmissions::route('/'),
+            'create' => CreateContactSubmission::route('/create'),
             'edit' => EditContactSubmission::route('/{record}/edit'),
             'view' => ViewContactSubmission::route('/{record}'),
         ];

@@ -120,9 +120,9 @@ class FinMailNotificationService
         $payment->loadMissing(['user', 'project', 'plant.proyecto']);
 
         $adminRecipients = User::query()
-            ->where('user_type', 'admin')
-            ->whereNotNull('email')
-            ->pluck('email')
+            ->get()
+            ->filter(static fn (User $user): bool => $user->isAdmin())
+            ->map(static fn (User $user): ?string => $user->email)
             ->filter(static fn (mixed $email): bool => is_string($email) && $email !== '')
             ->unique()
             ->values();

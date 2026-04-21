@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Crear usuario de prueba (cliente) si no existe
-        User::firstOrCreate(
+        $customerOne = User::firstOrCreate(
             ['email' => 'cliente@test.cl'],
             [
                 'name' => 'Juan Pérez',
@@ -26,8 +26,10 @@ class UserSeeder extends Seeder
             ]
         );
 
+        $customerOne->syncRoles(['cliente']);
+
         // Crear otro usuario de prueba sin verificar
-        User::firstOrCreate(
+        $customerTwo = User::firstOrCreate(
             ['email' => 'maria@test.cl'],
             [
                 'name' => 'María González',
@@ -38,6 +40,8 @@ class UserSeeder extends Seeder
                 'email_verified_at' => null,
             ]
         );
+
+        $customerTwo->syncRoles(['cliente']);
 
         $this->command->info('✅ Usuarios de prueba creados/verificados:');
         $this->command->info('   1. Email: cliente@test.cl | Password: Test123! | Verificado');

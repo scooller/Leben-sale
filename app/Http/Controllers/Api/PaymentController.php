@@ -171,8 +171,17 @@ class PaymentController extends Controller
     private function notifyAdminsManualProofSubmitted(Payment $payment): void
     {
         $admins = User::query()
-            ->where('user_type', 'admin')
-            ->get();
+            ->get()
+            ->filter(static fn (User $user): bool => $user->isAdmin())
+            ->values();
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        $admins = $admins
+            ->filter(static fn (User $user): bool => filled($user->email))
+            ->values();
 
         if ($admins->isEmpty()) {
             return;
