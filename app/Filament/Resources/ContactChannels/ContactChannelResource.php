@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class ContactChannelResource extends Resource
@@ -39,6 +40,17 @@ class ContactChannelResource extends Resource
     public static function table(Table $table): Table
     {
         return ContactChannelsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount([
+            'contactSubmissions as contact_submissions_by_slug_count' => function (Builder $query): void {
+                $query
+                    ->join('contact_channels as submission_channels', 'submission_channels.id', '=', 'contact_submissions.contact_channel_id')
+                    ->whereColumn('submission_channels.slug', 'contact_channels.slug');
+            },
+        ]);
     }
 
     public static function shouldRegisterNavigation(): bool

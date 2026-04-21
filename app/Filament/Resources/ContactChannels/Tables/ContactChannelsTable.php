@@ -27,6 +27,12 @@ class ContactChannelsTable
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('domain_patterns')
+                    ->label('Dominios asociados')
+                    ->getStateUsing(fn (ContactChannel $record): string => implode(', ', $record->domain_patterns ?? []))
+                    ->placeholder('(ninguno)')
+                    ->sortable()
+                    ->toggleable(),
                 IconColumn::make('is_active')
                     ->label('Activo')
                     ->boolean()
@@ -40,10 +46,9 @@ class ContactChannelsTable
                 TextColumn::make('notification_email')
                     ->label('Email notificación')
                     ->placeholder('(usa global)')
-                    ->toggleable(),
-                TextColumn::make('contactSubmissions_count')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('contact_submissions_by_slug_count')
                     ->label('Envíos')
-                    ->counts('contactSubmissions')
                     ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Actualizado')

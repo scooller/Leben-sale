@@ -16,6 +16,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
 
@@ -24,6 +25,7 @@ class ContactSubmissionsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['channel:id,name,slug_badge_color']))
             ->columns(self::columns())
             ->defaultSort('submitted_at', 'desc')
             ->searchable()
