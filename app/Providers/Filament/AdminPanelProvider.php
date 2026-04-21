@@ -12,6 +12,8 @@ use App\Filament\Widgets\ApiUsageChartWidget;
 use App\Filament\Widgets\PaymentGatewayChartWidget;
 use App\Filament\Widgets\PaymentsChartWidget;
 use App\Filament\Widgets\PaymentStatusChartWidget;
+use App\Filament\Widgets\ShortLinksStatsWidget;
+use App\Filament\Widgets\ShortLinksVisitsChartWidget;
 use App\Filament\Widgets\SyncPlantsWidget;
 use App\Filament\Widgets\SyncProjectsWidget;
 use App\Filament\Widgets\UsersChartWidget;
@@ -54,6 +56,8 @@ class AdminPanelProvider extends PanelProvider
             PaymentsChartWidget::class,
             PaymentGatewayChartWidget::class,
             PaymentStatusChartWidget::class,
+            ShortLinksStatsWidget::class,
+            ShortLinksVisitsChartWidget::class,
             SyncPlantsWidget::class,
             SyncProjectsWidget::class,
         ];

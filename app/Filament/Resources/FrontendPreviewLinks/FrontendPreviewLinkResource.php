@@ -17,7 +17,7 @@ class FrontendPreviewLinkResource extends Resource
 {
     protected static ?string $model = FrontendPreviewLink::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-link';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-cursor-arrow-ripple';
 
     protected static ?string $navigationLabel = 'Links Preview';
 

@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Filament\Resources\ShortLinks\Pages;
+
+use App\Filament\Resources\ShortLinks\ShortLinkResource;
+use App\Models\ShortLink;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Resources\Pages\ViewRecord;
+
+class ViewShortLink extends ViewRecord
+{
+    protected static string $resource = ShortLinkResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('openShortUrl')
+                ->label('Abrir URL corta')
+                ->icon('heroicon-o-link')
+                ->url(fn (): string => $this->getRecord()->shortUrl(), true),
+            EditAction::make(),
+        ];
+    }
+
+    public function getSubheading(): ?string
+    {
+        /** @var ShortLink $record */
+        $record = $this->getRecord();
+
+        return sprintf(
+            'Visitas totales: %d | Ultima visita: %s',
+            (int) $record->visits_count,
+            $record->last_visited_at?->format('d/m/Y H:i') ?? 'sin visitas'
+        );
+    }
+}

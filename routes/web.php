@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PaymentWebhookController;
+use App\Http\Controllers\ShortLinkRedirectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,6 +18,11 @@ Route::get('/curator/{path}', function (string $path) {
 
     return response()->file($fullPath);
 })->where('path', '.*');
+
+// Rutas públicas para acortador
+Route::get('/s/{slug}', ShortLinkRedirectController::class)
+    ->middleware('throttle:120,1')
+    ->name('short-links.redirect');
 
 // Rutas de webhooks y retornos de pasarelas de pago
 Route::prefix('payments')->name('payment.')->group(function () {

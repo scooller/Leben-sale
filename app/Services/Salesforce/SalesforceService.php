@@ -10,6 +10,10 @@ use Omniphx\Forrest\Providers\Laravel\Facades\Forrest;
 
 class SalesforceService
 {
+    private const LEAD_UNAVAILABLE_FIELDS_CACHE_KEY = 'salesforce:lead:unavailable-fields';
+
+    private const LEAD_UNAVAILABLE_FIELDS_CACHE_TTL_SECONDS = 86400;
+
     /**
      * Tiempo de caché predeterminado para consultas SOQL (en segundos)
      */
@@ -115,7 +119,7 @@ class SalesforceService
      */
     public function createLead(array $payload): array
     {
-        $currentPayload = $payload;
+        $currentPayload = $this->sanitizeLeadPayloadWithKnownUnavailableFields($payload);
 
         Log::debug('Salesforce: Enviando solicitud de creación de Lead', [
             'email' => $currentPayload['Email'] ?? null,
@@ -144,6 +148,8 @@ class SalesforceService
             $currentPayload = $sanitized['payload'];
 
             if ($sanitized['removed_fields'] !== []) {
+                $this->rememberUnavailableLeadFields($sanitized['removed_fields']);
+
                 Log::warning('Salesforce: Campos removidos del payload de Lead, reintentando', [
                     'removed_fields' => $sanitized['removed_fields'],
                     'email' => $payload['Email'] ?? null,
@@ -224,6 +230,8 @@ class SalesforceService
                 $currentPayload = $sanitized['payload'];
 
                 if ($sanitized['removed_fields'] !== []) {
+                    $this->rememberUnavailableLeadFields($sanitized['removed_fields']);
+
                     Log::warning('Salesforce: Campos removidos tras re-auth, reintentando Lead', [
                         'removed_fields' => $sanitized['removed_fields'],
                         'email' => $payload['Email'] ?? null,
@@ -333,6 +341,68 @@ class SalesforceService
             'payload' => $payload,
             'removed_fields' => $removedFields,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function sanitizeLeadPayloadWithKnownUnavailableFields(array $payload): array
+    {
+        $knownUnavailableFields = $this->knownUnavailableLeadFields();
+
+        if ($knownUnavailableFields === []) {
+            return $payload;
+        }
+
+        foreach ($knownUnavailableFields as $field) {
+            unset($payload[$field]);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function knownUnavailableLeadFields(): array
+    {
+        $cached = Cache::get(self::LEAD_UNAVAILABLE_FIELDS_CACHE_KEY, []);
+
+        if (! is_array($cached)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn (mixed $field): string => trim((string) $field),
+            $cached
+        ), static fn (string $field): bool => $field !== '')));
+    }
+
+    /**
+     * @param  list<string>  $fields
+     */
+    private function rememberUnavailableLeadFields(array $fields): void
+    {
+        $normalized = array_values(array_unique(array_filter(array_map(
+            static fn (string $field): string => trim($field),
+            $fields
+        ), static fn (string $field): bool => $field !== '')));
+
+        if ($normalized === []) {
+            return;
+        }
+
+        $merged = array_values(array_unique(array_merge(
+            $this->knownUnavailableLeadFields(),
+            $normalized
+        )));
+
+        Cache::put(
+            self::LEAD_UNAVAILABLE_FIELDS_CACHE_KEY,
+            $merged,
+            now()->addSeconds(self::LEAD_UNAVAILABLE_FIELDS_CACHE_TTL_SECONDS)
+        );
     }
 
     /**
