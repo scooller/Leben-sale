@@ -3,6 +3,7 @@
 namespace App\Filament\Actions;
 
 use App\Models\Asesor;
+use App\Models\ContactChannel;
 use App\Models\Proyecto;
 use App\Services\Salesforce\SalesforceService;
 use App\Support\AsesorProyectoActivityLogger;
@@ -128,12 +129,16 @@ class SyncProjectsAction
                 self::syncProyectoAsesores($proyecto, $proyectoData, $asesoresBySalesforceId);
             }
 
+            $channelsSync = self::syncContactChannelsFromProjects();
+
             return [
                 'success' => true,
-                'message' => "Sincronización completada. {$synced} nuevos proyectos, {$updated} actualizados",
+                'message' => "Sincronización completada. {$synced} nuevos proyectos, {$updated} actualizados, {$channelsSync['created']} canales creados, {$channelsSync['updated']} canales actualizados",
                 'count' => $synced + $updated,
                 'created' => $synced,
                 'updated' => $updated,
+                'channels_created' => $channelsSync['created'],
+                'channels_updated' => $channelsSync['updated'],
             ];
 
         } catch (Exception $e) {
@@ -380,5 +385,96 @@ class SyncProjectsAction
             ->all();
 
         AsesorProyectoActivityLogger::logSynced($proyecto, $attachedAsesorIds, $detachedAsesorIds);
+    }
+
+    /**
+     * @return array{created:int, updated:int}
+     */
+    private static function syncContactChannelsFromProjects(): array
+    {
+        $created = 0;
+        $updated = 0;
+
+        Proyecto::query()
+            ->select(['slug', 'name', 'is_active', 'pagina_web'])
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '')
+            ->orderBy('id')
+            ->chunk(200, function (Collection $projects) use (&$created, &$updated): void {
+                foreach ($projects as $project) {
+                    $slug = trim((string) $project->slug);
+
+                    if ($slug === '' || $slug === 'default') {
+                        continue;
+                    }
+
+                    $channel = ContactChannel::query()->firstOrNew(['slug' => $slug]);
+                    $isNew = ! $channel->exists;
+
+                    if ($isNew) {
+                        $channel->slug_badge_color = 'gray';
+                    }
+
+                    $channel->name = filled($project->name) ? (string) $project->name : $slug;
+                    $channel->is_active = (bool) ($project->is_active ?? true);
+                    $channel->is_default = false;
+
+                    $domainPattern = self::extractDomainPatternFromWebsite($project->pagina_web);
+                    $currentPatterns = collect((array) ($channel->domain_patterns ?? []))
+                        ->map(static fn ($pattern): string => strtolower(trim((string) $pattern)))
+                        ->filter(static fn (string $pattern): bool => $pattern !== '')
+                        ->values();
+
+                    if ($domainPattern !== null && ! $currentPatterns->contains($domainPattern)) {
+                        $currentPatterns->push($domainPattern);
+                    }
+
+                    if ($currentPatterns->isNotEmpty()) {
+                        $channel->domain_patterns = $currentPatterns->unique()->values()->all();
+                    }
+
+                    $channel->save();
+
+                    if ($isNew) {
+                        $created++;
+                    } else {
+                        $updated++;
+                    }
+                }
+            });
+
+        return ['created' => $created, 'updated' => $updated];
+    }
+
+    private static function extractDomainPatternFromWebsite(mixed $website): ?string
+    {
+        if (! is_string($website)) {
+            return null;
+        }
+
+        $value = trim($website);
+        if ($value === '') {
+            return null;
+        }
+
+        if (! str_contains($value, '://')) {
+            $value = 'https://'.$value;
+        }
+
+        $host = parse_url($value, PHP_URL_HOST);
+        if (! is_string($host)) {
+            return null;
+        }
+
+        $host = strtolower(trim($host));
+        if ($host === '' || \filter_var($host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) === false) {
+            return null;
+        }
+
+        if (str_starts_with($host, 'www.')) {
+            $host = substr($host, 4);
+        }
+
+        return $host !== '' ? $host : null;
     }
 }

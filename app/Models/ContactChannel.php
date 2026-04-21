@@ -15,6 +15,7 @@ class ContactChannel extends Model
     protected $fillable = [
         'slug',
         'name',
+        'slug_badge_color',
         'is_active',
         'is_default',
         'notification_email',

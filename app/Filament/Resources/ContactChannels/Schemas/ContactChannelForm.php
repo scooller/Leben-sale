@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ContactChannels\Schemas;
 
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -28,6 +29,18 @@ class ContactChannelForm
                         ->label('Nombre visible')
                         ->required()
                         ->maxLength(255),
+                    Select::make('slug_badge_color')
+                        ->label('Color del tag (slug)')
+                        ->required()
+                        ->default('gray')
+                        ->options([
+                            'gray' => 'Gris',
+                            'primary' => 'Primario',
+                            'info' => 'Info',
+                            'success' => 'Verde',
+                            'warning' => 'Amarillo',
+                            'danger' => 'Rojo',
+                        ]),
                 ]),
 
             Section::make('Estado')

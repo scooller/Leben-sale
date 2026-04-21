@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Actions\SyncProjectsAction;
 use App\Models\Asesor;
+use App\Models\ContactChannel;
 use App\Models\Proyecto;
 use App\Services\Salesforce\SalesforceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -301,6 +302,82 @@ class SyncProjectsActionTest extends TestCase
             'proyecto_id' => $proyecto->id,
             'asesor_id' => $asesor->id,
         ]);
+    }
+
+    public function test_sync_projects_creates_or_updates_contact_channels_from_project_data(): void
+    {
+        ContactChannel::query()
+            ->where('slug', 'sale')
+            ->firstOrFail()
+            ->update([
+                'name' => 'Sale Legacy',
+                'domain_patterns' => ['old.sale.cl'],
+            ]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('findProjects')
+                ->once()
+                ->andReturn([
+                    $this->projectPayload([
+                        'id' => 'SF-CH-001',
+                        'name' => 'Sale',
+                        'pagina_web' => 'https://sale.ileben.cl/landing',
+                    ]),
+                ]);
+
+            $mock->shouldReceive('findPublicCotizadorDocuments')
+                ->once()
+                ->andReturn([]);
+        });
+
+        $result = SyncProjectsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(0, $result['channels_created']);
+        $this->assertSame(1, $result['channels_updated']);
+
+        $channel = ContactChannel::query()->where('slug', 'sale')->firstOrFail();
+
+        $this->assertSame('Sale', $channel->name);
+        $this->assertTrue($channel->is_active);
+        $this->assertContains('old.sale.cl', (array) $channel->domain_patterns);
+        $this->assertContains('sale.ileben.cl', (array) $channel->domain_patterns);
+    }
+
+    public function test_sync_projects_creates_missing_contact_channel_for_project_slug(): void
+    {
+        ContactChannel::query()->where('slug', 'new-project')->delete();
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('findProjects')
+                ->once()
+                ->andReturn([
+                    $this->projectPayload([
+                        'id' => 'SF-CH-002',
+                        'name' => 'New Project',
+                        'pagina_web' => 'new-project.ileben.cl',
+                    ]),
+                ]);
+
+            $mock->shouldReceive('findPublicCotizadorDocuments')
+                ->once()
+                ->andReturn([]);
+        });
+
+        $result = SyncProjectsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['channels_created']);
+
+        $this->assertDatabaseHas('contact_channels', [
+            'slug' => 'new-project',
+            'name' => 'New Project',
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+
+        $channel = ContactChannel::query()->where('slug', 'new-project')->firstOrFail();
+        $this->assertContains('new-project.ileben.cl', (array) $channel->domain_patterns);
     }
 
     /**

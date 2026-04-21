@@ -63,7 +63,15 @@ class ContactChannelResource extends Resource
 
     public static function canDelete($record): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        if (! (auth()->user()?->isAdmin() ?? false)) {
+            return false;
+        }
+
+        if (! $record instanceof ContactChannel) {
+            return false;
+        }
+
+        return ! $record->is_default;
     }
 
     public static function getNavigationBadge(): ?string

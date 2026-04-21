@@ -20,6 +20,7 @@ class ContactChannelFactory extends Factory
         return [
             'slug' => $this->faker->unique()->slug(2),
             'name' => $this->faker->words(2, true),
+            'slug_badge_color' => 'gray',
             'is_active' => true,
             'is_default' => false,
             'notification_email' => $this->faker->safeEmail(),

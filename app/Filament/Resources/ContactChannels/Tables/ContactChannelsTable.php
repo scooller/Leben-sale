@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\ContactChannels\Tables;
 
+use App\Filament\Resources\ContactChannels\ContactChannelResource;
+use App\Models\ContactChannel;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -18,7 +21,7 @@ class ContactChannelsTable
                     ->searchable()
                     ->sortable()
                     ->badge()
-                    ->color('gray'),
+                    ->color(fn (ContactChannel $record): string => $record->slug_badge_color ?: 'gray'),
                 TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
@@ -50,6 +53,12 @@ class ContactChannelsTable
             ->defaultSort('name')
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make()
+                    ->modalHeading('¿Eliminar canal de contacto?')
+                    ->modalDescription('Esta acción es irreversible. El canal se eliminará permanentemente.')
+                    ->modalSubmitActionLabel('Sí, eliminar')
+                    ->modalIcon('heroicon-o-exclamation-triangle')
+                    ->visible(fn (ContactChannel $record): bool => ContactChannelResource::canDelete($record)),
             ]);
     }
 }
