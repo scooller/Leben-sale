@@ -21,17 +21,17 @@ class ContactSubmissionExporter extends Exporter
                 ->label('ID'),
             ExportColumn::make('name')
                 ->label('Nombre'),
-            ExportColumn::make('email')
-                ->label('Email'),
-            ExportColumn::make('phone')
-                ->label('Telefono'),
-            ExportColumn::make('rut')
-                ->label('RUT'),
+            // ExportColumn::make('email')
+            //     ->label('Email'),
+            // ExportColumn::make('phone')
+            //     ->label('Telefono'),
+            // ExportColumn::make('rut')
+            //     ->label('RUT'),
             ...self::getDynamicColumns(),
-            ExportColumn::make('dynamic_fields_json')
-                ->label('Campos dinamicos (JSON)')
-                ->state(fn (ContactSubmission $record): array => self::formatDynamicFields($record->fields))
-                ->listAsJson(),
+            ExportColumn::make('salesforce_case_id')
+                ->label('Salesforce Lead ID'),
+            ExportColumn::make('salesforce_case_error')
+                ->label('Salesforce Error'),
             ExportColumn::make('recipient_email')
                 ->label('Destinatario'),
             ExportColumn::make('ip_address')

@@ -30,6 +30,8 @@ class ContactSubmissionExporterTest extends TestCase
                     ],
                 ],
                 ['key' => 'budget', 'label' => 'Presupuesto', 'type' => 'text', 'required' => false],
+                ['key' => 'mensaje', 'label' => 'Mensaje', 'type' => 'textarea', 'required' => false],
+                ['key' => 'custom_extra', 'label' => 'Custom Extra', 'type' => 'text', 'required' => false],
             ],
         ]);
 
@@ -50,6 +52,8 @@ class ContactSubmissionExporterTest extends TestCase
             'ip_address' => '127.0.0.1',
             'user_agent' => 'PHPUnit',
             'submitted_at' => now(),
+            'salesforce_case_id' => '00QU1000002abcDIAQ',
+            'salesforce_case_error' => 'Error de validacion en Salesforce',
         ]);
 
         $columns = ContactSubmissionExporter::getColumns();
@@ -57,9 +61,13 @@ class ContactSubmissionExporterTest extends TestCase
 
         $this->assertContains('field_reason', $columnNames);
         $this->assertContains('field_budget', $columnNames);
+        $this->assertContains('field_mensaje', $columnNames);
+        $this->assertContains('field_custom_extra', $columnNames);
         $this->assertContains('contact_comuna', $columnNames);
         $this->assertContains('contact_proyecto', $columnNames);
-        $this->assertContains('dynamic_fields_json', $columnNames);
+        $this->assertNotContains('dynamic_fields_json', $columnNames);
+        $this->assertContains('salesforce_case_id', $columnNames);
+        $this->assertContains('salesforce_case_error', $columnNames);
 
         $exporter = new ContactSubmissionExporter(
             new Export(['exporter' => ContactSubmissionExporter::class]),
@@ -76,11 +84,11 @@ class ContactSubmissionExporterTest extends TestCase
         $this->assertIsArray($exportedData);
         $this->assertSame('Cotizacion', $exportedData['field_reason']);
         $this->assertSame('UF 4.500', $exportedData['field_budget']);
+        $this->assertSame('Necesito mas informacion.', $exportedData['field_mensaje']);
+        $this->assertSame('valor historico', $exportedData['field_custom_extra']);
         $this->assertSame('Providencia', $exportedData['contact_comuna']);
         $this->assertSame('Parque Central', $exportedData['contact_proyecto']);
-        $this->assertStringContainsString('"Motivo":"Cotizacion"', $exportedData['dynamic_fields_json']);
-        $this->assertStringContainsString('"Proyecto":"Parque Central"', $exportedData['dynamic_fields_json']);
-        $this->assertStringContainsString('"Mensaje":"Necesito mas informacion."', $exportedData['dynamic_fields_json']);
-        $this->assertStringContainsString('"Custom Extra":"valor historico"', $exportedData['dynamic_fields_json']);
+        $this->assertSame('00QU1000002abcDIAQ', $exportedData['salesforce_case_id']);
+        $this->assertSame('Error de validacion en Salesforce', $exportedData['salesforce_case_error']);
     }
 }
