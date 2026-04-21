@@ -11,6 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -107,7 +108,7 @@ class ContactSubmissionsTable
                 ->label('Canal')
                 ->placeholder('Sin canal')
                 ->badge()
-                ->color(fn ($record): string => $record->channel?->slug_badge_color ?: 'gray')
+                ->color(fn ($record): array => self::resolveBadgeColor($record->channel?->slug_badge_color))
                 ->sortable()
                 ->toggleable(),
             TextColumn::make('rut')
@@ -208,5 +209,20 @@ class ContactSubmissionsTable
         $encoded = Js::encode($value);
 
         return is_string($encoded) ? $encoded : '[valor no serializable]';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function resolveBadgeColor(?string $color): array
+    {
+        return match (strtolower(trim((string) $color))) {
+            'success', 'green', 'emerald' => Color::Emerald,
+            'warning', 'yellow', 'amber' => Color::Amber,
+            'danger', 'red', 'rose' => Color::Red,
+            'info', 'blue', 'sky' => Color::Blue,
+            'primary' => Color::Indigo,
+            default => Color::Gray,
+        };
     }
 }
