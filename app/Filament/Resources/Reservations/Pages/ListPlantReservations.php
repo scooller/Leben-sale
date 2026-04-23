@@ -37,16 +37,22 @@ class ListPlantReservations extends ListRecords
                         ->label('Planta')
                         ->options(function (): array {
                             return Plant::query()
+                                ->with(['proyecto:salesforce_id,name'])
                                 ->where('is_active', true)
                                 ->whereDoesntHave('reservations', function ($query): void {
                                     $query
                                         ->where('status', ReservationStatus::ACTIVE)
                                         ->where('expires_at', '>', now());
                                 })
+                                ->orderBy('salesforce_proyecto_id')
                                 ->orderBy('name')
-                                ->get(['id', 'name', 'product_code'])
+                                ->get(['id', 'name', 'product_code', 'salesforce_proyecto_id'])
                                 ->mapWithKeys(function (Plant $plant): array {
-                                    $label = trim((string) $plant->name);
+                                    $projectName = trim((string) ($plant->proyecto?->name ?? 'Sin proyecto'));
+                                    $plantName = trim((string) $plant->name);
+
+                                    $label = "{$projectName} - {$plantName}";
+
                                     if (! empty($plant->product_code)) {
                                         $label .= " ({$plant->product_code})";
                                     }
