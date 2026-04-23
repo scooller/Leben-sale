@@ -319,17 +319,17 @@ function PlantsGrid({
         )}
         <div id='plantas' className="plants-grid wa-grid wa-gap-2xl" ref={gridContainerRef}>
           {plants.map((plant) => (
-            <wa-card key={plant.id} className="plant-card box-shadow-2" appearance="filled">
+            <wa-card
+              key={plant.id}
+              className={`plant-card box-shadow-2 ${plant.isReserved ? 'plant-card--reserved' : 'plant-card--not-reserved'} ${isSaleEventActive && plant.discountPercentage > 0 ? 'plant-card--sale-unit' : 'plant-card--regular-unit'}`}
+              appearance="filled"
+            >
                 <div slot="media" className="plant-media">
                     <img
                     src={plant.imageUrl}
                     alt={plant.nombre}
                     onClick={() => openPlantDetail(plant)}
                     className="plant-image"
-                    style={{
-                        cursor: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 'not-allowed' : 'pointer',
-                        opacity: plant.isReserved || plant.isPaid || plant.isAvailable === false ? 0.72 : 1,
-                    }}
                     />
                     {plant.proyectoComuna && (
                     <wa-badge variant="neutral" className="plant-comuna-badge"><wa-icon slot="start" name="map-location"></wa-icon>{plant.proyectoComuna}</wa-badge>
@@ -405,32 +405,28 @@ function PlantsGrid({
                         )}
                     </div>
                 </div>
-                {/* Ubicación destacada */}
-                {plant.proyectoComuna && (
-                <div slot="footer" className="plant-price-wrapper wa-align-items-end">
-                    {/* Precios destacados en el header */}
-                    {(plant.precioFinal || plant.precioBase || plant.precioLista) && (
-                        <div className="plant-price-header">
-                      {(0 < plant.precioLista) && (plant.precioLista !== (plant.precioFinal || plant.precioBase)) && (
-                            <div className="price-original">
-                            <span className="price-label-small">Precio lista: </span>
-                            <span className="price wa-font-weight-bold">
-                                <s>UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</s>
-                            </span>
+                {(plant.precioFinal || plant.precioBase || plant.precioLista) && (
+                <div slot="footer" className="plant-price-wrapper">
+                    <div className="price-detail">
+                        {(0 < plant.precioLista) && (plant.precioLista !== (plant.precioFinal || plant.precioBase)) && (
+                            <div className="prices-list">
+                                <span className="price-text">Precio lista:</span>
+                                <span className="price-label">
+                                    UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                </span>
                             </div>
                         )}
-                      {(0 < (plant.precioFinal || plant.precioBase)) && (
-                            <div className="price-final">
-                            {(plant.precioFinal || plant.precioBase) < plant.precioLista && (
-                            <span className="price-label-discount wa-text-uppercase">{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'} </span>
-                            )}
-                            <span className="price-sale wa-font-weight-bold wa-heading-xl">
-                          UF {(plant.precioFinal || plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </span>
+                        {(0 < (plant.precioFinal || plant.precioBase)) && (
+                            <div className="prices-sale">
+                                {(plant.precioFinal || plant.precioBase) < plant.precioLista && (
+                                    <span className="price-text wa-text-uppercase">{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'}</span>
+                                )}
+                                <span className="price-label wa-font-weight-bold">
+                                    UF {(plant.precioFinal || plant.precioBase).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                </span>
                             </div>
                         )}
-                        </div>
-                    )}
+                    </div>
                 </div>
                 )}
                 {/* Acciones */}

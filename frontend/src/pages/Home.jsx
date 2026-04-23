@@ -204,6 +204,7 @@ function Home({ onNavigate, currentPath }) {
 
   const heroRef = useRef(null);
   const latestPlantsRequestRef = useRef(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const handleMenuNavigation = useCallback(() => {
     const menuSection = document.getElementById('menu-section');
@@ -1289,11 +1290,29 @@ function Home({ onNavigate, currentPath }) {
             <img src={homeHeroDesktopImage} alt={config?.site_name || 'Hero'} className="hero-video" />
           </picture>
         ) : (
-          <video autoPlay muted loop playsInline className="hero-video" poster={homeHeroPoster}>
-              <source src={homeHeroMobileVideo} type="video/mp4" media="(max-width: 768px)" />
-              <source src={homeHeroDesktopVideo} type="video/mp4" media="(min-width: 769px)" />
-              Tu navegador no soporta el video.
-          </video>
+          <>
+            {homeHeroPoster && !videoPlaying && (
+              <img
+                src={homeHeroPoster}
+                alt=""
+                aria-hidden="true"
+                className="hero-video hero-video-poster"
+              />
+            )}
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="hero-video"
+              onPlay={() => setVideoPlaying(true)}
+              style={videoPlaying ? {} : { opacity: 0 }}
+            >
+                <source src={homeHeroMobileVideo} type="video/mp4" media="(max-width: 768px)" />
+                <source src={homeHeroDesktopVideo} type="video/mp4" media="(min-width: 769px)" />
+                Tu navegador no soporta el video.
+            </video>
+          </>
         )}
         {homeHeroDisclaimer ? (
           <wa-badge className="hero-disclaimer" appearance="filled" variant="neutral" pill><sup>*</sup>{homeHeroDisclaimer}</wa-badge>

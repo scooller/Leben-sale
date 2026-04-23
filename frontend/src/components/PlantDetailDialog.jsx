@@ -388,19 +388,19 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
             <div slot="footer" className="wa-split wa-align-items-end">
                 {(plant.precioFinal || plant.precioBase || plant.precioLista) && (
                 <>
-                <div className="wa-stack wa-gap-xs precio-detail wa-order-0 wa-order-mobile-1">
+                <div className="wa-stack wa-gap-xs price-detail wa-order-0 wa-order-mobile-1">
                     <div className="wa-cluster wa-caption-s wa-mt-m">
                     {plant.precioLista && (plant.precioFinal || plant.precioBase) && plant.precioLista !== (plant.precioFinal || plant.precioBase) && (
-                        <div className="wa-split wa-gap-xs">
-                            <span className='wa-heading-l'>Precio lista:</span>
-                            <span className='wa-heading-l' style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+                        <div className="wa-split wa-gap-xs prices-list">
+                            <span className='price-text'>Precio lista:</span>
+                            <span className='price-label'>
                                 UF {plant.precioLista.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                         </div>
                     )}
-                        <div className="wa-split wa-gap-xs">
-                            <span className='wa-heading-xl wa-text-uppercase price-label-discount wa-font-weight-bold'>{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'}</span>
-                            <span className="wa-heading-3xl wa-font-weight-bold">
+                        <div className="wa-split wa-gap-xs prices-sale">
+                            <span className='wa-text-uppercase price-text wa-font-weight-bold'>{isSaleEventActive ? 'Precio Sale:' : 'Precio Base:'}</span>
+                            <span className="wa-font-weight-bold price-label">
                                 UF {(plant.precioFinal || plant.precioBase || plant.precioLista).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                         </div>
@@ -412,6 +412,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                     <wa-button
                         variant="neutral"
                         data-dialog="close"
+                        size={mobile ? 'small' : 'large'}
                         onClick={onClose}
                     >
                         <wa-icon name="xmark" slot="start"></wa-icon>
@@ -419,6 +420,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                     </wa-button>
                     <wa-button
                         variant="success"
+                        size={mobile ? 'small' : 'large'}
                         onClick={goToContact}
                     >
                         <wa-icon name="envelope" slot="start"></wa-icon>
@@ -427,6 +429,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                 {(plant.isPaid || plant.isReserved || plant.isAvailable === false) ? (
                     <wa-button
                         variant="warning"
+                        size={mobile ? 'small' : 'large'}
                         disabled
                     >
                         <wa-icon name="house-circle-xmark" slot="start"></wa-icon>
@@ -440,6 +443,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                 ) : (
                     <wa-button
                         variant="brand"
+                        size={mobile ? 'small' : 'large'}
                         disabled={checkoutLoading}
                         {...(checkoutLoading && { loading: true })}
                         onClick={onCheckout}
