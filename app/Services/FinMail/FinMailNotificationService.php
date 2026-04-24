@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Models\ContactSubmission;
 use App\Models\Payment;
 use App\Models\PlantReservation;
+use App\Models\Proyecto;
 use App\Models\SiteSetting;
 use App\Models\User;
 use FinityLabs\FinMail\Enums\EmailStatus;
@@ -115,21 +116,22 @@ class FinMailNotificationService
         );
     }
 
-    public function sendManualPaymentProofSubmittedToAdmins(Payment $payment): void
+    public function sendManualPaymentProofSubmittedToAdmins(Payment $payment, ?string $paymentReviewUrl = null): void
     {
-        $payment->loadMissing(['user', 'project', 'plant.proyecto']);
+        $payment->loadMissing([
+            'user',
+            'project.asesores',
+            'plant.asesor',
+            'plant.proyecto.asesores',
+        ]);
 
-        $adminRecipients = User::query()
-            ->get()
-            ->filter(static fn (User $user): bool => $user->isAdmin())
-            ->map(static fn (User $user): ?string => $user->email)
-            ->filter(static fn (mixed $email): bool => is_string($email) && $email !== '')
-            ->unique()
-            ->values();
+        $adminRecipients = $this->resolveAdminRecipients();
 
         if ($adminRecipients->isEmpty()) {
             return;
         }
+
+        $advisorRecipients = $this->resolveManualPaymentAdvisorRecipients($payment);
 
         foreach ($adminRecipients as $recipient) {
             $this->sendTemplate(
@@ -140,6 +142,7 @@ class FinMailNotificationService
                     'payment' => $payment,
                     'plant' => $payment->plant,
                     'project' => $payment->project ?? $payment->plant?->proyecto,
+                    'payment_review_url' => new TokenValue($paymentReviewUrl ?? '-'),
                 ],
                 contextModel: $payment,
                 logContext: [
@@ -147,9 +150,98 @@ class FinMailNotificationService
                     'user_id' => $payment->user_id,
                     'recipient' => $recipient,
                 ],
+                additionalCcRecipients: $advisorRecipients,
                 errorLogMessage: 'FinMail: no se pudo enviar correo a admin por comprobante manual',
             );
         }
+    }
+
+    public function sendNonManualPaymentProofSubmittedToAdmins(Payment $payment, ?string $paymentReviewUrl = null): void
+    {
+        $payment->loadMissing(['user', 'project', 'plant.proyecto']);
+
+        $adminRecipients = $this->resolveAdminRecipients();
+
+        if ($adminRecipients->isEmpty()) {
+            return;
+        }
+
+        $proofContactRecipients = $this->resolveNonManualProofContactRecipients();
+
+        foreach ($adminRecipients as $recipient) {
+            $this->sendTemplate(
+                templateKey: 'payment-proof-submitted-admin',
+                recipient: $recipient,
+                models: [
+                    'user' => $payment->user,
+                    'payment' => $payment,
+                    'plant' => $payment->plant,
+                    'project' => $payment->project ?? $payment->plant?->proyecto,
+                    'payment_review_url' => new TokenValue($paymentReviewUrl ?? '-'),
+                ],
+                contextModel: $payment,
+                logContext: [
+                    'payment_id' => $payment->id,
+                    'user_id' => $payment->user_id,
+                    'recipient' => $recipient,
+                ],
+                additionalCcRecipients: $proofContactRecipients,
+                errorLogMessage: 'FinMail: no se pudo enviar correo a admin por comprobante no manual',
+            );
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveManualPaymentAdvisorRecipients(Payment $payment): array
+    {
+        $plantAdvisorEmail = trim((string) ($payment->plant?->asesor?->email ?? ''));
+
+        if ($plantAdvisorEmail !== '' && \filter_var($plantAdvisorEmail, \FILTER_VALIDATE_EMAIL) !== false) {
+            return [$plantAdvisorEmail];
+        }
+
+        $project = $payment->project ?? $payment->plant?->proyecto;
+
+        if (! $project instanceof Proyecto) {
+            return [];
+        }
+
+        return $project->asesores
+            ->pluck('email')
+            ->filter(static fn (mixed $email): bool => is_string($email) && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    private function resolveAdminRecipients(): \Illuminate\Support\Collection
+    {
+        return User::query()
+            ->get()
+            ->filter(static fn (User $user): bool => $user->isAdmin())
+            ->map(static fn (User $user): ?string => $user->email)
+            ->filter(static fn (mixed $email): bool => is_string($email) && $email !== '')
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveNonManualProofContactRecipients(): array
+    {
+        $configuredEmail = trim((string) (SiteSetting::current()->gateway_proof_contact_email ?? ''));
+
+        if ($configuredEmail === '' || \filter_var($configuredEmail, \FILTER_VALIDATE_EMAIL) === false) {
+            return [];
+        }
+
+        return [$configuredEmail];
     }
 
     public function sendContactSubmissionReceivedToAdmin(ContactSubmission $submission): void
@@ -242,6 +334,7 @@ class FinMailNotificationService
         ?Model $contextModel,
         array $logContext,
         string $errorLogMessage,
+        array $additionalCcRecipients = [],
     ): void {
         $sentEmailLog = null;
 
@@ -257,7 +350,10 @@ class FinMailNotificationService
                 return;
             }
 
-            $ccRecipients = $this->resolveTemplateCcRecipients($templateKey);
+            $ccRecipients = array_values(array_filter(array_unique([
+                ...$this->resolveTemplateCcRecipients($templateKey),
+                ...$additionalCcRecipients,
+            ]), static fn (mixed $email) => is_string($email) && $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false && \strcasecmp((string) $email, $recipient) !== 0));
             $sentEmailLog = $this->createSentEmailLog($template, $recipient, $ccRecipients, $contextModel);
 
             $mail = TemplateMail::make($templateKey, app()->getLocale())

@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentStatus;
+use App\Models\Payment;
 use App\Models\SiteSetting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,5 +46,30 @@ class PaymentResultTrackingTest extends TestCase
         $failedResponse->assertSee('checkout_failed', false);
         $failedResponse->assertSee('failed', false);
         $failedResponse->assertSee('88', false);
+    }
+
+    public function test_success_page_does_not_emit_checkout_success_for_manual_payments(): void
+    {
+        SiteSetting::current()->update([
+            'tag_manager_id' => 'GTM-TEST123',
+        ]);
+
+        $user = User::factory()->create();
+
+        $payment = Payment::query()->create([
+            'user_id' => $user->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => 'MAN-TRACK-001',
+            'amount' => 15000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING_APPROVAL,
+            'metadata' => [],
+        ]);
+
+        $response = $this->get('/payments/success/'.$payment->id);
+
+        $response->assertOk();
+        $response->assertDontSee('checkout_success', false);
+        $response->assertSee('Pago Exitoso', false);
     }
 }

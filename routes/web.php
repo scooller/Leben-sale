@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\ShortLinkRedirectController;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,7 +45,18 @@ Route::prefix('payments')->name('payment.')->group(function () {
 
     // Páginas de resultado
     Route::get('success/{payment?}', function ($payment = null) {
-        return view('payments.success', compact('payment'));
+        $paymentModel = null;
+
+        if ($payment !== null) {
+            $paymentModel = Payment::query()->find($payment);
+        }
+
+        $shouldTrackCheckoutSuccess = ! ($paymentModel?->requiresManualApproval() ?? false);
+
+        return view('payments.success', [
+            'payment' => $payment,
+            'shouldTrackCheckoutSuccess' => $shouldTrackCheckoutSuccess,
+        ]);
     })->name('success');
 
     Route::get('failed/{payment?}', function ($payment = null) {

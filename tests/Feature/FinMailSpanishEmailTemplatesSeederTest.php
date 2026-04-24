@@ -33,15 +33,18 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $paymentTemplate = EmailTemplate::query()->where('key', 'payment-status-updated')->first();
         $manualReservationTemplate = EmailTemplate::query()->where('key', 'manual-reservation-created')->first();
         $manualProofAdminTemplate = EmailTemplate::query()->where('key', 'manual-payment-proof-submitted-admin')->first();
+        $proofAdminTemplate = EmailTemplate::query()->where('key', 'payment-proof-submitted-admin')->first();
 
         $this->assertNotNull($reservationTemplate);
         $this->assertNotNull($paymentTemplate);
         $this->assertNotNull($manualReservationTemplate);
         $this->assertNotNull($manualProofAdminTemplate);
+        $this->assertNotNull($proofAdminTemplate);
         $this->assertSame(1, EmailTemplate::query()->where('key', 'unit-reserved')->count());
         $this->assertSame(1, EmailTemplate::query()->where('key', 'payment-status-updated')->count());
         $this->assertSame(1, EmailTemplate::query()->where('key', 'manual-reservation-created')->count());
         $this->assertSame(1, EmailTemplate::query()->where('key', 'manual-payment-proof-submitted-admin')->count());
+        $this->assertSame(1, EmailTemplate::query()->where('key', 'payment-proof-submitted-admin')->count());
         $this->assertSame('Reserva de unidad confirmada', $reservationTemplate->getTranslation('name', 'es'));
         $this->assertStringContainsString('{{ reservation_amount', $reservationTemplate->getTranslation('body', 'es'));
         $this->assertStringContainsString('{{ reservation_currency', $reservationTemplate->getTranslation('body', 'es'));
@@ -52,6 +55,8 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $this->assertStringContainsString('{{ payment.currency', $paymentTemplate->getTranslation('body', 'es'));
         $this->assertSame('Reserva manual creada', $manualReservationTemplate->getTranslation('name', 'es'));
         $this->assertSame('Comprobante manual recibido (admin)', $manualProofAdminTemplate->getTranslation('name', 'es'));
+        $this->assertStringContainsString('{{ payment_review_url', $manualProofAdminTemplate->getTranslation('body', 'es'));
+        $this->assertSame('Comprobante de pago recibido (admin)', $proofAdminTemplate->getTranslation('name', 'es'));
     }
 
     public function test_contact_submission_template_wraps_cmr_fields_in_spans(): void

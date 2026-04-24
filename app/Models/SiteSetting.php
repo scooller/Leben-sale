@@ -68,6 +68,7 @@ class SiteSetting extends Model
         'gateway_transbank_enabled',
         'gateway_mercadopago_enabled',
         'gateway_manual_enabled',
+        'gateway_proof_contact_email',
         'gateway_reservation_timeout_minutes',
         'gateway_transbank_config',
         'gateway_mercadopago_config',

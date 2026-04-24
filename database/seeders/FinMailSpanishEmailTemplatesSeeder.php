@@ -181,8 +181,8 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'en' => 'A manual payment proof was received and requires review.',
                 ],
                 'body' => [
-                    'es' => '<p>Se recibio un comprobante para un pago manual.</p><p><strong>Referencia unica:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Monto:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Cliente:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unidad:</strong> {{ plant.name | "-" }}</p><p><strong>Proyecto:</strong> {{ project.name | "-" }}</p>',
-                    'en' => '<p>A payment proof was received for a manual payment.</p><p><strong>Unique reference:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Amount:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Customer:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unit:</strong> {{ plant.name | "-" }}</p><p><strong>Project:</strong> {{ project.name | "-" }}</p>',
+                    'es' => '<p>Se recibio un comprobante para un pago manual.</p><p><strong>Referencia unica:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Monto:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Cliente:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unidad:</strong> {{ plant.name | "-" }}</p><p><strong>Proyecto:</strong> {{ project.name | "-" }}</p><p><strong>Revisar comprobante:</strong> {{ payment_review_url | "-" }}</p>',
+                    'en' => '<p>A payment proof was received for a manual payment.</p><p><strong>Unique reference:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Amount:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Customer:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unit:</strong> {{ plant.name | "-" }}</p><p><strong>Project:</strong> {{ project.name | "-" }}</p><p><strong>Review proof:</strong> {{ payment_review_url | "-" }}</p>',
                 ],
                 'category' => 'transactional',
                 'tags' => ['manual', 'payment', 'admin'],
@@ -191,6 +191,35 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'plant' => ['name'],
                     'project' => ['name'],
                     'payment' => ['gateway_tx_id', 'amount', 'currency', 'status'],
+                    'payment_review_url' => 'string',
+                ],
+            ],
+            [
+                'key' => 'payment-proof-submitted-admin',
+                'name' => [
+                    'es' => 'Comprobante de pago recibido (admin)',
+                    'en' => 'Payment proof received (admin)',
+                ],
+                'subject' => [
+                    'es' => 'Comprobante recibido: {{ payment.gateway_tx_id | "-" }}',
+                    'en' => 'Proof received: {{ payment.gateway_tx_id | "-" }}',
+                ],
+                'preheader' => [
+                    'es' => 'Se recibio un comprobante de pago y requiere revision.',
+                    'en' => 'A payment proof was received and requires review.',
+                ],
+                'body' => [
+                    'es' => '<p>Se recibio un comprobante para un pago.</p><p><strong>Referencia unica:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Monto:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Cliente:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unidad:</strong> {{ plant.name | "-" }}</p><p><strong>Proyecto:</strong> {{ project.name | "-" }}</p><p><strong>Revisar comprobante:</strong> {{ payment_review_url | "-" }}</p>',
+                    'en' => '<p>A payment proof was received.</p><p><strong>Unique reference:</strong> {{ payment.gateway_tx_id | "-" }}</p><p><strong>Amount:</strong> {{ payment.amount | "-" }} {{ payment.currency | "CLP" }}</p><p><strong>Customer:</strong> {{ user.name | "-" }} ({{ user.email | "-" }})</p><p><strong>Unit:</strong> {{ plant.name | "-" }}</p><p><strong>Project:</strong> {{ project.name | "-" }}</p><p><strong>Review proof:</strong> {{ payment_review_url | "-" }}</p>',
+                ],
+                'category' => 'transactional',
+                'tags' => ['payment', 'proof', 'admin'],
+                'token_schema' => [
+                    'user' => ['name', 'email'],
+                    'plant' => ['name'],
+                    'project' => ['name'],
+                    'payment' => ['gateway_tx_id', 'amount', 'currency', 'status'],
+                    'payment_review_url' => 'string',
                 ],
             ],
             [

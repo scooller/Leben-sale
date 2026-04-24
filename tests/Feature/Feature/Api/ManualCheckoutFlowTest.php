@@ -4,6 +4,7 @@ namespace Tests\Feature\Feature\Api;
 
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Models\Asesor;
 use App\Models\Payment;
 use App\Models\Plant;
 use App\Models\Proyecto;
@@ -11,12 +12,15 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\FinMail\FinMailNotificationService;
 use App\Services\PlantReservationService;
+use Database\Seeders\FinMailSpanishEmailTemplatesSeeder;
+use FinityLabs\FinMail\Mail\TemplateMail;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
@@ -380,6 +384,151 @@ class ManualCheckoutFlowTest extends TestCase
             'Comprobante de pago recibido',
             (string) data_get($notification->data, 'title')
         );
+        $this->assertStringContainsString(
+            '/payments/'.$payment->id,
+            (string) data_get($notification->data, 'body')
+        );
+    }
+
+    public function test_it_sends_manual_proof_email_copy_to_plant_advisor_before_project_advisors(): void
+    {
+        Mail::fake();
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        $admin = User::factory()->create([
+            'user_type' => 'admin',
+            'email' => 'admin+manual-proof@example.test',
+        ]);
+
+        $plantAdvisor = Asesor::factory()->create([
+            'email' => 'asesor-planta@example.test',
+        ]);
+
+        $projectAdvisor = Asesor::factory()->create([
+            'email' => 'asesor-proyecto@example.test',
+        ]);
+
+        $project = Proyecto::factory()->create();
+        $project->asesores()->attach($projectAdvisor->id);
+
+        $plant = Plant::factory()->create([
+            'salesforce_proyecto_id' => $project->salesforce_id,
+            'asesor_id' => $plantAdvisor->id,
+            'is_active' => true,
+        ]);
+
+        $payment = Payment::query()->create([
+            'user_id' => $this->user->id,
+            'project_id' => $project->id,
+            'plant_id' => $plant->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => 'MAN-CC-PLANT-001',
+            'amount' => 10000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING_APPROVAL,
+            'metadata' => [
+                'manual_payment_expires_at' => now()->addDay()->toISOString(),
+                'manual_payment_proof_submitted' => false,
+            ],
+        ]);
+
+        $this->post('/api/v1/payments/'.$payment->id.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante-plant.jpg'),
+        ])->assertOk();
+
+        Mail::assertSent(TemplateMail::class, function (TemplateMail $mail) use ($admin, $plantAdvisor, $projectAdvisor): bool {
+            return $mail->hasTo($admin->email)
+                && $mail->hasCc($plantAdvisor->email)
+                && ! $mail->hasCc($projectAdvisor->email);
+        });
+    }
+
+    public function test_it_falls_back_to_project_advisors_for_manual_proof_email_copy_when_plant_has_no_advisor(): void
+    {
+        Mail::fake();
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        $admin = User::factory()->create([
+            'user_type' => 'admin',
+            'email' => 'admin+manual-proof-fallback@example.test',
+        ]);
+
+        $projectAdvisor = Asesor::factory()->create([
+            'email' => 'asesor-proyecto-fallback@example.test',
+        ]);
+
+        $project = Proyecto::factory()->create();
+        $project->asesores()->attach($projectAdvisor->id);
+
+        $plant = Plant::factory()->create([
+            'salesforce_proyecto_id' => $project->salesforce_id,
+            'asesor_id' => null,
+            'is_active' => true,
+        ]);
+
+        $payment = Payment::query()->create([
+            'user_id' => $this->user->id,
+            'project_id' => $project->id,
+            'plant_id' => $plant->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => 'MAN-CC-PROJECT-001',
+            'amount' => 10000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING_APPROVAL,
+            'metadata' => [
+                'manual_payment_expires_at' => now()->addDay()->toISOString(),
+                'manual_payment_proof_submitted' => false,
+            ],
+        ]);
+
+        $this->post('/api/v1/payments/'.$payment->id.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante-project.jpg'),
+        ])->assertOk();
+
+        Mail::assertSent(TemplateMail::class, function (TemplateMail $mail) use ($admin, $projectAdvisor): bool {
+            return $mail->hasTo($admin->email)
+                && $mail->hasCc($projectAdvisor->email);
+        });
+    }
+
+    public function test_it_sends_non_manual_payment_proof_email_copy_to_configured_site_setting_contact(): void
+    {
+        Mail::fake();
+        $this->seed(FinMailSpanishEmailTemplatesSeeder::class);
+
+        $admin = User::factory()->create([
+            'user_type' => 'admin',
+            'email' => 'admin+non-manual-proof@example.test',
+        ]);
+
+        SiteSetting::current()->update([
+            'gateway_proof_contact_email' => 'contacto-comprobante@example.test',
+        ]);
+
+        $payment = Payment::query()->create([
+            'user_id' => $this->user->id,
+            'gateway' => 'transbank',
+            'gateway_tx_id' => 'TBK-PROOF-001',
+            'amount' => 15000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::AUTHORIZED,
+            'metadata' => [],
+        ]);
+
+        $this->post('/api/v1/payments/'.$payment->id.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante-transbank.jpg'),
+            'notes' => 'Comprobante de pago no manual.',
+        ])->assertOk();
+
+        $payment->refresh();
+
+        $this->assertSame('comprobante-transbank.jpg', $payment->metadata['payment_proof_name'] ?? null);
+        $this->assertTrue((bool) ($payment->metadata['payment_proof_submitted'] ?? false));
+
+        Mail::assertSent(TemplateMail::class, function (TemplateMail $mail) use ($admin): bool {
+            return $mail->hasTo($admin->email)
+                && $mail->hasCc('contacto-comprobante@example.test');
+        });
     }
 
     public function test_it_logs_manual_payment_proof_error_when_payment_is_not_owned_by_authenticated_user(): void

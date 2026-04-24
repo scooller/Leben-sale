@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\PaymentStatus;
+use App\Filament\Resources\Payments\PaymentResource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ManualPaymentProofRequest;
 use App\Models\Payment;
@@ -114,7 +115,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * Store manual payment proof for an existing manual payment.
+     * Store payment proof for an existing payment.
      */
     public function uploadManualProof(ManualPaymentProofRequest $request, string $id): JsonResponse
     {
@@ -142,25 +143,14 @@ class PaymentController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        if (! $payment->requiresManualApproval()) {
-            Log::warning('Fallo al subir comprobante manual: el pago no admite aprobacion manual.', [
-                'payment_id' => $payment->id,
-                'gateway' => $payment->gateway instanceof \BackedEnum ? $payment->gateway->value : (string) $payment->gateway,
-                'status' => $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status,
-                'authenticated_user_id' => $authenticatedUser?->id,
-            ]);
-
-            return response()->json([
-                'message' => 'Este pago no admite comprobante manual.',
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $isManualPayment = $payment->requiresManualApproval();
 
         $metadata = $payment->metadata ?? [];
         $expiresAt = filled($metadata['manual_payment_expires_at'] ?? null)
             ? Carbon::parse($metadata['manual_payment_expires_at'])
             : null;
 
-        if ($expiresAt !== null && $expiresAt->isPast()) {
+        if ($isManualPayment && $expiresAt !== null && $expiresAt->isPast()) {
             Log::warning('Fallo al subir comprobante manual: el plazo del pago ya expiro.', [
                 'payment_id' => $payment->id,
                 'authenticated_user_id' => $authenticatedUser?->id,
@@ -172,7 +162,7 @@ class PaymentController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $previousProofPath = (string) ($metadata['manual_payment_proof_path'] ?? '');
+        $previousProofPath = (string) ($metadata['manual_payment_proof_path'] ?? $metadata['payment_proof_path'] ?? '');
 
         /** @var UploadedFile $proof */
         $proof = $request->file('proof');
@@ -184,6 +174,15 @@ class PaymentController extends Controller
         $metadata['manual_payment_proof_uploaded_at'] = now()->toISOString();
         $metadata['manual_payment_proof_notes'] = $request->validated('notes');
         $metadata['manual_payment_proof_submitted'] = true;
+
+        if (! $isManualPayment) {
+            $metadata['payment_proof_path'] = $path;
+            $metadata['payment_proof_name'] = $proof->getClientOriginalName();
+            $metadata['payment_proof_mime_type'] = $proof->getClientMimeType();
+            $metadata['payment_proof_uploaded_at'] = now()->toISOString();
+            $metadata['payment_proof_notes'] = $request->validated('notes');
+            $metadata['payment_proof_submitted'] = true;
+        }
 
         try {
             DB::beginTransaction();
@@ -208,7 +207,7 @@ class PaymentController extends Controller
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
-            $this->notifyAdminsManualProofSubmitted($freshPayment);
+            $this->notifyAdminsProofSubmitted($freshPayment, $isManualPayment);
 
             DB::commit();
         } catch (Exception $exception) {
@@ -242,7 +241,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    private function notifyAdminsManualProofSubmitted(Payment $payment): void
+    private function notifyAdminsProofSubmitted(Payment $payment, bool $isManualPayment): void
     {
         $admins = User::query()
             ->get()
@@ -265,9 +264,15 @@ class PaymentController extends Controller
             ? (string) $payment->gateway_tx_id
             : '#'.$payment->getKey();
 
+        $paymentReviewUrl = PaymentResource::getUrl(
+            'view',
+            ['record' => $payment],
+            isAbsolute: true,
+        );
+
         FilamentNotification::make()
             ->title('Comprobante de pago recibido')
-            ->body("Se recibio un comprobante para el pago {$reference}.")
+            ->body("Se recibio un comprobante para el pago {$reference}. Revisar en: {$paymentReviewUrl}")
             ->info()
             ->icon('heroicon-o-document-check')
             ->sendToDatabase($admins);
@@ -276,11 +281,18 @@ class PaymentController extends Controller
             ? $payment->status
             : PaymentStatus::fromValue((string) $payment->status);
 
-        if ($status !== PaymentStatus::PENDING_APPROVAL) {
+        if ($isManualPayment) {
+            if ($status !== PaymentStatus::PENDING_APPROVAL) {
+                return;
+            }
+
+            app(FinMailNotificationService::class)
+                ->sendManualPaymentProofSubmittedToAdmins($payment, $paymentReviewUrl);
+
             return;
         }
 
         app(FinMailNotificationService::class)
-            ->sendManualPaymentProofSubmittedToAdmins($payment);
+            ->sendNonManualPaymentProofSubmittedToAdmins($payment, $paymentReviewUrl);
     }
 }

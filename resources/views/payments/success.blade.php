@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago Exitoso</title>
-    @include('payments.partials.tracking', ['eventName' => 'checkout_success', 'paymentStatus' => 'completed', 'payment' => $payment])
+    @if($shouldTrackCheckoutSuccess ?? true)
+        @include('payments.partials.tracking', ['eventName' => 'checkout_success', 'paymentStatus' => 'completed', 'payment' => $payment])
+    @endif
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

@@ -832,6 +832,13 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Transferencia bancaria, efectivo u otro método offline')
                                             ->default(true),
 
+                                        TextInput::make('gateway_proof_contact_email')
+                                            ->label('Contacto comprobante')
+                                            ->helperText('Email que recibirá copia cuando se suba comprobante de pagos no manuales.')
+                                            ->email()
+                                            ->maxLength(255)
+                                            ->nullable(),
+
                                         TextInput::make('gateway_manual_config.auto_expire_minutes')
                                             ->label('Tiempo de reserva en Pago Manual (minutos)')
                                             ->helperText('Cuánto tiempo se mantiene la reserva cuando se inicia un pago manual. Si está vacío se usa la configuración por defecto del gateway manual.')
