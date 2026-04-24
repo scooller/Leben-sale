@@ -118,12 +118,38 @@ class PaymentController extends Controller
      */
     public function uploadManualProof(ManualPaymentProofRequest $request, string $id): JsonResponse
     {
-        /** @var Payment $payment */
-        $payment = $request->user()
+        $authenticatedUser = $request->user();
+
+        /** @var Payment|null $payment */
+        $payment = $authenticatedUser
             ->payments()
-            ->findOrFail($id);
+            ->find($id);
+
+        if (! $payment instanceof Payment) {
+            Log::warning('Fallo al subir comprobante manual: pago no encontrado para el usuario autenticado.', [
+                'payment_id' => $id,
+                'authenticated_user_id' => $authenticatedUser?->id,
+                'authenticated_user_email' => $authenticatedUser?->email,
+                'authenticated_user_roles' => $authenticatedUser?->getRoleNames()?->values()?->all() ?? [],
+                'authenticated_user_type' => $authenticatedUser?->user_type,
+                'is_admin' => $authenticatedUser?->isAdmin() ?? false,
+                'request_path' => $request->path(),
+                'request_ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => sprintf('No query results for model [%s] %s', Payment::class, $id),
+            ], Response::HTTP_NOT_FOUND);
+        }
 
         if (! $payment->requiresManualApproval()) {
+            Log::warning('Fallo al subir comprobante manual: el pago no admite aprobacion manual.', [
+                'payment_id' => $payment->id,
+                'gateway' => $payment->gateway instanceof \BackedEnum ? $payment->gateway->value : (string) $payment->gateway,
+                'status' => $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status,
+                'authenticated_user_id' => $authenticatedUser?->id,
+            ]);
+
             return response()->json([
                 'message' => 'Este pago no admite comprobante manual.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -135,6 +161,12 @@ class PaymentController extends Controller
             : null;
 
         if ($expiresAt !== null && $expiresAt->isPast()) {
+            Log::warning('Fallo al subir comprobante manual: el plazo del pago ya expiro.', [
+                'payment_id' => $payment->id,
+                'authenticated_user_id' => $authenticatedUser?->id,
+                'manual_payment_expires_at' => $expiresAt->toISOString(),
+            ]);
+
             return response()->json([
                 'message' => 'La fecha limite para enviar el comprobante ya expiro.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -168,6 +200,7 @@ class PaymentController extends Controller
 
                 Log::warning('No se pudo refrescar el pago manual tras subir comprobante.', [
                     'payment_id' => $payment->id,
+                    'authenticated_user_id' => $authenticatedUser?->id,
                 ]);
 
                 return response()->json([
@@ -183,9 +216,11 @@ class PaymentController extends Controller
 
             Storage::delete($path);
 
-            Log::warning('No se pudo procesar el comprobante manual de forma atomica.', [
+            Log::error('No se pudo procesar el comprobante manual de forma atomica.', [
                 'payment_id' => $payment->id,
+                'authenticated_user_id' => $authenticatedUser?->id,
                 'error' => $exception->getMessage(),
+                'exception' => get_class($exception),
             ]);
 
             return response()->json([

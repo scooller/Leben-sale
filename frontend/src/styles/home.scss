@@ -562,6 +562,43 @@ html.wa-light #root{
   min-height: 66px;
 }
 
+.manual-proof-upload {
+  gap: var(--wa-space-2xs);
+}
+
+.manual-proof-file-input {
+  width: 100%;
+}
+
+.manual-proof-file-input::part(base) {
+  border-radius: var(--wa-border-radius-l);
+}
+
+.manual-proof-file-input::part(dropzone) {
+  background: rgba(var(--wa-color-brand-fill-loud-rgb), 0.04);
+  border: 1px dashed rgba(var(--wa-color-brand-border-loud-rgb), 0.55);
+  border-radius: var(--wa-border-radius-l);
+  padding: var(--wa-space-m);
+}
+
+.manual-proof-file-input::part(dropzone-text) {
+  color: var(--wa-color-text-normal);
+  font-size: var(--wa-font-size-s);
+}
+
+.manual-proof-dropzone-content {
+  justify-items: center;
+  text-align: center;
+}
+
+.manual-proof-dropzone-content .wa-caption-s {
+  color: var(--wa-color-text-quiet);
+}
+
+.manual-proof-file-name {
+  color: var(--wa-color-text-quiet);
+}
+
 .box-shadow-1{
     box-shadow: rgb(var(--wa-color-black-rgb)) 0px 20px 30px -10px;
 }

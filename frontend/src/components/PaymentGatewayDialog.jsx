@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { authService } from '../services/auth';
 import ReservationService from '../services/reservation';
 import { trackEvent } from '../utils/tagManager';
@@ -24,6 +24,7 @@ function PaymentGatewayDialog({
   const validationToastRef = useRef(null);
   const turnstileContainerRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
+  const manualProofInputRef = useRef(null);
   const [selectedGateway, setSelectedGateway] = useState('');
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutEmail, setCheckoutEmail] = useState('');
@@ -43,6 +44,7 @@ function PaymentGatewayDialog({
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [validationToast, setValidationToast] = useState(null);
   const [manualProofFile, setManualProofFile] = useState(null);
+  const [manualProofHasSelection, setManualProofHasSelection] = useState(false);
   const [manualProofError, setManualProofError] = useState(null);
   const [manualProofSuccess, setManualProofSuccess] = useState(null);
   const [turnstileReady, setTurnstileReady] = useState(Boolean(window.turnstile));
@@ -50,7 +52,7 @@ function PaymentGatewayDialog({
   const [turnstileError, setTurnstileError] = useState(null);
 
   const manualProofMaxBytes = 5 * 1024 * 1024;
-  const manualProofAllowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'heic', 'heif'];
+  const manualProofAllowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'heic', 'heif'];
 
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const isTurnstileEnabled = Boolean(turnstileSiteKey);
@@ -214,6 +216,132 @@ function PaymentGatewayDialog({
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(date);
+  };
+
+  const syncManualProofSelection = useCallback((inputElement) => {
+    console.log('[PaymentGatewayDialog] syncManualProofSelection:start', {
+      hasInputElement: Boolean(inputElement),
+      fileCount: inputElement?.files?.length ?? 0,
+      files: inputElement?.files?.map?.((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      })) ?? null,
+    });
+
+    if (!inputElement) {
+      setManualProofFile(null);
+      setManualProofHasSelection(false);
+      setManualProofError(null);
+
+      console.log('[PaymentGatewayDialog] syncManualProofSelection:no-input');
+
+      return;
+    }
+
+    const selectedFile = inputElement.files?.[0] || null;
+
+    if (!selectedFile) {
+      setManualProofFile(null);
+      setManualProofHasSelection(false);
+      setManualProofError(null);
+
+      inputElement.setCustomValidity('');
+
+      console.log('[PaymentGatewayDialog] syncManualProofSelection:no-file');
+
+      return;
+    }
+
+    const extension = selectedFile.name.split('.').pop()?.toLowerCase() || '';
+
+    if (!manualProofAllowedExtensions.includes(extension)) {
+      const message = 'Formato no permitido. Usa JPG, PNG, HEIC, HEIF o PDF.';
+      setManualProofFile(null);
+      setManualProofHasSelection(false);
+      setManualProofError(message);
+      inputElement.setCustomValidity(message);
+      inputElement.files = [];
+
+      console.log('[PaymentGatewayDialog] syncManualProofSelection:invalid-extension', {
+        extension,
+        fileName: selectedFile.name,
+      });
+
+      return;
+    }
+
+    if (selectedFile.size > manualProofMaxBytes) {
+      const message = 'El archivo supera el máximo permitido de 5 MB.';
+      setManualProofFile(null);
+      setManualProofHasSelection(false);
+      setManualProofError(message);
+      inputElement.setCustomValidity(message);
+      inputElement.files = [];
+
+      console.log('[PaymentGatewayDialog] syncManualProofSelection:file-too-large', {
+        fileName: selectedFile.name,
+        size: selectedFile.size,
+        max: manualProofMaxBytes,
+      });
+
+      return;
+    }
+
+    inputElement.setCustomValidity('');
+
+    setManualProofFile(selectedFile);
+    setManualProofHasSelection(true);
+    setManualProofError(null);
+
+    console.log('[PaymentGatewayDialog] syncManualProofSelection:success', {
+      fileName: selectedFile.name,
+      size: selectedFile.size,
+      type: selectedFile.type,
+    });
+  }, [manualProofAllowedExtensions, manualProofMaxBytes]);
+
+  const resetManualProofInput = useCallback(() => {
+    if (manualProofInputRef.current) {
+      manualProofInputRef.current.files = [];
+      manualProofInputRef.current.setCustomValidity('');
+    }
+
+    setManualProofFile(null);
+    setManualProofHasSelection(false);
+  }, []);
+
+  const handleManualProofInputChange = useCallback(() => {
+    console.log('[PaymentGatewayDialog] handleManualProofInputChange', {
+      hasInputElement: Boolean(manualProofInputRef.current),
+      fileCount: manualProofInputRef.current?.files?.length ?? 0,
+    });
+
+    syncManualProofSelection(manualProofInputRef.current);
+  }, [syncManualProofSelection]);
+
+  const setManualProofInputElement = useCallback((element) => {
+    console.log('[PaymentGatewayDialog] setManualProofInputElement', {
+      hasPreviousElement: Boolean(manualProofInputRef.current),
+      hasNextElement: Boolean(element),
+    });
+
+    if (manualProofInputRef.current) {
+      manualProofInputRef.current.removeEventListener('change', handleManualProofInputChange);
+    }
+
+    manualProofInputRef.current = element;
+
+    if (element) {
+      element.addEventListener('change', handleManualProofInputChange);
+      syncManualProofSelection(element);
+    }
+  }, [handleManualProofInputChange, syncManualProofSelection]);
+
+  const openManualProofPicker = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    manualProofInputRef.current?.click();
   };
 
   // Sincronizar estado abierto con el diálogo
@@ -438,15 +566,24 @@ function PaymentGatewayDialog({
         rut: false,
       });
       setValidationToast(null);
-      setManualProofFile(null);
       setManualProofError(null);
       setManualProofSuccess(null);
+      resetManualProofInput();
       setTurnstileToken('');
       setTurnstileError(null);
     }
   }, [open, plant, gateways]);
 
   const handleManualProofUpload = async () => {
+    console.log('[PaymentGatewayDialog] handleManualProofUpload', {
+      paymentId: manualPayment?.payment_id ?? null,
+      hasManualProofFile: Boolean(manualProofFile),
+      manualProofHasSelection,
+      fileName: manualProofFile?.name ?? null,
+      fileSize: manualProofFile?.size ?? null,
+      inputFileCount: manualProofInputRef.current?.files?.length ?? 0,
+    });
+
     if (!manualPayment?.payment_id) {
       setManualProofError('No se encontro la referencia del pago manual.');
       return;
@@ -521,6 +658,21 @@ function PaymentGatewayDialog({
         });
     })
     : [];
+
+  useEffect(() => {
+    if (!manualPayment) {
+      return;
+    }
+
+    console.log('[PaymentGatewayDialog] manual-proof-state', {
+      manualProofHasSelection,
+      manualProofFileName: manualProofFile?.name ?? null,
+      manualProofError,
+      manualProofLoading,
+      submitDisabled: manualProofLoading || (manualPayment.requires_proof && !manualProofHasSelection),
+      inputFileCount: manualProofInputRef.current?.files?.length ?? 0,
+    });
+  }, [manualPayment, manualProofHasSelection, manualProofFile, manualProofError, manualProofLoading]);
 
   return (
     <wa-dialog
@@ -598,44 +750,20 @@ function PaymentGatewayDialog({
             )}
 
             {manualPayment.requires_proof && (
-              <div className="wa-stack wa-gap-s">
-                <strong>Enviar comprobante</strong>
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf,.heic,.heif"
-                  onChange={(event) => {
-                    const selectedFile = event.target.files?.[0] || null;
-
-                    if (!selectedFile) {
-                      setManualProofFile(null);
-                      setManualProofError(null);
-
-                      return;
-                    }
-
-                    const extension = selectedFile.name.split('.').pop()?.toLowerCase() || '';
-
-                    if (!manualProofAllowedExtensions.includes(extension)) {
-                      setManualProofFile(null);
-                      setManualProofError('Formato no permitido. Usa JPG, PNG, HEIC, HEIF o PDF.');
-                      event.target.value = '';
-
-                      return;
-                    }
-
-                    if (selectedFile.size > manualProofMaxBytes) {
-                      setManualProofFile(null);
-                      setManualProofError('El archivo supera el máximo permitido de 5 MB.');
-                      event.target.value = '';
-
-                      return;
-                    }
-
-                    setManualProofFile(selectedFile);
-                    setManualProofError(null);
-                  }}
-                />
-                <small className="wa-caption-s">Formatos permitidos: JPG, PNG, HEIC, HEIF o PDF. Máximo 5 MB.</small>
+              <div className="wa-stack wa-gap-s manual-proof-upload">
+                <wa-file-input
+                  ref={setManualProofInputElement}
+                  className="manual-proof-file-input"
+                  label="Enviar comprobante"
+                  hint="Formatos permitidos: JPG, PNG, GIF, WEBP, PDF, HEIC, HEIF. Máximo 5 MB."
+                  accept="image/jpeg, image/png, image/gif, image/webp, application/pdf, image/heic, image/heif"
+                  size="small"
+                  required
+                >
+                </wa-file-input>
+                {manualProofFile && (
+                  <small className="wa-caption-s manual-proof-file-name">Archivo seleccionado: {manualProofFile.name}</small>
+                )}
               </div>
             )}
 
@@ -862,7 +990,7 @@ function PaymentGatewayDialog({
         variant="brand"
         onClick={manualPayment ? handleManualProofUpload : handleConfirm}
         disabled={manualPayment
-          ? manualProofLoading || (manualPayment.requires_proof && !manualProofFile)
+          ? manualProofLoading || (manualPayment.requires_proof && !manualProofHasSelection)
           : (loading || !isCheckoutReady || reservationLoading)}
         {...((manualPayment ? manualProofLoading : (loading || reservationLoading)) && { loading: true })}
       >

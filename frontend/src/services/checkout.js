@@ -257,7 +257,18 @@ class CheckoutService {
         formData.append('notes', notes);
       }
 
-      const response = await api.post(`/payments/${paymentId}/manual-proof`, formData);
+      const response = await api.post(`/payments/${paymentId}/manual-proof`, formData, {
+        transformRequest: [(data, headers) => {
+          if (headers?.delete) {
+            headers.delete('Content-Type');
+          } else if (headers) {
+            delete headers['Content-Type'];
+            delete headers['content-type'];
+          }
+
+          return data;
+        }],
+      });
 
       return response.data;
     } catch (error) {

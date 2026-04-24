@@ -46,7 +46,8 @@ class CheckoutController extends Controller
                 );
             }
 
-            $payerUser = $this->resolvePayerUser($validated);
+            /** @var User $payerUser */
+            $payerUser = $request->user();
 
             // Obtener la planta con su proyecto
             $plant = Plant::with('proyecto')->findOrFail($validated['plant_id']);
@@ -81,6 +82,17 @@ class CheckoutController extends Controller
                 $validated['email'],
             );
         } catch (Throwable $e) {
+            Log::error('Error al iniciar el checkout.', [
+                'authenticated_user_id' => $request->user()?->id,
+                'authenticated_user_email' => $request->user()?->email,
+                'gateway' => $request->input('gateway'),
+                'plant_id' => $request->input('plant_id'),
+                'quantity' => $request->input('quantity'),
+                'session_token' => $request->input('session_token'),
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => 'Error al iniciar el checkout',
                 'error' => $e->getMessage(),
@@ -483,40 +495,6 @@ class CheckoutController extends Controller
         }
 
         return filled($project->getRawOriginal('transbank_commerce_code'));
-    }
-
-    /**
-     * @param  array<string, mixed>  $billing
-     */
-    private function resolvePayerUser(array $billing): User
-    {
-        $email = $this->billingEmail($billing);
-        $existingUser = User::query()->where('email', $email)->first();
-
-        if ($existingUser) {
-            return $existingUser;
-        }
-
-        $rut = $this->billingRut($billing);
-        $safeRut = $rut !== null && User::query()->where('rut', $rut)->exists() ? null : $rut;
-
-        $user = User::query()->create([
-            'name' => $this->billingName($billing) ?? $email,
-            'email' => $email,
-            'user_type' => 'customer',
-            'phone' => $this->billingPhone($billing),
-            'rut' => $safeRut,
-            'password' => $email,
-            'email_verified_at' => now(),
-        ]);
-
-        try {
-            $user->assignRole('cliente');
-        } catch (Throwable) {
-            // Keep checkout running even if roles are not yet seeded.
-        }
-
-        return $user;
     }
 
     /**

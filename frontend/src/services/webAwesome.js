@@ -24,13 +24,13 @@ if (import.meta.env.DEV) {
   // Desarrollo: apuntar a node_modules
   setBasePath('/node_modules/@web.awesome.me/webawesome-pro/dist')
 } else {
-  // ProducciÃ³n: Vite copiarÃ¡ los assets, intentar auto-detecciÃ³n
+  // Producción: Vite copiará los assets, intentar auto-detección
   // Si los iconos no cargan, ajustar esta ruta manualmente
   setBasePath('/assets')
 }
 
-// Importar componentes que se usan en la aplicaciÃ³n
-// SegÃºn la documentaciÃ³n oficial, cada componente debe importarse explÃ­citamente
+// Importar componentes que se usan en la aplicación
+// Según la documentación oficial, cada componente debe importarse explícitamente
 // https://webawesome.com/docs/installation
 import '@web.awesome.me/webawesome-pro/dist/components/animation/animation.js'
 import '@web.awesome.me/webawesome-pro/dist/components/badge/badge.js'
@@ -42,6 +42,7 @@ import '@web.awesome.me/webawesome-pro/dist/components/details/details.js'
 import '@web.awesome.me/webawesome-pro/dist/components/dialog/dialog.js'
 import '@web.awesome.me/webawesome-pro/dist/components/drawer/drawer.js'
 import '@web.awesome.me/webawesome-pro/dist/components/divider/divider.js'
+import '@web.awesome.me/webawesome-pro/dist/components/file-input/file-input.js'
 import '@web.awesome.me/webawesome-pro/dist/components/icon/icon.js'
 import '@web.awesome.me/webawesome-pro/dist/components/input/input.js'
 import '@web.awesome.me/webawesome-pro/dist/components/option/option.js'

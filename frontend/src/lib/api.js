@@ -16,13 +16,23 @@ const resolvePreviewToken = () => {
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
 // Interceptor para agregar token de autenticación
 api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    if (config.headers?.delete) {
+      config.headers.delete('Content-Type');
+    } else if (config.headers) {
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
+    }
+  } else if (config.headers && !config.headers['Content-Type'] && !config.headers['content-type']) {
+    config.headers['Content-Type'] = 'application/json';
+  }
+
   const previewToken = resolvePreviewToken();
   const userToken = localStorage.getItem('auth_token');
   const token = userToken || defaultAuthToken;

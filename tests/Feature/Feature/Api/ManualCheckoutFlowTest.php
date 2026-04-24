@@ -16,6 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
@@ -238,8 +239,8 @@ class ManualCheckoutFlowTest extends TestCase
 
         $this->assertSame('manual', $gatewayValue);
         $this->assertSame(PaymentStatus::PENDING_APPROVAL, $payment->status);
-        $this->assertNotSame($this->user->id, $payment->user_id);
-        $this->assertSame('usuario@example.com', $payment->user?->email);
+        $this->assertSame($this->user->id, $payment->user_id);
+        $this->assertSame($this->user->email, $payment->user?->email);
         $this->assertSame($plant->id, $payment->plant_id);
         $this->assertSame($project->id, $payment->project_id);
         $this->assertSame('Usuario Demo', $payment->billing_name);
@@ -255,6 +256,72 @@ class ManualCheckoutFlowTest extends TestCase
 
         $this->assertSame(ReservationStatus::ACTIVE, $reservation->status);
         $this->assertTrue($reservation->expires_at->greaterThan(now()->addHours(47)));
+    }
+
+    public function test_it_allows_uploading_manual_payment_proof_for_payment_created_by_checkout(): void
+    {
+        Storage::fake();
+
+        $project = Proyecto::factory()->create([
+            'manual_payment_instructions' => 'Deposita y comparte tu comprobante.',
+        ]);
+
+        $plant = Plant::factory()->create([
+            'salesforce_proyecto_id' => $project->salesforce_id,
+            'is_active' => true,
+        ]);
+
+        SiteSetting::current()->update([
+            'gateway_manual_enabled' => true,
+            'gateway_manual_config' => [
+                'instructions' => 'Transfiere y envia tu comprobante.',
+                'auto_expire_minutes' => 30,
+            ],
+        ]);
+
+        $reservation = app(PlantReservationService::class)->reserve($plant->id, $this->user->id);
+
+        $mock = Mockery::mock(FinMailNotificationService::class);
+        $mock->shouldReceive('sendManualReservationCreated')->once();
+        $mock->shouldReceive('sendManualPaymentProofSubmittedToAdmins')->once();
+        $this->app->instance(FinMailNotificationService::class, $mock);
+
+        User::factory()->create([
+            'user_type' => 'admin',
+        ]);
+
+        $checkoutResponse = $this->postJson('/api/v1/checkout', [
+            'plant_id' => $plant->id,
+            'quantity' => 1,
+            'gateway' => 'manual',
+            'name' => 'Usuario Demo',
+            'email' => 'usuario@example.com',
+            'phone' => '912345678',
+            'rut' => '12345678-5',
+            'session_token' => $reservation->session_token,
+        ]);
+
+        $checkoutResponse->assertOk()
+            ->assertJsonPath('flow', 'manual');
+
+        $paymentId = (int) $checkoutResponse->json('payment_id');
+
+        $this->assertSame($this->user->id, Payment::query()->findOrFail($paymentId)->user_id);
+
+        $uploadResponse = $this->post('/api/v1/payments/'.$paymentId.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante-checkout.jpg'),
+            'notes' => 'Comprobante del flujo completo.',
+        ]);
+
+        $uploadResponse->assertOk()
+            ->assertJsonPath('message', 'Comprobante recibido correctamente.')
+            ->assertJsonPath('payment.metadata.manual_payment_proof_submitted', true);
+
+        $payment = Payment::query()->findOrFail($paymentId);
+
+        $this->assertTrue((bool) ($payment->metadata['manual_payment_proof_submitted'] ?? false));
+        $this->assertSame('comprobante-checkout.jpg', $payment->metadata['manual_payment_proof_name'] ?? null);
+        Storage::assertExists($payment->metadata['manual_payment_proof_path']);
     }
 
     public function test_it_accepts_manual_payment_proof_upload(): void
@@ -313,6 +380,42 @@ class ManualCheckoutFlowTest extends TestCase
             'Comprobante de pago recibido',
             (string) data_get($notification->data, 'title')
         );
+    }
+
+    public function test_it_logs_manual_payment_proof_error_when_payment_is_not_owned_by_authenticated_user(): void
+    {
+        Log::spy();
+
+        $otherUser = User::factory()->create();
+
+        $payment = Payment::query()->create([
+            'user_id' => $otherUser->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => 'MAN-FOREIGN-123',
+            'amount' => 10000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING_APPROVAL,
+            'metadata' => [
+                'manual_payment_expires_at' => now()->addDay()->toISOString(),
+                'manual_payment_proof_submitted' => false,
+            ],
+        ]);
+
+        $response = $this->post('/api/v1/payments/'.$payment->id.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante-ajeno.jpg'),
+        ]);
+
+        $response->assertNotFound()
+            ->assertJsonPath('message', 'No query results for model [App\\Models\\Payment] '.$payment->id);
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($payment): bool {
+                return $message === 'Fallo al subir comprobante manual: pago no encontrado para el usuario autenticado.'
+                    && (string) ($context['payment_id'] ?? '') === (string) $payment->id
+                    && ($context['authenticated_user_id'] ?? null) === $this->user->id
+                    && array_key_exists('authenticated_user_roles', $context);
+            });
     }
 
     public function test_it_applies_manual_payment_timeout_configured_in_minutes(): void
@@ -633,7 +736,7 @@ class ManualCheckoutFlowTest extends TestCase
 
         $firstPayment = Payment::query()->findOrFail((int) $firstCheckout->json('payment_id'));
 
-        $this->assertSame($existingCustomer->id, $firstPayment->user_id);
+        $this->assertSame($this->user->id, $firstPayment->user_id);
         $this->assertSame('Nombre Facturacion Uno', $firstPayment->billing_name);
         $this->assertSame('cliente.existente@example.com', $firstPayment->billing_email);
         $this->assertSame('955555551', $firstPayment->billing_phone);
@@ -656,7 +759,7 @@ class ManualCheckoutFlowTest extends TestCase
 
         $secondPayment = Payment::query()->findOrFail((int) $secondCheckout->json('payment_id'));
 
-        $this->assertSame($existingCustomer->id, $secondPayment->user_id);
+        $this->assertSame($this->user->id, $secondPayment->user_id);
         $this->assertSame('Nombre Facturacion Dos', $secondPayment->billing_name);
         $this->assertSame('cliente.existente@example.com', $secondPayment->billing_email);
         $this->assertSame('955555552', $secondPayment->billing_phone);
