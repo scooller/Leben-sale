@@ -11,6 +11,7 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\FinMail\FinMailNotificationService;
 use App\Services\PlantReservationService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\DatabaseNotification;
@@ -311,6 +312,54 @@ class ManualCheckoutFlowTest extends TestCase
             'Comprobante de pago recibido',
             (string) data_get($notification->data, 'title')
         );
+    }
+
+    public function test_it_does_not_persist_manual_payment_proof_when_post_upload_processing_fails(): void
+    {
+        Storage::fake();
+
+        User::factory()->create([
+            'user_type' => 'admin',
+        ]);
+
+        $exception = new ModelNotFoundException;
+        $exception->setModel(Payment::class, ['12']);
+
+        $mock = Mockery::mock(FinMailNotificationService::class);
+        $mock->shouldReceive('sendManualPaymentProofSubmittedToAdmins')
+            ->once()
+            ->andThrow($exception);
+        $this->app->instance(FinMailNotificationService::class, $mock);
+
+        $payment = Payment::query()->create([
+            'user_id' => $this->user->id,
+            'gateway' => 'manual',
+            'gateway_tx_id' => 'MAN-TEST-ATOMIC',
+            'amount' => 10000,
+            'currency' => 'CLP',
+            'status' => PaymentStatus::PENDING_APPROVAL,
+            'metadata' => [
+                'manual_payment_expires_at' => now()->addDay()->toISOString(),
+                'manual_payment_proof_submitted' => false,
+            ],
+        ]);
+
+        $response = $this->post('/api/v1/payments/'.$payment->id.'/manual-proof', [
+            'proof' => UploadedFile::fake()->image('comprobante.jpg'),
+            'notes' => 'Transferencia con falla posterior.',
+        ]);
+
+        $response->assertStatus(500)
+            ->assertJsonPath('message', 'No se pudo registrar el comprobante. Intenta nuevamente.');
+
+        $payment->refresh();
+
+        $this->assertFalse((bool) ($payment->metadata['manual_payment_proof_submitted'] ?? false));
+        $this->assertNull($payment->metadata['manual_payment_proof_path'] ?? null);
+        $this->assertNull($payment->metadata['manual_payment_proof_name'] ?? null);
+
+        $proofs = Storage::allFiles('payment-proofs');
+        $this->assertSame([], $proofs);
     }
 
     public function test_it_uses_project_manual_payment_data_with_priority_over_global_settings(): void

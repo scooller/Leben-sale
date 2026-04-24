@@ -32,6 +32,7 @@ class SiteSettingFrontendConfigTest extends TestCase
 
         SiteSetting::current()->update([
             'brand_color' => '#112233',
+            'gateway_reservation_timeout_minutes' => 22,
             'evento_sale' => true,
             'mostrar_plantas' => false,
             'contact_page_title' => 'Conversemos',
@@ -122,6 +123,8 @@ class SiteSettingFrontendConfigTest extends TestCase
         $this->assertSame('<script>window.headerTracking = true;</script>', $payload['header_scripts']);
         $this->assertArrayHasKey('footer_scripts', $payload);
         $this->assertSame('<script>window.footerTracking = true;</script>', $payload['footer_scripts']);
+        $this->assertArrayHasKey('payment_gateways', $payload);
+        $this->assertSame(22, $payload['payment_gateways']['reservation_timeout_minutes']);
         $this->assertArrayHasKey('hero', $payload);
         $this->assertSame('video', $payload['hero']['home']['type']);
         $this->assertArrayHasKey('image_desktop', $payload['hero']['home']);

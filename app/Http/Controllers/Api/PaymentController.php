@@ -8,11 +8,14 @@ use App\Http\Requests\ManualPaymentProofRequest;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\FinMail\FinMailNotificationService;
+use Exception;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -137,9 +140,7 @@ class PaymentController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if (filled($metadata['manual_payment_proof_path'] ?? null)) {
-            Storage::delete($metadata['manual_payment_proof_path']);
-        }
+        $previousProofPath = (string) ($metadata['manual_payment_proof_path'] ?? '');
 
         /** @var UploadedFile $proof */
         $proof = $request->file('proof');
@@ -152,11 +153,49 @@ class PaymentController extends Controller
         $metadata['manual_payment_proof_notes'] = $request->validated('notes');
         $metadata['manual_payment_proof_submitted'] = true;
 
-        $payment->update([
-            'metadata' => $metadata,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $this->notifyAdminsManualProofSubmitted($payment->fresh());
+            $payment->update([
+                'metadata' => $metadata,
+            ]);
+
+            $freshPayment = $payment->fresh();
+
+            if (! $freshPayment instanceof Payment) {
+                DB::rollBack();
+                Storage::delete($path);
+
+                Log::warning('No se pudo refrescar el pago manual tras subir comprobante.', [
+                    'payment_id' => $payment->id,
+                ]);
+
+                return response()->json([
+                    'message' => 'No se pudo registrar el comprobante. Intenta nuevamente.',
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+
+            $this->notifyAdminsManualProofSubmitted($freshPayment);
+
+            DB::commit();
+        } catch (Exception $exception) {
+            DB::rollBack();
+
+            Storage::delete($path);
+
+            Log::warning('No se pudo procesar el comprobante manual de forma atomica.', [
+                'payment_id' => $payment->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'No se pudo registrar el comprobante. Intenta nuevamente.',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        if ($previousProofPath !== '' && $previousProofPath !== $path) {
+            Storage::delete($previousProofPath);
+        }
 
         return response()->json([
             'message' => 'Comprobante recibido correctamente.',

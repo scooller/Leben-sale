@@ -150,11 +150,14 @@ class CheckoutController extends Controller
             ],
         ]);
 
+        $reservationExpiresAt = $reservation->expires_at;
+
         if ($expiresAt !== null) {
-            $this->reservationService->extendForManualPayment($reservation, $expiresAt, [
+            $updatedReservation = $this->reservationService->extendForManualPayment($reservation, $expiresAt, [
                 'manual_payment_id' => $payment->id,
                 'manual_payment_reference' => $manualTransaction['reference'],
             ]);
+            $reservationExpiresAt = $updatedReservation->expires_at;
         }
 
         if ($reservation !== null) {
@@ -174,7 +177,7 @@ class CheckoutController extends Controller
             'bank_accounts' => $manualTransaction['bank_accounts'] ?? [],
             'payment_link' => $config['payment_link'] ?? null,
             'requires_proof' => (bool) ($manualTransaction['requires_proof'] ?? true),
-            'expires_at' => $expiresAt?->toISOString(),
+            'expires_at' => $reservationExpiresAt->toISOString(),
         ]);
     }
 

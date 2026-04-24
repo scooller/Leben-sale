@@ -1306,7 +1306,8 @@ function Home({ onNavigate, currentPath }) {
               playsInline
               className="hero-video"
               onPlay={() => setVideoPlaying(true)}
-              style={videoPlaying ? {} : { opacity: 0 }}
+              onCanPlay={() => setVideoPlaying(true)}
+              onLoadedMetadata={() => setVideoPlaying(true)}
             >
                 <source src={homeHeroMobileVideo} type="video/mp4" media="(max-width: 768px)" />
                 <source src={homeHeroDesktopVideo} type="video/mp4" media="(min-width: 769px)" />

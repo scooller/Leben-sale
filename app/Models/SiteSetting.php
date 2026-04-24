@@ -167,6 +167,7 @@ class SiteSetting extends Model
                 'contact_page_title' => 'Contacto',
                 'contact_page_subtitle' => 'Estamos para ayudarte',
                 'contact_page_content' => '<p>Si tienes dudas sobre nuestras plantas o el proceso de compra, escríbenos y te responderemos a la brevedad.</p>',
+                'gateway_reservation_timeout_minutes' => 15,
                 'salesforce_sync_interval_minutes' => 1440,
                 'salesforce_sync_plant_types' => ['ESTACIONAMIENTO', 'DEPARTAMENTO', 'BODEGA', 'LOCAL'],
                 'contact_form_fields' => [
@@ -219,6 +220,11 @@ class SiteSetting extends Model
 
         if ($settings->salesforce_sync_plant_types === null) {
             $settings->salesforce_sync_plant_types = $defaultSalesforcePlantTypes;
+            $requiresUpdate = true;
+        }
+
+        if ($settings->gateway_reservation_timeout_minutes === null) {
+            $settings->gateway_reservation_timeout_minutes = 15;
             $requiresUpdate = true;
         }
 
