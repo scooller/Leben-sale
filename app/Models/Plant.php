@@ -21,6 +21,7 @@ class Plant extends Model
         'salesforce_product_id',
         'salesforce_proyecto_id',
         'asesor_id',
+        'contact_link',
         'name',
         'product_code',
         'tipo_producto',

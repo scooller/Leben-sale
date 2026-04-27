@@ -69,6 +69,11 @@ class PlantForm
                     })
                     ->nullable()
                     ->helperText('Si seleccionas un asesor de planta, tendrá prioridad sobre los asesores configurados en el proyecto.'),
+                TextInput::make('contact_link')
+                    ->label('Link de contacto')
+                    ->maxLength(2048)
+                    ->nullable()
+                    ->helperText('Si está definido, el botón "Asesorate aquí" del detalle de planta usará este link (interno o externo).'),
                 TextInput::make('piso')
                     ->label('Piso')
                     ->disabled(),

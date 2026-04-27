@@ -19,6 +19,7 @@ class PlantFactory extends Factory
         return [
             'salesforce_product_id' => fake()->unique()->uuid(),
             'salesforce_proyecto_id' => fake()->uuid(),
+            'contact_link' => fake()->optional()->url(),
             'name' => fake()->numberBetween(101, 999),
             'product_code' => 'PLANT-'.fake()->unique()->numberBetween(1000, 9999),
             'tipo_producto' => fake()->randomElement(['DEPARTAMENTO', 'ESTACIONAMIENTO', 'BODEGA', 'LOCAL']),

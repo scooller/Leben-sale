@@ -524,6 +524,30 @@ class PlantApiFiltersTest extends TestCase
         $this->assertArrayNotHasKey('interior_image_id', $plantPayload);
     }
 
+    public function test_it_returns_contact_link_in_plant_payload(): void
+    {
+        $project = Proyecto::factory()->create();
+
+        $plant = Plant::query()->create([
+            'salesforce_product_id' => (string) Str::uuid(),
+            'salesforce_proyecto_id' => $project->salesforce_id,
+            'name' => 'A-100',
+            'product_code' => 'PLANT-A100',
+            'programa' => '2 dormitorios',
+            'programa2' => '2 baños',
+            'precio_base' => 5000,
+            'precio_lista' => 5500,
+            'contact_link' => 'https://wa.me/56912345678',
+            'is_active' => true,
+            'last_synced_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/v1/plantas/'.$plant->id);
+
+        $response->assertOk();
+        $response->assertJsonPath('contact_link', 'https://wa.me/56912345678');
+    }
+
     public function test_it_returns_compact_media_payload_for_images(): void
     {
         $project = Proyecto::factory()->create();

@@ -149,18 +149,44 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
             }
         );
     };
+    const resolveContactTarget = () => {
+        const configuredLink = `${plant?.contactLink ?? plant?.contact_link ?? ''}`.trim();
+
+        if (configuredLink !== '') {
+            return configuredLink;
+        }
+
+        return '/contacto';
+    };
+
     const goToContact = () => {
         if (typeof window === 'undefined') {
             return;
         }
 
+        const target = resolveContactTarget();
+
         if (dialogRef?.current && typeof dialogRef.current.hide === 'function') {
             dialogRef.current.hide();
         }
 
-        window.history.pushState({}, '', '/contacto');
-        window.dispatchEvent(new PopStateEvent('popstate'));
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        try {
+            const parsedTarget = new URL(target, window.location.origin);
+
+            if (parsedTarget.origin === window.location.origin) {
+                const nextPath = `${parsedTarget.pathname}${parsedTarget.search}${parsedTarget.hash}`;
+                window.history.pushState({}, '', nextPath || '/contacto');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            window.location.assign(parsedTarget.href);
+        } catch {
+            window.history.pushState({}, '', '/contacto');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
   return (

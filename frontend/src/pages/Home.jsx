@@ -424,6 +424,7 @@ function Home({ onNavigate, currentPath }) {
     return {
       ...plant,
       nombre: plant.name,
+      contactLink: `${plant.contact_link ?? ''}`.trim(),
       programa: plant.programa,
       coverImage: plant.cover_image_url || plant.cover_image_media?.url || '',
       interiorImage: plant.interior_image_url || plant.interior_image_media?.url || '',
