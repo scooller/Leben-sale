@@ -4,6 +4,8 @@ namespace App\Filament\Pages;
 
 use AlizHarb\ActivityLog\Widgets\ActivityChartWidget;
 use AlizHarb\ActivityLog\Widgets\LatestActivityWidget;
+use App\Filament\Actions\SyncPlantsAction;
+use App\Filament\Actions\SyncProjectsAction;
 use App\Filament\Widgets\ApiMonitoringWidget;
 use App\Filament\Widgets\ApiUsageChartWidget;
 use App\Filament\Widgets\PaymentGatewayChartWidget;
@@ -864,6 +866,34 @@ class SiteSettings extends Page implements HasForms
                         Tabs\Tab::make('Salesforce')
                             ->icon('heroicon-o-arrow-path')
                             ->schema([
+                                Section::make('Proyectos')
+                                    ->description('Selecciona los campos de proyectos que no se deben actualizar al sincronizar desde Salesforce.')
+                                    ->schema([
+                                        Select::make('extra_settings.salesforce_sync_projects_excluded_fields')
+                                            ->label('Campos excluidos de sincronizacion (Proyectos)')
+                                            ->helperText('Estos campos se mantienen con su valor local al actualizar proyectos existentes.')
+                                            ->options(SyncProjectsAction::getUpdatableFieldOptions())
+                                            ->multiple()
+                                            ->searchable()
+                                            ->preload()
+                                            ->default([]),
+                                    ])
+                                    ->columns(1),
+
+                                Section::make('Plantas')
+                                    ->description('Selecciona los campos de plantas que no se deben actualizar al sincronizar desde Salesforce.')
+                                    ->schema([
+                                        Select::make('extra_settings.salesforce_sync_plants_excluded_fields')
+                                            ->label('Campos excluidos de sincronizacion (Plantas)')
+                                            ->helperText('Estos campos se mantienen con su valor local al actualizar plantas existentes.')
+                                            ->options(SyncPlantsAction::getUpdatableFieldOptions())
+                                            ->multiple()
+                                            ->searchable()
+                                            ->preload()
+                                            ->default([]),
+                                    ])
+                                    ->columns(1),
+
                                 Section::make('Sincronización Automática de Plantas')
                                     ->description('Configura cada cuánto se sincronizan automáticamente las plantas y qué tipos se incluirán.')
                                     ->schema([

@@ -6,6 +6,7 @@ use App\Filament\Actions\SyncProjectsAction;
 use App\Models\Asesor;
 use App\Models\ContactChannel;
 use App\Models\Proyecto;
+use App\Models\SiteSetting;
 use App\Services\Salesforce\SalesforceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
@@ -65,6 +66,45 @@ class SyncProjectsActionTest extends TestCase
         $this->assertDatabaseHas('proyectos', [
             'salesforce_id' => 'SF001',
             'name' => 'Updated Name',
+        ]);
+    }
+
+    public function test_sync_projects_keeps_excluded_fields_when_updating_existing_project(): void
+    {
+        SiteSetting::current()->update([
+            'extra_settings' => [
+                'salesforce_sync_projects_excluded_fields' => ['descripcion', 'telefono'],
+            ],
+        ]);
+
+        Proyecto::factory()->create([
+            'salesforce_id' => 'SF-EXCLUDED-001',
+            'name' => 'Nombre Local',
+            'descripcion' => 'Descripcion local',
+            'telefono' => '+56911111111',
+        ]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('findProjects')
+                ->once()
+                ->andReturn([
+                    $this->projectPayload([
+                        'id' => 'SF-EXCLUDED-001',
+                        'name' => 'Nombre Salesforce',
+                        'descripcion' => 'Descripcion Salesforce',
+                        'telefono' => '+56922222222',
+                    ]),
+                ]);
+        });
+
+        $result = SyncProjectsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('proyectos', [
+            'salesforce_id' => 'SF-EXCLUDED-001',
+            'name' => 'Nombre Salesforce',
+            'descripcion' => 'Descripcion local',
+            'telefono' => '+56911111111',
         ]);
     }
 

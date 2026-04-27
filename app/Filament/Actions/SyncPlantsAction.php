@@ -4,6 +4,7 @@ namespace App\Filament\Actions;
 
 use App\Models\Plant;
 use App\Models\Proyecto;
+use App\Models\SiteSetting;
 use App\Services\Salesforce\SalesforceService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -12,6 +13,35 @@ use Illuminate\Support\Facades\Log;
 
 class SyncPlantsAction
 {
+    /**
+     * @var array<string, string>
+     */
+    private const UPDATABLE_PLANT_FIELD_OPTIONS = [
+        'salesforce_proyecto_id' => 'Proyecto Salesforce',
+        'name' => 'Nombre',
+        'tipo_producto' => 'Tipo producto',
+        'orientacion' => 'Orientacion',
+        'programa' => 'Programa',
+        'programa2' => 'Programa 2',
+        'piso' => 'Piso',
+        'precio_base' => 'Precio base',
+        'precio_lista' => 'Precio lista',
+        'porcentaje_maximo_unidad' => 'Porcentaje maximo unidad',
+        'superficie_total_principal' => 'Superficie total principal',
+        'superficie_interior' => 'Superficie interior',
+        'superficie_util' => 'Superficie util',
+        'superficie_terraza' => 'Superficie terraza',
+        'salesforce_interior_image_url' => 'URL interior Salesforce',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getUpdatableFieldOptions(): array
+    {
+        return self::UPDATABLE_PLANT_FIELD_OPTIONS;
+    }
+
     /**
      * Crear acción para Filament
      */
@@ -49,6 +79,7 @@ class SyncPlantsAction
     {
         try {
             Log::info('Iniciando sincronización de plantas desde Salesforce...');
+            $excludedUpdateFields = self::resolveExcludedUpdateFields();
 
             $salesforceService = app(SalesforceService::class);
             $projectNamesBySalesforceId = Proyecto::query()
@@ -130,7 +161,7 @@ class SyncPlantsAction
                         $updateData['salesforce_interior_image_url'] = $salesforceInteriorImageUrl;
                     }
 
-                    $existingPlant->update($updateData);
+                    $existingPlant->update(self::removeExcludedUpdateFields($updateData, $excludedUpdateFields));
                     $updated++;
                 } else {
                     // Create con product_code
@@ -371,5 +402,44 @@ class SyncPlantsAction
     private static function normalizeDocumentName(string $value): string
     {
         return mb_strtolower(trim(preg_replace('/\s+/', ' ', $value) ?? $value));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function resolveExcludedUpdateFields(): array
+    {
+        $extraSettings = SiteSetting::get('extra_settings', []);
+
+        $configured = is_array($extraSettings)
+            ? ($extraSettings['salesforce_sync_plants_excluded_fields'] ?? [])
+            : [];
+
+        if (! is_array($configured)) {
+            return [];
+        }
+
+        $allowedKeys = array_keys(self::UPDATABLE_PLANT_FIELD_OPTIONS);
+
+        return array_values(array_intersect(
+            $allowedKeys,
+            array_map(static fn ($value): string => trim((string) $value), $configured)
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $excludedFields
+     * @return array<string, mixed>
+     */
+    private static function removeExcludedUpdateFields(array $data, array $excludedFields): array
+    {
+        if ($excludedFields === []) {
+            return $data;
+        }
+
+        return collect($data)
+            ->except($excludedFields)
+            ->all();
     }
 }

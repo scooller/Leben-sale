@@ -6,6 +6,7 @@ use App\Filament\Actions\SyncPlantsAction;
 use App\Models\Asesor;
 use App\Models\Plant;
 use App\Models\Proyecto;
+use App\Models\SiteSetting;
 use App\Services\Salesforce\SalesforceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -273,6 +274,76 @@ class SyncPlantsActionTest extends TestCase
         $this->assertDatabaseHas('plants', [
             'salesforce_product_id' => 'SF_PLANT_PERCENT',
             'porcentaje_maximo_unidad' => 17.5,
+        ]);
+    }
+
+    public function test_sync_plants_keeps_excluded_fields_when_updating_existing_plant(): void
+    {
+        SiteSetting::current()->update([
+            'extra_settings' => [
+                'salesforce_sync_plants_excluded_fields' => ['orientacion', 'precio_base'],
+            ],
+        ]);
+
+        $proyecto = Proyecto::factory()->create([
+            'salesforce_id' => 'SF_PROJ_EXCLUDE',
+        ]);
+
+        Plant::create([
+            'salesforce_product_id' => 'SF_PLANT_EXCLUDE',
+            'salesforce_proyecto_id' => $proyecto->salesforce_id,
+            'name' => 'Planta Local',
+            'product_code' => 'LOCAL-001',
+            'orientacion' => 'Sur',
+            'programa' => '2D',
+            'precio_base' => 1000,
+            'precio_lista' => 2000,
+            'superficie_total_principal' => 50,
+            'superficie_interior' => 40,
+            'superficie_util' => 38,
+            'superficie_terraza' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock) use ($proyecto): void {
+            $mock->shouldReceive('findPlants')
+                ->once()
+                ->andReturn([
+                    [
+                        'id' => 'SF_PLANT_EXCLUDE',
+                        'name' => 'Planta Salesforce',
+                        'product_code' => 'LOCAL-001',
+                        'tipo_producto' => 'DEPARTAMENTO',
+                        'orientacion' => 'Norte',
+                        'programa' => '3D',
+                        'programa2' => '2B',
+                        'piso' => '8',
+                        'precio_base' => 3000.0,
+                        'precio_lista' => 4000.0,
+                        'porcentaje_maximo_unidad' => 5.0,
+                        'superficie_total_principal' => 60.0,
+                        'superficie_interior' => 48.0,
+                        'superficie_util' => 45.0,
+                        'superficie_terraza' => 12.0,
+                        'proyecto_id' => $proyecto->salesforce_id,
+                    ],
+                ]);
+
+            $mock->shouldReceive('findPublicProjectDocuments')
+                ->once()
+                ->andReturn([]);
+        });
+
+        $result = SyncPlantsAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('plants', [
+            'salesforce_product_id' => 'SF_PLANT_EXCLUDE',
+            'name' => 'Planta Salesforce',
+            'orientacion' => 'Sur',
+            'programa' => '3D',
+            'precio_base' => 1000,
+            'precio_lista' => 4000,
         ]);
     }
 

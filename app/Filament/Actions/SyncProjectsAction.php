@@ -5,6 +5,7 @@ namespace App\Filament\Actions;
 use App\Models\Asesor;
 use App\Models\ContactChannel;
 use App\Models\Proyecto;
+use App\Models\SiteSetting;
 use App\Services\Salesforce\SalesforceService;
 use App\Support\AsesorProyectoActivityLogger;
 use Exception;
@@ -17,6 +18,41 @@ use Throwable;
 
 class SyncProjectsAction
 {
+    /**
+     * @var array<string, string>
+     */
+    private const UPDATABLE_PROJECT_FIELD_OPTIONS = [
+        'name' => 'Nombre',
+        'descripcion' => 'Descripcion',
+        'direccion' => 'Direccion',
+        'comuna' => 'Comuna',
+        'provincia' => 'Provincia',
+        'region' => 'Region',
+        'email' => 'Email',
+        'telefono' => 'Telefono',
+        'pagina_web' => 'Pagina web',
+        'razon_social' => 'Razon social',
+        'rut' => 'RUT',
+        'fecha_inicio_ventas' => 'Fecha inicio ventas',
+        'fecha_entrega' => 'Fecha entrega',
+        'etapa' => 'Etapa',
+        'horario_atencion' => 'Horario atencion',
+        'valor_reserva_exigido_defecto_peso' => 'Valor reserva exigido defecto (peso)',
+        'valor_reserva_exigido_min_peso' => 'Valor reserva exigido minimo (peso)',
+        'entrega_inmediata' => 'Entrega inmediata',
+        'tipo' => 'Tipo',
+        'salesforce_logo_url' => 'Logo Salesforce',
+        'salesforce_portada_url' => 'Portada Salesforce',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getUpdatableFieldOptions(): array
+    {
+        return self::UPDATABLE_PROJECT_FIELD_OPTIONS;
+    }
+
     /**
      * Crear acción para Filament
      */
@@ -57,6 +93,7 @@ class SyncProjectsAction
             $proyectos = $salesforceService->findProjects();
             $brandingSync = self::resolveSalesforceBranding($salesforceService);
             $asesoresBySalesforceId = self::syncAsesores($salesforceService, $proyectos);
+            $excludedUpdateFields = self::resolveExcludedUpdateFields();
 
             if (empty($proyectos)) {
                 return [
@@ -114,7 +151,7 @@ class SyncProjectsAction
                 $proyecto = Proyecto::query()->where('salesforce_id', $proyectoData['id'])->first();
 
                 if ($proyecto) {
-                    $proyecto->update($data);
+                    $proyecto->update(self::removeExcludedUpdateFields($data, $excludedUpdateFields));
                     $updated++;
                 } else {
                     $proyecto = Proyecto::create(array_merge(
@@ -140,7 +177,6 @@ class SyncProjectsAction
                 'channels_created' => $channelsSync['created'],
                 'channels_updated' => $channelsSync['updated'],
             ];
-
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -148,6 +184,45 @@ class SyncProjectsAction
                 'count' => 0,
             ];
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function resolveExcludedUpdateFields(): array
+    {
+        $extraSettings = SiteSetting::get('extra_settings', []);
+
+        $configured = is_array($extraSettings)
+            ? ($extraSettings['salesforce_sync_projects_excluded_fields'] ?? [])
+            : [];
+
+        if (! is_array($configured)) {
+            return [];
+        }
+
+        $allowedKeys = array_keys(self::UPDATABLE_PROJECT_FIELD_OPTIONS);
+
+        return array_values(array_intersect(
+            $allowedKeys,
+            array_map(static fn ($value): string => trim((string) $value), $configured)
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $excludedFields
+     * @return array<string, mixed>
+     */
+    private static function removeExcludedUpdateFields(array $data, array $excludedFields): array
+    {
+        if ($excludedFields === []) {
+            return $data;
+        }
+
+        return collect($data)
+            ->except($excludedFields)
+            ->all();
     }
 
     /**

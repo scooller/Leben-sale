@@ -97,7 +97,7 @@ class ContactSubmissionExporter extends Exporter
      */
     private static function configuredExportFields(): array
     {
-        return collect(SiteSetting::current()->contact_form_fields ?? [])
+        $configuredFields = collect(SiteSetting::current()->contact_form_fields ?? [])
             ->filter(fn (mixed $field): bool => is_array($field) && filled($field['key'] ?? null))
             ->reject(function (array $field): bool {
                 $key = (string) ($field['key'] ?? '');
@@ -117,8 +117,28 @@ class ContactSubmissionExporter extends Exporter
                     'nombre_proyecto',
                 ], true);
             })
+            ->values();
+
+        return $configuredFields
+            ->concat(self::standardUtmFieldDefinitions())
+            ->unique(fn (array $field): string => (string) ($field['key'] ?? ''))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private static function standardUtmFieldDefinitions(): array
+    {
+        return [
+            ['key' => 'utm_source', 'label' => 'UTM Source', 'type' => 'text'],
+            ['key' => 'utm_medium', 'label' => 'UTM Medium', 'type' => 'text'],
+            ['key' => 'utm_campaign', 'label' => 'UTM Campaign', 'type' => 'text'],
+            ['key' => 'utm_term', 'label' => 'UTM Term', 'type' => 'text'],
+            ['key' => 'utm_content', 'label' => 'UTM Content', 'type' => 'text'],
+            ['key' => 'utm_site', 'label' => 'UTM Site', 'type' => 'text'],
+        ];
     }
 
     /**
