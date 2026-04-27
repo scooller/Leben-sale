@@ -801,7 +801,7 @@ class SalesforceService
         $soql = 'SELECT Id, Name, Descripci_n__c, Direccion__c, Comuna__c, Provincia__c, Region__c, '
             .'Email__c, Telefono__c, Pagina_Web_Proyecto__c, Razon_Social__c, RUT__c, '
             .'Fecha_Inicio_Ventas__c, Fecha_Recepcion_Municipal__c, Etapa__c, Horario_Atencion__c, '
-            .'Asesor_Responsable__c, '
+            .'Asesor_Responsable__c, Asesor_1__c, Asesor_2__c, '
             .'Valor_Reserva_Exigido_Defecto_Peso__c, Valor_Reserva_Exigido_Min_Peso__c, '
             .'Entrega_Inmediata__c '
             .'FROM Proyecto__c '
@@ -835,7 +835,11 @@ class SalesforceService
                         'fecha_entrega' => $entry['Fecha_Recepcion_Municipal__c'] ?? null,
                         'etapa' => $entry['Etapa__c'] ?? null,
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
-                        'asesor_responsable_ids' => $this->normalizeSalesforceIdList($entry['Asesor_Responsable__c'] ?? null),
+                        'asesor_responsable_ids' => $this->normalizeSalesforceIdList([
+                            $entry['Asesor_Responsable__c'] ?? null,
+                            $entry['Asesor_1__c'] ?? null,
+                            $entry['Asesor_2__c'] ?? null,
+                        ]),
                         'valor_reserva_exigido_defecto_peso' => $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] : null,
                         'valor_reserva_exigido_min_peso' => $entry['Valor_Reserva_Exigido_Min_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Min_Peso__c'] : null,
                         'entrega_inmediata' => (bool) ($entry['Entrega_Inmediata__c'] ?? false),
@@ -864,7 +868,11 @@ class SalesforceService
                         'fecha_entrega' => $entry['Fecha_Recepcion_Municipal__c'] ?? null,
                         'etapa' => $entry['Etapa__c'] ?? null,
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
-                        'asesor_responsable_ids' => $this->normalizeSalesforceIdList($entry['Asesor_Responsable__c'] ?? null),
+                        'asesor_responsable_ids' => $this->normalizeSalesforceIdList([
+                            $entry['Asesor_Responsable__c'] ?? null,
+                            $entry['Asesor_1__c'] ?? null,
+                            $entry['Asesor_2__c'] ?? null,
+                        ]),
                         'valor_reserva_exigido_defecto_peso' => $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Defecto_Peso__c'] : null,
                         'valor_reserva_exigido_min_peso' => $entry['Valor_Reserva_Exigido_Min_Peso__c'] ? (float) $entry['Valor_Reserva_Exigido_Min_Peso__c'] : null,
                         'entrega_inmediata' => (bool) ($entry['Entrega_Inmediata__c'] ?? false),
