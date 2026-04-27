@@ -27,6 +27,7 @@ class PaymentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('user.name')
                     ->label('Usuario')
@@ -112,7 +113,7 @@ class PaymentsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->recordUrl(fn ($record): string => PaymentResource::getUrl('view', ['record' => $record]))
+            ->recordUrl(fn($record): string => PaymentResource::getUrl('view', ['record' => $record]))
             ->filters([
                 SelectFilter::make('gateway')
                     ->label('Gateway')
@@ -138,7 +139,7 @@ class PaymentsTable
                     ->label('Descargar Comprobante')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
-                    ->visible(fn (Payment $record): bool => ManualPaymentActionSupport::hasManualProof($record))
+                    ->visible(fn(Payment $record): bool => ManualPaymentActionSupport::hasManualProof($record))
                     ->action(function (Payment $record) {
                         $path = ManualPaymentActionSupport::manualProofPath($record);
 
@@ -158,7 +159,7 @@ class PaymentsTable
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn (Payment $record): bool => ManualPaymentActionSupport::isManualPendingApproval($record))
+                    ->visible(fn(Payment $record): bool => ManualPaymentActionSupport::isManualPendingApproval($record))
                     ->action(function (Payment $record): void {
                         $approved = ManualPaymentActionSupport::approve($record, Auth::id());
 
@@ -178,7 +179,7 @@ class PaymentsTable
                             ->maxLength(500)
                             ->required(),
                     ])
-                    ->visible(fn (Payment $record): bool => ManualPaymentActionSupport::isManualPendingApproval($record))
+                    ->visible(fn(Payment $record): bool => ManualPaymentActionSupport::isManualPendingApproval($record))
                     ->action(function (Payment $record, array $data): void {
                         $rejected = ManualPaymentActionSupport::reject(
                             payment: $record,

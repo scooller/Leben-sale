@@ -15,10 +15,11 @@ class AsesoresTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('first_name', 'asc')
             ->columns([
                 ImageColumn::make('avatar_url')
                     ->label('Avatar')
-                    ->getStateUsing(fn ($record): ?string => $record->resolved_avatar_url)
+                    ->getStateUsing(fn($record): ?string => $record->resolved_avatar_url)
                     ->circular(),
 
                 TextColumn::make('full_name')

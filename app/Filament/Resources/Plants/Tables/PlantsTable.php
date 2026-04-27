@@ -21,11 +21,13 @@ use Illuminate\Database\Eloquent\Collection;
 colores disponibles para badge:
  red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,
 */
+
 class PlantsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('updated_at', 'desc')
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
@@ -48,7 +50,7 @@ class PlantsTable
                 TextColumn::make('tipo_producto')
                     ->label('Tipo')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'DEPARTAMENTO' => 'emerald',
                         'ESTACIONAMIENTO' => 'orange',
                         'BODEGA' => 'amber',
@@ -70,24 +72,24 @@ class PlantsTable
                     ->label('Precio Base')
                     ->badge()
                     ->color('indigo')
-                    ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'UF ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 TextColumn::make('precio_lista')
                     ->label('Precio Lista')
                     ->badge()
                     ->color('sky')
-                    ->formatStateUsing(fn ($state) => $state ? 'UF '.number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'UF ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 TextColumn::make('porcentaje_maximo_unidad')
                     ->label('% Máx. Unidad')
                     ->badge()
                     ->color('amber')
-                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 2, ',', '.').'%' : '-')
+                    ->formatStateUsing(fn($state) => $state !== null ? number_format((float) $state, 2, ',', '.') . '%' : '-')
                     ->sortable(),
                 IconColumn::make('unidad_sale')
                     ->label('Unidad Sale')
                     ->boolean()
-                    ->color(fn (bool $state): string => $state ? 'warning' : 'gray')
+                    ->color(fn(bool $state): string => $state ? 'warning' : 'gray')
                     ->sortable(),
                 // TextColumn::make('superficie_util')
                 //     ->label('Sup. Útil')
@@ -100,7 +102,7 @@ class PlantsTable
                 IconColumn::make('is_active')
                     ->label('Activo')
                     ->boolean()
-                    ->color(fn (bool $state): string => $state ? 'green' : 'red')
+                    ->color(fn(bool $state): string => $state ? 'green' : 'red')
                     ->sortable(),
                 ImageColumn::make('coverImageMedia.url')
                     ->label('Imagen de portada')
@@ -164,10 +166,10 @@ class PlantsTable
             ])
             ->recordActions([
                 Action::make('toggleActive')
-                    ->label(fn (Plant $record): string => $record->is_active ? 'Desactivar' : 'Activar')
-                    ->icon(fn (Plant $record): string => $record->is_active ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->color(fn (Plant $record): string => $record->is_active ? 'warning' : 'success')
-                    ->action(fn (Plant $record): bool => $record->update([
+                    ->label(fn(Plant $record): string => $record->is_active ? 'Desactivar' : 'Activar')
+                    ->icon(fn(Plant $record): string => $record->is_active ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->color(fn(Plant $record): string => $record->is_active ? 'warning' : 'success')
+                    ->action(fn(Plant $record): bool => $record->update([
                         'is_active' => ! $record->is_active,
                     ]))
                     ->successNotificationTitle('Estado actualizado'),
@@ -175,12 +177,12 @@ class PlantsTable
                     ->label('Ver en Salesforce')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(
-                        fn (Plant $record): ?string => filled($record->salesforce_product_id)
+                        fn(Plant $record): ?string => filled($record->salesforce_product_id)
                             ? "https://leben.lightning.force.com/lightning/r/Product2/{$record->salesforce_product_id}/view"
                             : null,
                         shouldOpenInNewTab: true
                     )
-                    ->visible(fn (Plant $record): bool => filled($record->salesforce_product_id)),
+                    ->visible(fn(Plant $record): bool => filled($record->salesforce_product_id)),
                 EditAction::make(),
             ])
             ->toolbarActions([
