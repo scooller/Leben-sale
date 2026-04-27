@@ -26,3 +26,34 @@
 :root, *{
     box-sizing: border-box;
 }
+
+.app-loading-shell {
+    min-height: 70vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+}
+
+.app-loading-shell__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 30rem;
+    width: min(100%, 30rem);
+    padding: 1rem 1.25rem;
+    border-radius: var(--wa-border-radius-l);
+    background: color-mix(in oklab, var(--wa-color-surface-raised, #fff) 88%, transparent);
+    border: 1px solid color-mix(in oklab, var(--wa-color-neutral-border-normal, #d1d5db) 65%, transparent);
+    backdrop-filter: blur(4px);
+}
+
+.app-loading-shell__title {
+    font-size: var(--wa-font-size-l, 1.125rem);
+    font-weight: var(--wa-font-weight-semibold, 600);
+    color: var(--wa-color-text-normal, #111827);
+}
+
+.app-loading-shell__hint {
+    font-size: var(--wa-font-size-s, 0.875rem);
+    color: var(--wa-color-text-quiet, #6b7280);
+}

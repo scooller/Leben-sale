@@ -16,6 +16,7 @@ class PlantTest extends TestCase
         $fillable = [
             'salesforce_product_id',
             'salesforce_proyecto_id',
+            'asesor_id',
             'name',
             'product_code',
             'tipo_producto',

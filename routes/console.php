@@ -11,7 +11,7 @@ Artisan::command('inspire', function () {
 
 try {
     Schedule::command('reservations:expire')->everyMinute();
-    Schedule::job(new SyncPlantsJob)->dailyAt('03:00');
+    Schedule::job(new SyncPlantsJob)->everyFiveMinutes()->withoutOverlapping();
 } catch (Throwable) {
 } catch (\Throwable) {
     // Allow first-time installs to run migrations before settings-backed packages are ready.

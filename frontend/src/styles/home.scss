@@ -664,6 +664,15 @@ html.wa-light {
         }
     }
 
+    .plants-grid {
+        wa-card.plant-card {
+            .plant-price-wrapper {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+        }
+    }
+
     // Dialogo de plantas
     .plant-detail-dialog{
         .prices-list{

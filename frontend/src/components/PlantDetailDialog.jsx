@@ -43,6 +43,11 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
 
     const sanitizePhone = (value) => `${value ?? ''}`.replace(/\D+/g, '');
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+    const ActionButtonsContainer = mobile ? 'div' : 'wa-button-group';
+    const actionButtonsContainerClassName = mobile
+        ? 'wa-stack wa-order-1 wa-order-mobile-0'
+        : 'wa-order-1 wa-order-mobile-0';
+    const actionButtonsContainerStyle = mobile ? { width: '100%', marginTop: '1rem' } : undefined;
 
     const reservaExigidaPeso = plant?.proyecto?.valor_reserva_exigido_defecto_peso ?? null;
     const reservaAsNumber = reservaExigidaPeso !== null && reservaExigidaPeso !== undefined
@@ -357,7 +362,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                                                     <div className="wa-stack wa-gap-3xs advisor-contact-meta">
                                                         <strong>{advisorName}</strong>
                                                         {advisor.email && (
-                                                            <span>{advisor.email}</span>
+                                                            <wa-button appearance="plain" variant="neutral" href={`mailto:${advisor.email}`} target="_blank">{advisor.email}</wa-button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -421,7 +426,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                 </div>
                 </>
                 )}
-                <wa-button-group className="wa-order-1 wa-order-mobile-0">
+                <ActionButtonsContainer className={actionButtonsContainerClassName} style={actionButtonsContainerStyle}>
                     <wa-button
                         variant="neutral"
                         data-dialog="close"
@@ -466,7 +471,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                         </>}
                     </wa-button>
                 )}
-                </wa-button-group>
+                </ActionButtonsContainer>
             </div>
         </>
       )}

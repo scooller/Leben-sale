@@ -69,6 +69,15 @@ const resolvePageDescription = (pathname, siteDescription = '') => {
   return siteDescription || 'Descubre departamentos inmobiliarios disponibles para compra en Chile.';
 };
 
+const AppRouteFallback = () => (
+  <div className="app-loading-shell" role="status" aria-live="polite">
+    <div className="app-loading-shell__card">
+      <span className="app-loading-shell__title">Cargando iLeben...</span>
+      <span className="app-loading-shell__hint">Estamos preparando tu experiencia.</span>
+    </div>
+  </div>
+);
+
 function AppContent() {
   const { config } = useContext(SiteConfigContext) || {};
   const [pathname, setPathname] = useState(getInitialPathname);
@@ -193,7 +202,7 @@ function AppContent() {
         duration={5500}
       />
       <main>
-        <Suspense fallback={null}>
+        <Suspense fallback={<AppRouteFallback />}>
           {currentPath === '/contacto' ? (
             <Contact onNavigate={navigate} currentPath={currentPath} />
           ) : currentPath === '/pago' ? (

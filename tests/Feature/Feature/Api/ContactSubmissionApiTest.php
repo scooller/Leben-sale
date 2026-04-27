@@ -54,6 +54,8 @@ class ContactSubmissionApiTest extends TestCase
                 'reason' => 'cotizacion',
                 'email' => 'juan@example.com',
                 'message' => 'Quiero información del proyecto.',
+                'comuna' => 'Providencia',
+                'proyecto' => 'Edificio Andes',
                 'utm_source' => 'facebook',
                 'utm_medium' => 'cpc',
                 'utm_campaign' => 'summer-launch',
@@ -146,6 +148,8 @@ class ContactSubmissionApiTest extends TestCase
                 'fields' => [
                     'name' => 'Sin UTM Site',
                     'email' => 'sin-utmsite@example.com',
+                    'comuna' => 'Santiago',
+                    'proyecto' => 'Proyecto Referer',
                     'utm_source' => 'instagram',
                 ],
             ]);
@@ -266,6 +270,8 @@ class ContactSubmissionApiTest extends TestCase
             'fields' => [
                 'name' => 'Juan Perez',
                 'email' => 'juan@example.com',
+                'comuna' => 'Las Condes',
+                'proyecto' => 'Torre Las Condes',
             ],
             'turnstile_token' => 'valid-token',
         ]);
@@ -620,6 +626,8 @@ class ContactSubmissionApiTest extends TestCase
                 'name' => 'Alejandro',
                 'email' => 'alejandro@example.com',
                 'message' => 'Quiero información.',
+                'comuna' => 'Santiago Centro',
+                'proyecto' => 'Proyecto SF',
                 'utm_campaign' => 'BlackFriday',
             ],
         ]);
@@ -651,6 +659,8 @@ class ContactSubmissionApiTest extends TestCase
                 'name' => 'Alejandro',
                 'email' => 'alejandro@example.com',
                 'message' => 'Quiero información.',
+                'comuna' => 'Santiago Centro',
+                'proyecto' => 'Proyecto SF',
             ],
         ]);
 

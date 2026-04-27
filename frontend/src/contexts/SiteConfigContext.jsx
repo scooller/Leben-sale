@@ -1,20 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import siteConfigService from '../services/siteConfig';
+import WebAwesomeService from '../services/webAwesome';
 import { initializeFacebookPixel, initializeTagManager } from '../utils/tagManager';
 import { setUtmDefaultOverrides } from '../utils/utmSession';
 
 export const SiteConfigContext = createContext(null);
 
 const COLOR_MODE_STORAGE_KEY = 'ileben-color-mode';
-let webAwesomeServicePromise = null;
-
-const getWebAwesomeService = async () => {
-  if (!webAwesomeServicePromise) {
-    webAwesomeServicePromise = import('../services/webAwesome').then((module) => module.default);
-  }
-
-  return webAwesomeServicePromise;
-};
 
 const resolveInitialColorMode = () => {
   if (typeof window === 'undefined') {
@@ -120,7 +112,6 @@ export const SiteConfigProvider = ({ children }) => {
 
       cancelDeferredSetupRef.current = runWhenBrowserIdle(async () => {
         try {
-          const WebAwesomeService = await getWebAwesomeService();
           const theme = data.webawesome_theme || 'mellow';
           const palette = data.webawesome_palette || 'natural';
 

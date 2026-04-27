@@ -208,7 +208,7 @@ class PlantController extends Controller
             return $this->plantPayload($plant);
         });
 
-        return response()->json($plants);
+        return $this->noStoreJson($plants);
     }
 
     /**
@@ -278,7 +278,7 @@ class PlantController extends Controller
             })
             ->findOrFail($id);
 
-        return response()->json($this->plantPayload($plant));
+        return $this->noStoreJson($this->plantPayload($plant));
     }
 
     public function showByProjectSlugAndUnitName(string $projectSlug, string $unitName): JsonResponse
@@ -301,7 +301,7 @@ class PlantController extends Controller
             })
             ->firstOrFail();
 
-        return response()->json($this->plantPayload($plant));
+        return $this->noStoreJson($this->plantPayload($plant));
     }
 
     public function locationFilters(): JsonResponse
@@ -378,13 +378,23 @@ class PlantController extends Controller
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
-        return response()->json([
+        return $this->noStoreJson([
             'regions' => $regions,
             'comunas' => $comunas,
             'comunas_by_region' => $comunasByRegion,
             'orientaciones' => $orientaciones,
             'tipos_producto' => $tiposProducto,
             'entregas' => $entregas,
+        ]);
+    }
+
+    private function noStoreJson(mixed $payload, int $status = 200): JsonResponse
+    {
+        return response()->json($payload, $status, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'Surrogate-Control' => 'no-store',
         ]);
     }
 

@@ -96,15 +96,25 @@ class PlantReservationController extends Controller
         $reservation = $this->reservationService->checkPlantStatus($plantId);
 
         if (! $reservation) {
-            return response()->json([
+            return $this->noStoreJson([
                 'reserved' => false,
             ]);
         }
 
-        return response()->json([
+        return $this->noStoreJson([
             'reserved' => true,
             'expires_at' => $reservation->expires_at->toISOString(),
             'remaining_seconds' => $reservation->remainingSeconds(),
+        ]);
+    }
+
+    private function noStoreJson(mixed $payload, int $status = 200): JsonResponse
+    {
+        return response()->json($payload, $status, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'Surrogate-Control' => 'no-store',
         ]);
     }
 }

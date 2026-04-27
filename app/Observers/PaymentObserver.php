@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Enums\PaymentStatus;
+use App\Jobs\SyncPlantsJob;
 use App\Models\Payment;
 use App\Services\FinMail\FinMailNotificationService;
 
@@ -10,10 +11,6 @@ class PaymentObserver
 {
     public function updated(Payment $payment): void
     {
-        if (! config('payments.notifications.fin_mail.enabled', true)) {
-            return;
-        }
-
         if (! $payment->wasChanged('status')) {
             return;
         }
@@ -21,6 +18,14 @@ class PaymentObserver
         $currentStatus = $payment->status instanceof PaymentStatus
             ? $payment->status
             : PaymentStatus::fromValue((string) $payment->status);
+
+        if ($currentStatus?->isCompleted() === true) {
+            SyncPlantsJob::dispatch();
+        }
+
+        if (! config('payments.notifications.fin_mail.enabled', true)) {
+            return;
+        }
 
         if (! $currentStatus || ! in_array($currentStatus, $this->statusesThatTriggerNotification(), true)) {
             return;

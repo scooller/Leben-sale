@@ -47,6 +47,42 @@ class PlantApiFiltersTest extends TestCase
         $this->assertNotContains($plantInOtherProject->id, $responsePlantIds);
     }
 
+    public function test_it_returns_no_store_headers_for_plant_inventory_endpoint(): void
+    {
+        $project = Proyecto::factory()->create();
+        $this->createPlant($project->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id);
+
+        $response->assertOk();
+        $cacheControl = (string) $response->headers->get('Cache-Control', '');
+
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
+        $this->assertStringContainsString('max-age=0', $cacheControl);
+        $response->assertHeader('Pragma', 'no-cache');
+        $response->assertHeader('Expires', '0');
+    }
+
+    public function test_it_returns_no_store_headers_for_plant_reservation_status_endpoint(): void
+    {
+        $project = Proyecto::factory()->create();
+        $plant = $this->createPlant($project->salesforce_id, true);
+
+        $response = $this->getJson('/api/v1/reservations/planta/'.$plant->id);
+
+        $response->assertOk();
+        $cacheControl = (string) $response->headers->get('Cache-Control', '');
+
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
+        $this->assertStringContainsString('max-age=0', $cacheControl);
+        $response->assertHeader('Pragma', 'no-cache');
+        $response->assertHeader('Expires', '0');
+    }
+
     public function test_it_filters_plants_by_project_slug(): void
     {
         $targetProject = Proyecto::factory()->create([
