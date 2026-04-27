@@ -108,6 +108,66 @@ class SyncProjectsActionTest extends TestCase
         ]);
     }
 
+    public function test_sync_projects_does_not_sync_asesores_when_excluded_for_existing_project(): void
+    {
+        SiteSetting::current()->update([
+            'extra_settings' => [
+                'salesforce_sync_projects_excluded_fields' => ['asesores'],
+            ],
+        ]);
+
+        $manualAsesor = Asesor::factory()->create([
+            'salesforce_id' => null,
+            'email' => 'manual@example.com',
+        ]);
+
+        $proyecto = Proyecto::factory()->create([
+            'salesforce_id' => 'SF-PRJ-EX-ASE-001',
+            'name' => 'Proyecto existente con asesor manual',
+        ]);
+
+        $proyecto->asesores()->sync([$manualAsesor->id]);
+
+        $this->mock(SalesforceService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('findProjects')
+                ->once()
+                ->andReturn([
+                    $this->projectPayload([
+                        'id' => 'SF-PRJ-EX-ASE-001',
+                        'name' => 'Proyecto actualizado desde Salesforce',
+                        'asesor_responsable_ids' => ['005XX0000009ZZZ'],
+                    ]),
+                ]);
+
+            $mock->shouldReceive('findPublicCotizadorDocuments')
+                ->once()
+                ->andReturn([]);
+
+            $mock->shouldReceive('findSalesforceUsersByIds')
+                ->once()
+                ->with(['005XX0000009ZZZ'])
+                ->andReturn([
+                    [
+                        'id' => '005XX0000009ZZZ',
+                        'first_name' => 'Salesforce',
+                        'last_name' => 'Advisor',
+                        'email' => 'salesforce.advisor@example.com',
+                        'whatsapp_owner' => null,
+                        'avatar_url' => null,
+                        'is_active' => true,
+                    ],
+                ]);
+        });
+
+        $result = SyncProjectsAction::execute();
+
+        $this->assertTrue($result['success']);
+
+        $proyecto->refresh();
+        $this->assertTrue($proyecto->asesores->contains($manualAsesor->id));
+        $this->assertCount(1, $proyecto->asesores);
+    }
+
     public function test_sync_projects_does_not_update_is_active_on_existing_projects(): void
     {
         Proyecto::factory()->create([

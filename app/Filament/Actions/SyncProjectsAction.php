@@ -43,6 +43,7 @@ class SyncProjectsAction
         'tipo' => 'Tipo',
         'salesforce_logo_url' => 'Logo Salesforce',
         'salesforce_portada_url' => 'Portada Salesforce',
+        'asesores' => 'Asesores',
     ];
 
     /**
@@ -149,6 +150,7 @@ class SyncProjectsAction
                 }
 
                 $proyecto = Proyecto::query()->where('salesforce_id', $proyectoData['id'])->first();
+                $isExistingProject = $proyecto !== null;
 
                 if ($proyecto) {
                     $proyecto->update(self::removeExcludedUpdateFields($data, $excludedUpdateFields));
@@ -163,7 +165,11 @@ class SyncProjectsAction
                     $synced++;
                 }
 
-                self::syncProyectoAsesores($proyecto, $proyectoData, $asesoresBySalesforceId);
+                $shouldSkipAsesoresSync = $isExistingProject && in_array('asesores', $excludedUpdateFields, true);
+
+                if (! $shouldSkipAsesoresSync) {
+                    self::syncProyectoAsesores($proyecto, $proyectoData, $asesoresBySalesforceId);
+                }
             }
 
             $channelsSync = self::syncContactChannelsFromProjects();
