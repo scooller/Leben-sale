@@ -153,6 +153,16 @@ class SiteSettings extends Page implements HasForms
                                             ->default(true)
                                             ->helperText('Cuando está desactivado, el frontend mostrará un mensaje de "Próximamente" en lugar del catálogo.'),
 
+                                        TextInput::make('plants_per_page')
+                                            ->label('Cantidad de plantas por página')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->maxValue(100)
+                                            ->step(1)
+                                            ->default(12)
+                                            ->required()
+                                            ->helperText('Define cuántas plantas se muestran por página por defecto en el catálogo (si no se envía perPage en la API).'),
+
                                         TextInput::make('extra_settings.catalogo_no_disponible_titulo')
                                             ->label('Título cuando no se muestran plantas')
                                             ->default('Próximamente')

@@ -216,6 +216,25 @@ class PlantApiFiltersTest extends TestCase
         $this->assertNotContains($availablePlant->id, $unavailablePlantIds);
     }
 
+    public function test_it_uses_site_settings_default_plants_per_page_when_per_page_is_not_provided(): void
+    {
+        SiteSetting::current()->update([
+            'plants_per_page' => 5,
+        ]);
+
+        $project = Proyecto::factory()->create();
+
+        for ($index = 0; $index < 7; $index++) {
+            $this->createPlant($project->salesforce_id, true);
+        }
+
+        $response = $this->getJson('/api/v1/plantas?proyecto_id='.$project->id);
+
+        $response->assertOk();
+        $response->assertJsonCount(5, 'data');
+        $response->assertJsonPath('per_page', 5);
+    }
+
     public function test_it_treats_paid_plants_as_unavailable(): void
     {
         $project = Proyecto::factory()->create();

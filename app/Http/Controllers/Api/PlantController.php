@@ -202,8 +202,10 @@ class PlantController extends Controller
             $query->where('precio_base', '<=', $request->max_precio);
         }
 
-        // Obtener perPage del request o usar 12 por defecto
-        $perPage = $request->get('perPage', 12);
+        // Obtener perPage del request o usar Site Settings (fallback 12)
+        $defaultPerPage = (int) (SiteSetting::get('plants_per_page', 12) ?? 12);
+        $perPage = (int) $request->input('perPage', $defaultPerPage);
+        $perPage = max(1, min($perPage, 100));
         $plants = $query->paginate($perPage)->through(function (Plant $plant): array {
             return $this->plantPayload($plant);
         });

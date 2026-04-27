@@ -19,6 +19,7 @@ class SiteSetting extends Model
         'footer_legal_text',
         'evento_sale',
         'mostrar_plantas',
+        'plants_per_page',
         'logo_sale_id',
         'logo',
         'logo_dark',
@@ -86,6 +87,7 @@ class SiteSetting extends Model
         'maintenance_use_html' => 'boolean',
         'evento_sale' => 'boolean',
         'mostrar_plantas' => 'boolean',
+        'plants_per_page' => 'integer',
         'gateway_transbank_enabled' => 'boolean',
         'gateway_mercadopago_enabled' => 'boolean',
         'gateway_manual_enabled' => 'boolean',
@@ -165,6 +167,7 @@ class SiteSetting extends Model
                 ],
                 'evento_sale' => false,
                 'mostrar_plantas' => true,
+                'plants_per_page' => 12,
                 'contact_page_title' => 'Contacto',
                 'contact_page_subtitle' => 'Estamos para ayudarte',
                 'contact_page_content' => '<p>Si tienes dudas sobre nuestras plantas o el proceso de compra, escríbenos y te responderemos a la brevedad.</p>',
@@ -226,6 +229,11 @@ class SiteSetting extends Model
 
         if ($settings->gateway_reservation_timeout_minutes === null) {
             $settings->gateway_reservation_timeout_minutes = 15;
+            $requiresUpdate = true;
+        }
+
+        if ($settings->plants_per_page === null) {
+            $settings->plants_per_page = 12;
             $requiresUpdate = true;
         }
 
