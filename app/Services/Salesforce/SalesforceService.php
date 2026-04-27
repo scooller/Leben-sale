@@ -919,17 +919,53 @@ class SalesforceService
 
         $records = $this->query($soql, $cacheTtl ?? $this->defaultCacheTtl);
 
-        return array_map(static function (array $entry): array {
-            return [
-                'id' => $entry['Id'] ?? null,
-                'first_name' => $entry['FirstName'] ?? null,
-                'last_name' => $entry['LastName'] ?? null,
-                'email' => $entry['Email'] ?? null,
-                'whatsapp_owner' => $entry['Whatsapp_owner__c'] ?? null,
-                'avatar_url' => $entry['MediumPhotoUrl'] ?? null,
-                'is_active' => (bool) ($entry['IsActive'] ?? true),
-            ];
-        }, $records);
+        return array_map($this->mapSalesforceUserRecord(...), $records);
+    }
+
+    /**
+     * Buscar un usuario (asesor) de Salesforce por email exacto.
+     *
+     * @return array{id: string|null, first_name: string|null, last_name: string|null, email: string|null, whatsapp_owner: string|null, avatar_url: string|null, is_active: bool}|null
+     */
+    public function findSalesforceUserByEmail(string $email, ?int $cacheTtl = null): ?array
+    {
+        $normalizedEmail = mb_strtolower(trim($email));
+
+        if ($normalizedEmail === '') {
+            return null;
+        }
+
+        $quotedEmail = str_replace("'", "\\'", $normalizedEmail);
+
+        $soql = 'SELECT Id, FirstName, LastName, Email, Whatsapp_owner__c, MediumPhotoUrl, IsActive '
+            .'FROM User '
+            ."WHERE Email = '{$quotedEmail}' "
+            .'LIMIT 1';
+
+        $records = $this->query($soql, $cacheTtl ?? $this->defaultCacheTtl);
+
+        if ($records === []) {
+            return null;
+        }
+
+        return $this->mapSalesforceUserRecord($records[0]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     * @return array{id: string|null, first_name: string|null, last_name: string|null, email: string|null, whatsapp_owner: string|null, avatar_url: string|null, is_active: bool}
+     */
+    private function mapSalesforceUserRecord(array $entry): array
+    {
+        return [
+            'id' => $entry['Id'] ?? null,
+            'first_name' => $entry['FirstName'] ?? null,
+            'last_name' => $entry['LastName'] ?? null,
+            'email' => $entry['Email'] ?? null,
+            'whatsapp_owner' => $entry['Whatsapp_owner__c'] ?? null,
+            'avatar_url' => $entry['MediumPhotoUrl'] ?? null,
+            'is_active' => (bool) ($entry['IsActive'] ?? true),
+        ];
     }
 
     /**

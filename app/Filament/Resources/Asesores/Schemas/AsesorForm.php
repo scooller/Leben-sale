@@ -2,10 +2,15 @@
 
 namespace App\Filament\Resources\Asesores\Schemas;
 
+use App\Services\Salesforce\SalesforceService;
 use Awcodes\Curator\Components\Forms\CuratorPicker;
+use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class AsesorForm
@@ -35,6 +40,47 @@ class AsesorForm
                         TextInput::make('email')
                             ->label('Email')
                             ->email()
+                            ->suffixAction(
+                                Action::make('syncAsesorByEmail')
+                                    ->icon('heroicon-m-arrow-path')
+                                    ->tooltip('Importar asesor desde Salesforce por email')
+                                    ->action(function (SalesforceService $salesforceService, Get $get, Set $set): void {
+                                        $email = mb_strtolower(trim((string) $get('email')));
+
+                                        if ($email === '') {
+                                            Notification::make()
+                                                ->title('Ingresa un email para sincronizar')
+                                                ->warning()
+                                                ->send();
+
+                                            return;
+                                        }
+
+                                        $salesforceUser = $salesforceService->findSalesforceUserByEmail($email);
+
+                                        if ($salesforceUser === null) {
+                                            Notification::make()
+                                                ->title('No se encontró un asesor con ese email en Salesforce')
+                                                ->danger()
+                                                ->send();
+
+                                            return;
+                                        }
+
+                                        $set('salesforce_id', $salesforceUser['id']);
+                                        $set('first_name', $salesforceUser['first_name']);
+                                        $set('last_name', $salesforceUser['last_name']);
+                                        $set('email', $salesforceUser['email'] ?: $email);
+                                        $set('whatsapp_owner', $salesforceUser['whatsapp_owner']);
+                                        $set('avatar_url', $salesforceUser['avatar_url']);
+                                        $set('is_active', (bool) ($salesforceUser['is_active'] ?? true));
+
+                                        Notification::make()
+                                            ->title('Datos del asesor importados desde Salesforce')
+                                            ->success()
+                                            ->send();
+                                    })
+                            )
                             ->maxLength(255),
 
                         TextInput::make('whatsapp_owner')
