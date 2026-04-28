@@ -173,6 +173,7 @@ class Proyecto extends Model
     protected function etapa(): Attribute
     {
         return Attribute::make(
+            get: fn (?string $value): ?string => self::normalizeEtapa($value) ?? $value,
             set: fn (mixed $value): ?string => self::normalizeEtapa($value),
         );
     }
