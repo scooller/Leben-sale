@@ -114,11 +114,17 @@ class SiteSettings extends Page implements HasForms
     public function mount(): void
     {
         $settings = SiteSetting::current();
-        $this->form->fill($settings->toArray());
+        $data = $settings->toArray();
+
+        data_set($data, 'extra_settings.qr', $settings->qrOptions());
+
+        $this->form->fill($data);
     }
 
     public function form(Schema $schema): Schema
     {
+        $qrDefaults = SiteSetting::current()->qrOptions();
+
         return $schema
             ->schema([
                 Tabs::make('Settings')
@@ -615,6 +621,114 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Imagen para compartir en redes sociales (1200x630px)'),
                                     ])
                                     ->columns(1),
+                            ]),
+
+                        Tabs\Tab::make('QR')
+                            ->icon('heroicon-o-qr-code')
+                            ->schema([
+                                Section::make('Configuración General del QR')
+                                    ->description('Estas opciones se aplican al QR mostrado en Short Links y Links Preview.')
+                                    ->schema([
+                                        TextInput::make('extra_settings.qr.size')
+                                            ->label('Tamaño')
+                                            ->numeric()
+                                            ->required()
+                                            ->default((string) ($qrDefaults['size'] ?? '300')),
+
+                                        Select::make('extra_settings.qr.margin')
+                                            ->label('Margen')
+                                            ->required()
+                                            ->options([
+                                                '0' => '0',
+                                                '1' => '1',
+                                                '3' => '3',
+                                                '7' => '7',
+                                                '9' => '9',
+                                            ])
+                                            ->default((string) ($qrDefaults['margin'] ?? '1')),
+
+                                        Select::make('extra_settings.qr.style')
+                                            ->label('Estilo')
+                                            ->required()
+                                            ->options([
+                                                'square' => 'Square',
+                                                'dot' => 'Dot',
+                                                'round' => 'Round',
+                                            ])
+                                            ->default((string) ($qrDefaults['style'] ?? 'square')),
+
+                                        Select::make('extra_settings.qr.correction')
+                                            ->label('Corrección')
+                                            ->required()
+                                            ->options([
+                                                'L' => '7%',
+                                                'M' => '15%',
+                                                'Q' => '25%',
+                                                'H' => '30%',
+                                            ])
+                                            ->default((string) ($qrDefaults['correction'] ?? 'H')),
+
+                                        ColorPicker::make('extra_settings.qr.color')
+                                            ->label('Color principal')
+                                            ->default((string) ($qrDefaults['color'] ?? 'rgba(74, 74, 74, 1)')),
+
+                                        ColorPicker::make('extra_settings.qr.back_color')
+                                            ->label('Color de fondo')
+                                            ->default((string) ($qrDefaults['back_color'] ?? 'rgba(252, 252, 252, 1)')),
+
+                                        Toggle::make('extra_settings.qr.hasGradient')
+                                            ->label('Usar degradado')
+                                            ->default((bool) ($qrDefaults['hasGradient'] ?? false))
+                                            ->live(),
+
+                                        ColorPicker::make('extra_settings.qr.gradient_form')
+                                            ->label('Degradado desde')
+                                            ->default((string) ($qrDefaults['gradient_form'] ?? 'rgb(69, 179, 157)'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasGradient')),
+
+                                        ColorPicker::make('extra_settings.qr.gradient_to')
+                                            ->label('Degradado hasta')
+                                            ->default((string) ($qrDefaults['gradient_to'] ?? 'rgb(241, 148, 138)'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasGradient')),
+
+                                        Select::make('extra_settings.qr.gradient_type')
+                                            ->label('Tipo de degradado')
+                                            ->options([
+                                                'vertical' => 'Vertical',
+                                                'horizontal' => 'Horizontal',
+                                                'diagonal' => 'Diagonal',
+                                                'inverse_diagonal' => 'Diagonal inverso',
+                                                'radial' => 'Radial',
+                                            ])
+                                            ->default((string) ($qrDefaults['gradient_type'] ?? 'vertical'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasGradient')),
+
+                                        Toggle::make('extra_settings.qr.hasEyeColor')
+                                            ->label('Usar color en ojos')
+                                            ->default((bool) ($qrDefaults['hasEyeColor'] ?? false))
+                                            ->live(),
+
+                                        ColorPicker::make('extra_settings.qr.eye_color_inner')
+                                            ->label('Color interior del ojo')
+                                            ->default((string) ($qrDefaults['eye_color_inner'] ?? 'rgb(241, 148, 138)'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasEyeColor')),
+
+                                        ColorPicker::make('extra_settings.qr.eye_color_outer')
+                                            ->label('Color exterior del ojo')
+                                            ->default((string) ($qrDefaults['eye_color_outer'] ?? 'rgb(69, 179, 157)'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasEyeColor')),
+
+                                        Select::make('extra_settings.qr.eye_style')
+                                            ->label('Estilo de ojos')
+                                            ->options([
+                                                'square' => 'Square',
+                                                'circle' => 'Circle',
+                                            ])
+                                            ->default((string) ($qrDefaults['eye_style'] ?? 'square'))
+                                            ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasEyeColor')),
+                                    ])
+                                    ->columns(2),
+
                             ]),
 
                         Tabs\Tab::make('Contacto')

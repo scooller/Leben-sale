@@ -6,6 +6,7 @@ use App\Support\LogsModelActivity;
 use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use LaraZeus\Qr\Facades\Qr;
 
 class SiteSetting extends Model
 {
@@ -250,6 +251,14 @@ class SiteSetting extends Model
     public static function get(string $key, mixed $default = null): mixed
     {
         return static::current()->{$key} ?? $default;
+    }
+
+    public function qrOptions(): array
+    {
+        $extraSettings = is_array($this->extra_settings) ? $this->extra_settings : [];
+        $qrSettings = data_get($extraSettings, 'qr', []);
+
+        return Qr::getDefaultOptions(is_array($qrSettings) ? $qrSettings : []);
     }
 
     /**

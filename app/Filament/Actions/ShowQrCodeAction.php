@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\SiteSetting;
 use Filament\Actions\Action;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -21,10 +22,12 @@ class ShowQrCodeAction
             ->modalCancelActionLabel('Cerrar')
             ->modalContent(function (Model $record) use ($urlResolver): View {
                 $url = value($urlResolver, $record);
+                $qrOptions = SiteSetting::current()->qrOptions();
+                $qrOptions['type'] = 'svg';
 
                 return view('filament.actions.show-qr-code', [
                     'url' => $url,
-                    'qrSvg' => Qr::render(data: $url),
+                    'qrSvg' => Qr::render(data: $url, options: $qrOptions, downloadable: false),
                 ]);
             })
             ->action(static fn (): null => null);
