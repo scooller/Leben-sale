@@ -77,4 +77,17 @@ class ProyectoTest extends TestCase
 
         Proyecto::factory()->create(['salesforce_id' => 'SF001']);
     }
+
+    public function test_it_normalizes_salesforce_stage_labels_to_canonical_values(): void
+    {
+        $this->assertSame('permiso_edificacion', Proyecto::normalizeEtapa('Permiso de edificación'));
+        $this->assertSame('inicio_obra', Proyecto::normalizeEtapa('Inicio de obra'));
+    }
+
+    public function test_it_normalizes_legacy_stage_aliases_to_canonical_values(): void
+    {
+        $this->assertSame('obra_gruesa', Proyecto::normalizeEtapa('Construcción'));
+        $this->assertSame('entrega', Proyecto::normalizeEtapa('Entrega Inmediata'));
+        $this->assertNull(Proyecto::normalizeEtapa('Etapa inexistente'));
+    }
 }

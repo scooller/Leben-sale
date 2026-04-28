@@ -38,24 +38,10 @@ class Proyecto extends Model
      * @var array<string, string>
      */
     public const ETAPA_ALIASES = [
-        'permiso de edificacion' => 'permiso_edificacion',
-        'permiso de edificación' => 'permiso_edificacion',
-        'demolicion' => 'demolicion',
-        'demolición' => 'demolicion',
-        'inicio de obra' => 'inicio_obra',
-        'excavacion masiva' => 'excavacion_masiva',
-        'excavación masiva' => 'excavacion_masiva',
+        'permiso_de_edificacion' => 'permiso_edificacion',
+        'inicio_de_obra' => 'inicio_obra',
         'construccion' => 'obra_gruesa',
-        'construcción' => 'obra_gruesa',
-        'obra gruesa' => 'obra_gruesa',
-        'terminaciones' => 'terminaciones',
-        'recepcion municipal y copropiedad' => 'recepcion_municipal_y_copropiedad',
-        'recepción municipal y copropiedad' => 'recepcion_municipal_y_copropiedad',
-        'escrituracion' => 'escrituracion',
-        'escrituración' => 'escrituracion',
-        'entrega' => 'entrega',
-        'entrega inmediata' => 'entrega',
-        'postventa' => 'postventa',
+        'entrega_inmediata' => 'entrega',
         'preventa' => 'permiso_edificacion',
         'venta' => 'inicio_obra',
     ];
