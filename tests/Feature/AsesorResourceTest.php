@@ -6,9 +6,11 @@ use App\Filament\Resources\Asesores\AsesorResource;
 use App\Filament\Resources\Asesores\Pages\CreateAsesor;
 use App\Filament\Resources\Asesores\Pages\EditAsesor;
 use App\Filament\Resources\Asesores\RelationManagers\ProyectosRelationManager;
+use App\Filament\Resources\Asesores\Tables\AsesoresTable;
 use App\Models\Asesor;
 use App\Models\Plant;
 use App\Models\Proyecto;
+use App\Models\ShortLink;
 use App\Models\User;
 use Filament\Support\Enums\Width;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -126,5 +128,70 @@ class AsesorResourceTest extends TestCase
         $asesor->proyectos()->detach($proyectoA->id);
 
         $this->assertSame([$proyectoB->id], $asesor->proyectos()->pluck('proyectos.id')->all());
+    }
+
+    public function test_create_qr_action_creates_short_link_for_advisor_whatsapp_redirect(): void
+    {
+        $asesor = Asesor::factory()->create([
+            'first_name' => 'Camila',
+            'last_name' => 'Diaz',
+            'whatsapp_owner' => '+56 9 8765 4321',
+            'is_active' => true,
+        ]);
+
+        $shortUrl = AsesoresTable::resolveOrCreateWhatsappShortLinkUrl($asesor);
+
+        $shortLink = ShortLink::query()
+            ->where('metadata->origin', 'advisor_whatsapp_qr')
+            ->where('metadata->advisor_id', $asesor->id)
+            ->first();
+
+        $this->assertNotNull($shortLink);
+        $this->assertSame(route('advisors.whatsapp.redirect', ['asesor' => $asesor]), $shortLink?->destination_url);
+        $this->assertSame($shortLink?->shortUrl(), $shortUrl);
+    }
+
+    public function test_create_qr_action_reuses_existing_short_link_for_same_advisor(): void
+    {
+        $asesor = Asesor::factory()->create([
+            'first_name' => 'Camila',
+            'last_name' => 'Diaz',
+            'whatsapp_owner' => '+56 9 8765 4321',
+            'is_active' => true,
+        ]);
+
+        $firstShortUrl = AsesoresTable::resolveOrCreateWhatsappShortLinkUrl($asesor);
+        $secondShortUrl = AsesoresTable::resolveOrCreateWhatsappShortLinkUrl($asesor);
+
+        $this->assertSame($firstShortUrl, $secondShortUrl);
+        $this->assertSame(1, ShortLink::query()
+            ->where('metadata->origin', 'advisor_whatsapp_qr')
+            ->where('metadata->advisor_id', $asesor->id)
+            ->count());
+    }
+
+    public function test_existing_qr_short_link_url_returns_null_when_not_created_yet(): void
+    {
+        $asesor = Asesor::factory()->create([
+            'whatsapp_owner' => '+56 9 8765 4321',
+            'is_active' => true,
+        ]);
+
+        $existingShortUrl = AsesoresTable::resolveExistingWhatsappShortLinkUrl($asesor);
+
+        $this->assertNull($existingShortUrl);
+    }
+
+    public function test_existing_qr_short_link_url_returns_created_short_link(): void
+    {
+        $asesor = Asesor::factory()->create([
+            'whatsapp_owner' => '+56 9 8765 4321',
+            'is_active' => true,
+        ]);
+
+        $createdShortUrl = AsesoresTable::resolveOrCreateWhatsappShortLinkUrl($asesor);
+        $existingShortUrl = AsesoresTable::resolveExistingWhatsappShortLinkUrl($asesor);
+
+        $this->assertSame($createdShortUrl, $existingShortUrl);
     }
 }
