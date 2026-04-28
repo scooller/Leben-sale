@@ -2,6 +2,7 @@
 
 namespace App\Services\Salesforce;
 
+use App\Models\Proyecto;
 use App\Models\SiteSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -833,7 +834,7 @@ class SalesforceService
                         'rut' => $entry['RUT__c'] ?? null,
                         'fecha_inicio_ventas' => $entry['Fecha_Inicio_Ventas__c'] ?? null,
                         'fecha_entrega' => $entry['Fecha_Recepcion_Municipal__c'] ?? null,
-                        'etapa' => $entry['Etapa__c'] ?? null,
+                        'etapa' => Proyecto::normalizeEtapa($entry['Etapa__c'] ?? null),
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
                         'asesor_responsable_ids' => $this->normalizeSalesforceIdList([
                             $entry['Asesor_Responsable__c'] ?? null,
@@ -866,7 +867,7 @@ class SalesforceService
                         'rut' => $entry['RUT__c'] ?? null,
                         'fecha_inicio_ventas' => $entry['Fecha_Inicio_Ventas__c'] ?? null,
                         'fecha_entrega' => $entry['Fecha_Recepcion_Municipal__c'] ?? null,
-                        'etapa' => $entry['Etapa__c'] ?? null,
+                        'etapa' => Proyecto::normalizeEtapa($entry['Etapa__c'] ?? null),
                         'horario_atencion' => $entry['Horario_Atencion__c'] ?? null,
                         'asesor_responsable_ids' => $this->normalizeSalesforceIdList([
                             $entry['Asesor_Responsable__c'] ?? null,

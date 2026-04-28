@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Proyecto;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -31,7 +32,7 @@ class ProyectoFactory extends Factory
             'rut' => fake()->numerify('########-#'),
             'fecha_inicio_ventas' => fake()->dateTimeBetween('-1 year', 'now'),
             'fecha_entrega' => fake()->dateTimeBetween('now', '+2 years'),
-            'etapa' => fake()->randomElement(['Preventa', 'En Construcción', 'Entrega Inmediata']),
+            'etapa' => fake()->randomElement(array_keys(Proyecto::etapaOptions())),
             'horario_atencion' => 'Lunes a Viernes 9:00 - 18:00',
             'valor_reserva_exigido_defecto_peso' => fake()->randomFloat(2, 100000, 500000),
             'valor_reserva_exigido_min_peso' => fake()->randomFloat(2, 50000, 200000),

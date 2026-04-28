@@ -75,18 +75,21 @@ class ProyectosTable
                 ->searchable()
                 ->sortable(),
 
-            // Postventa,Permiso de edificación,Inicio de obra,Entrega,Construcción,Obra gruesa,Terminaciones
             TextColumn::make('etapa')
                 ->label('Etapa')
                 ->badge()
-                ->color(fn (string $state): string => match ($state) {
-                    'Postventa' => 'emerald',
-                    'Permiso de edificación' => 'orange',
-                    'Inicio de obra' => 'amber',
-                    'Entrega' => 'sky',
-                    'Construcción' => 'indigo',
-                    'Obra gruesa' => 'rose',
-                    'Terminaciones' => 'violet',
+                ->formatStateUsing(fn (?string $state): ?string => Proyecto::etapaLabel($state))
+                ->color(fn (?string $state): string => match (Proyecto::normalizeEtapa($state)) {
+                    'postventa' => 'emerald',
+                    'permiso_edificacion' => 'orange',
+                    'demolicion' => 'red',
+                    'inicio_obra' => 'amber',
+                    'excavacion_masiva' => 'yellow',
+                    'obra_gruesa' => 'rose',
+                    'terminaciones' => 'violet',
+                    'recepcion_municipal_y_copropiedad' => 'indigo',
+                    'escrituracion' => 'blue',
+                    'entrega' => 'sky',
                     default => 'gray',
                 })
                 ->sortable()
@@ -181,15 +184,7 @@ class ProyectosTable
             SelectFilter::make('etapa')
                 ->label('Etapa')
                 ->multiple()
-                ->options([
-                    'Postventa' => 'Postventa',
-                    'Permiso de edificación' => 'Permiso de edificación',
-                    'Inicio de obra' => 'Inicio de obra',
-                    'Entrega' => 'Entrega',
-                    'Construcción' => 'Construcción',
-                    'Obra gruesa' => 'Obra gruesa',
-                    'Terminaciones' => 'Terminaciones',
-                ])
+                ->options(Proyecto::etapaOptions())
                 ->searchable(),
 
             SelectFilter::make('region')

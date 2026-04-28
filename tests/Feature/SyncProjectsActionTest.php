@@ -501,7 +501,7 @@ class SyncProjectsActionTest extends TestCase
             'rut' => '12345678-9',
             'fecha_inicio_ventas' => now()->toDateString(),
             'fecha_entrega' => now()->addYear()->toDateString(),
-            'etapa' => 'Preventa',
+            'etapa' => 'Permiso de edificación',
             'horario_atencion' => 'Lunes a Viernes',
             'valor_reserva_exigido_defecto_peso' => 100000.0,
             'valor_reserva_exigido_min_peso' => 50000.0,

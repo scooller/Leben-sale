@@ -39,7 +39,7 @@ class PlantController extends Controller
         $comunaValues = $this->normalizeInputValues($request->input('comuna'));
         $provinciaValues = $this->normalizeInputValues($request->input('provincia'));
         $regionValues = $this->normalizeInputValues($request->input('region'));
-        $entregaValues = $this->normalizeInputValues($request->input('entrega'));
+        $entregaValues = $this->normalizeEtapaValues($request->input('entrega'));
         $eventoSale = $this->normalizeBoolean($request->input('evento_sale'));
         $available = $this->normalizeBoolean($request->input('disponible', $request->input('available')));
 
@@ -269,6 +269,18 @@ class PlantController extends Controller
     }
 
     /**
+     * @return list<string>
+     */
+    private function normalizeEtapaValues(mixed $value): array
+    {
+        return collect($this->normalizeInputValues($value))
+            ->map(static fn (string $item): ?string => Proyecto::normalizeEtapa($item))
+            ->filter(static fn (?string $item): bool => $item !== null)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Display the specified resource.
      */
     public function show(string $id): JsonResponse
@@ -374,7 +386,7 @@ class PlantController extends Controller
 
         $entregas = $projects
             ->pluck('etapa')
-            ->map(static fn (mixed $etapa): string => trim((string) $etapa))
+            ->map(static fn (mixed $etapa): string => trim((string) (Proyecto::etapaLabel($etapa) ?? '')))
             ->filter(static fn (string $etapa): bool => $etapa !== '')
             ->unique()
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
@@ -528,7 +540,7 @@ class PlantController extends Controller
             'provincia' => $proyecto->provincia,
             'region' => $proyecto->region,
             'pagina_web' => $proyecto->pagina_web,
-            'etapa' => $proyecto->etapa,
+            'etapa' => Proyecto::etapaLabel($proyecto->etapa),
             'horario_atencion' => $proyecto->horario_atencion,
             'entrega_inmediata' => $proyecto->entrega_inmediata,
             'is_active' => $proyecto->is_active,

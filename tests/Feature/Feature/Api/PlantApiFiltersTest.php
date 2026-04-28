@@ -358,14 +358,14 @@ class PlantApiFiltersTest extends TestCase
         $projectInSantiago = Proyecto::factory()->create([
             'comuna' => 'Santiago',
             'region' => 'Metropolitana',
-            'etapa' => 'Entrega Inmediata',
+            'etapa' => 'entrega',
             'is_active' => true,
         ]);
 
         $projectInProvidencia = Proyecto::factory()->create([
             'comuna' => 'Providencia',
             'region' => 'Metropolitana',
-            'etapa' => 'En Construccion',
+            'etapa' => 'obra_gruesa',
             'is_active' => true,
         ]);
 
@@ -385,7 +385,7 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonFragment(['comunas' => ['Providencia', 'Santiago']]);
         $response->assertJsonFragment(['orientaciones' => ['Norte', 'Sur']]);
         $response->assertJsonFragment(['tipos_producto' => ['DEPARTAMENTO', 'LOCAL']]);
-        $response->assertJsonFragment(['entregas' => ['En Construccion', 'Entrega Inmediata']]);
+        $response->assertJsonFragment(['entregas' => ['Entrega', 'Obra gruesa']]);
         $response->assertJsonPath('comunas_by_region.Metropolitana.0', 'Providencia');
         $response->assertJsonPath('comunas_by_region.Metropolitana.1', 'Santiago');
     }
@@ -429,19 +429,19 @@ class PlantApiFiltersTest extends TestCase
     public function test_it_filters_plants_by_entrega_stage(): void
     {
         $deliveryProject = Proyecto::factory()->create([
-            'etapa' => 'Entrega Inmediata',
+            'etapa' => 'entrega',
             'is_active' => true,
         ]);
 
         $constructionProject = Proyecto::factory()->create([
-            'etapa' => 'En Construccion',
+            'etapa' => 'obra_gruesa',
             'is_active' => true,
         ]);
 
         $deliveryPlant = $this->createPlant($deliveryProject->salesforce_id, true);
         $constructionPlant = $this->createPlant($constructionProject->salesforce_id, true);
 
-        $response = $this->getJson('/api/v1/plantas?entrega=Entrega%20Inmediata');
+        $response = $this->getJson('/api/v1/plantas?entrega=Entrega');
 
         $response->assertOk();
         $responsePlantIds = collect($response->json('data'))->pluck('id')->all();

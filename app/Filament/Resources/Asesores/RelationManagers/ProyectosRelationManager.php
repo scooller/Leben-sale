@@ -45,6 +45,7 @@ class ProyectosRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('etapa')
                     ->label('Etapa')
+                    ->formatStateUsing(fn (?string $state): ?string => Proyecto::etapaLabel($state))
                     ->badge()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('plantas_count')

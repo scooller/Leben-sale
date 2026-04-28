@@ -18,6 +18,48 @@ class Proyecto extends Model
     use HasFactory;
     use LogsModelActivity;
 
+    /**
+     * @var array<string, string>
+     */
+    public const ETAPA_OPTIONS = [
+        'permiso_edificacion' => 'Permiso de edificación',
+        'demolicion' => 'Demolición',
+        'inicio_obra' => 'Inicio de obra',
+        'excavacion_masiva' => 'Excavación masiva',
+        'obra_gruesa' => 'Obra gruesa',
+        'terminaciones' => 'Terminaciones',
+        'recepcion_municipal_y_copropiedad' => 'Recepción Municipal y Copropiedad',
+        'escrituracion' => 'Escrituración',
+        'entrega' => 'Entrega',
+        'postventa' => 'Postventa',
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    public const ETAPA_ALIASES = [
+        'permiso de edificacion' => 'permiso_edificacion',
+        'permiso de edificación' => 'permiso_edificacion',
+        'demolicion' => 'demolicion',
+        'demolición' => 'demolicion',
+        'inicio de obra' => 'inicio_obra',
+        'excavacion masiva' => 'excavacion_masiva',
+        'excavación masiva' => 'excavacion_masiva',
+        'construccion' => 'obra_gruesa',
+        'construcción' => 'obra_gruesa',
+        'obra gruesa' => 'obra_gruesa',
+        'terminaciones' => 'terminaciones',
+        'recepcion municipal y copropiedad' => 'recepcion_municipal_y_copropiedad',
+        'recepción municipal y copropiedad' => 'recepcion_municipal_y_copropiedad',
+        'escrituracion' => 'escrituracion',
+        'escrituración' => 'escrituracion',
+        'entrega' => 'entrega',
+        'entrega inmediata' => 'entrega',
+        'postventa' => 'postventa',
+        'preventa' => 'permiso_edificacion',
+        'venta' => 'inicio_obra',
+    ];
+
     protected $table = 'proyectos';
 
     protected $fillable = [
@@ -81,6 +123,72 @@ class Proyecto extends Model
                 $model->slug = Str::slug($model->name);
             }
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function etapaOptions(): array
+    {
+        return self::ETAPA_OPTIONS;
+    }
+
+    public static function normalizeEtapa(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $raw = trim((string) $value);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if (array_key_exists($raw, self::ETAPA_OPTIONS)) {
+            return $raw;
+        }
+
+        $normalizedKey = self::normalizeEtapaKey($raw);
+
+        if ($normalizedKey === '') {
+            return null;
+        }
+
+        if (array_key_exists($normalizedKey, self::ETAPA_OPTIONS)) {
+            return $normalizedKey;
+        }
+
+        return self::ETAPA_ALIASES[$normalizedKey] ?? null;
+    }
+
+    public static function etapaLabel(mixed $value): ?string
+    {
+        $normalized = self::normalizeEtapa($value);
+
+        if ($normalized === null) {
+            return null;
+        }
+
+        return self::ETAPA_OPTIONS[$normalized] ?? null;
+    }
+
+    private static function normalizeEtapaKey(string $value): string
+    {
+        $ascii = Str::of($value)
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/', '_')
+            ->trim('_');
+
+        return (string) $ascii;
+    }
+
+    protected function etapa(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value): ?string => self::normalizeEtapa($value),
+        );
     }
 
     /**

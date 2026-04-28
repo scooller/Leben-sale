@@ -78,7 +78,11 @@ class ProyectoController extends Controller
         }
 
         if (filled($request->input('etapa'))) {
-            $query->where('etapa', $request->input('etapa'));
+            $etapa = Proyecto::normalizeEtapa($request->input('etapa'));
+
+            if ($etapa !== null) {
+                $query->where('etapa', $etapa);
+            }
         }
 
         if (filled($request->input('q'))) {
