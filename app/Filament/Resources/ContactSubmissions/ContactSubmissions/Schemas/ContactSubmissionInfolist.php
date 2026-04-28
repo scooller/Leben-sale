@@ -37,15 +37,6 @@ class ContactSubmissionInfolist
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Campos enviados')
-                    ->components([
-                        KeyValueEntry::make('fields')
-                            ->label('Campos dinámicos')
-                            ->state(fn($record): array => self::formatDynamicFields($record->fields))
-                            ->placeholder('Sin datos enviados')
-                            ->columnSpanFull(),
-                    ]),
-
                 Section::make('Salesforce')
                     ->columns(2)
                     ->components([
@@ -79,6 +70,17 @@ class ContactSubmissionInfolist
                             ->columnSpanFull()
                             ->wrap(),
                     ]),
+
+                Section::make('Campos enviados')
+                    ->components([
+                        KeyValueEntry::make('fields')
+                            ->label('Campos dinámicos')
+                            ->state(fn($record): array => self::formatDynamicFields($record->fields))
+                            ->placeholder('Sin datos enviados')
+                            ->columnSpanFull(),
+                    ]),
+
+
             ]);
     }
 
