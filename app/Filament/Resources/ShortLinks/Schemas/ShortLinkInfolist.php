@@ -26,7 +26,7 @@ class ShortLinkInfolist
                             ->copyable(),
                         TextEntry::make('short_url')
                             ->label('URL corta')
-                            ->state(fn (ShortLink $record): string => $record->shortUrl())
+                            ->state(fn(ShortLink $record): string => $record->shortUrl())
                             ->copyable()
                             ->columnSpanFull(),
                         TextEntry::make('destination_url')

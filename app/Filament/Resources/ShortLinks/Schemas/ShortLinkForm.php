@@ -19,7 +19,7 @@ class ShortLinkForm
         return $schema
             ->components([
                 Section::make('Link corto')
-                    ->description('UTM (utm_source, utm_medium, utm_campaign, etc.) se pasan por query string en la URL destino y se registran por visita. Metadata es para clasificacion interna del link y no reemplaza UTM ni eventos de Google Analytics, Meta Pixel o TikTok Pixel.')
+                    ->description('UTM (utm_source, utm_medium, utm_campaign, etc.) se pasan por query string en la URL destino y se registran por visita. Ejemplo base: https://api.whatsapp.com/send/?phone=56942221542&text=Hola&type=phone_number&app_absent=0. Ejemplo con UTM (formato correcto): https://api.whatsapp.com/send/?phone=56942221542&text=Hola&type=phone_number&app_absent=0&utm_source=Brevo&utm_medium=Black_Inmobiliario_Icon_SUR&utm_campaign=BlackInmobiliario&utm_content=mail_black_inmobiliario_icon_sur_indigo_280426&utm_term=Clic_boton. Metadata es para clasificacion interna del link y no reemplaza UTM ni eventos de Google Analytics, Meta Pixel o TikTok Pixel.')
                     ->columns(2)
                     ->components([
                         TextInput::make('title')
@@ -33,7 +33,7 @@ class ShortLinkForm
                             ->maxLength(32)
                             ->alphaDash()
                             ->unique(ignoreRecord: true)
-                            ->default(fn (): string => Str::lower(Str::random(2)))
+                            ->default(fn(): string => Str::lower(Str::random(2)))
                             ->helperText('Se usa en la URL corta /s/{slug}.'),
                         Select::make('status')
                             ->label('Estado')
@@ -46,14 +46,14 @@ class ShortLinkForm
                             ->url()
                             ->required()
                             ->maxLength(2048)
-                            ->helperText('Si necesitas atribucion de campana, agrega UTM a la URL (ej: ?utm_source=google&utm_medium=cpc&utm_campaign=lanzamiento).')
+                            ->helperText('Si necesitas atribucion de campana, agrega UTM en la misma URL destino. Si la URL ya trae parametros (por ejemplo, en WhatsApp), continua con &utm_... y no uses un segundo ?.')
                             ->columnSpanFull(),
                         TextInput::make('tag_manager_id')
                             ->label('GTM ID (override)')
                             ->placeholder('GTM-XXXXXXX')
                             ->maxLength(50)
                             ->regex('/^GTM-[A-Z0-9]+$/')
-                            ->default(fn (): ?string => SiteSetting::get('tag_manager_id') ?: null)
+                            ->default(fn(): ?string => SiteSetting::get('tag_manager_id') ?: null)
                             ->helperText('Si se deja vacio, usa el tag_manager_id global de Site Settings.'),
                         DateTimePicker::make('expires_at')
                             ->label('Expira en')
