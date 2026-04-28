@@ -1,5 +1,6 @@
 import { trackEvent } from '../utils/tagManager';
 import { useEffect, useRef } from 'react';
+import { resolveStageAlias } from '../utils/stageAlias';
 import { getStoredUtmParams } from '../utils/utmSession';
 import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 
@@ -304,7 +305,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                                 {plant.proyectoEtapa && (
                                 <div className="wa-split wa-align-items-center">
                                     <strong>Etapa</strong>
-                                    <wa-badge variant="success">{plant.proyectoEtapa}</wa-badge>
+                                    <wa-badge variant="success">{resolveStageAlias(plant.proyectoEtapa, plant.proyectoSlug)}</wa-badge>
                                 </div>
                                 )}
                                 {plant.proyectoDescripcion && (

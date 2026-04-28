@@ -9,6 +9,7 @@ import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import siteConfigService from '../services/siteConfig';
 import { isRetryableError } from '../utils/errorHandler';
+import { getConfiguredEntregaAliases, getProjectSlugsByAlias, getStageKeysByAlias } from '../utils/stageAlias';
 import { trackEvent, trackPageView } from '../utils/tagManager';
 import '../styles/home.scss' with { type: 'css' };
 
@@ -132,7 +133,10 @@ function Home({ onNavigate, currentPath }) {
   const { config, loading: configLoading, colorMode, toggleColorMode } = useSiteConfig();
   const isSaleEventActive = Boolean(config?.evento_sale);
   const showPlants = Boolean(config?.mostrar_plantas ?? false);
-  const canRenderPlantsCatalog = showPlants;
+  // Optimistic: while config is loading assume catalog is visible so all data fetches
+  // fire immediately in parallel with the site-config request instead of waiting for it.
+  // If config loads and mostrar_plantas is explicitly false, the catalog is hidden then.
+  const canRenderPlantsCatalog = configLoading ? true : showPlants;
   const catalogUnavailableTitle = config?.catalogo_no_disponible_titulo || 'Próximamente';
   const catalogUnavailableMessage = config?.catalogo_no_disponible_mensaje || '<p>El catálogo de plantas no está disponible por el momento.</p>';
   const routeFilters = useMemo(() => {
@@ -467,36 +471,17 @@ function Home({ onNavigate, currentPath }) {
       try {
         const data = await PlantsService.getLocationFilters();
         setOrientacionOptions(data.orientaciones || []);
-        setEntregaOptions(data.entregas || []);
+        setEntregaOptions(getConfiguredEntregaAliases(data.entregas || []));
         setRegionOptions(data.regions || []);
         setComunaOptions(data.comunas || []);
         setComunasByRegion(data.comunas_by_region || {});
+        setPisoOptions(data.pisos || []);
       } catch {
         return;
       }
     };
 
     fetchLocationFilters();
-  }, [canRenderPlantsCatalog]);
-
-  useEffect(() => {
-    if (!canRenderPlantsCatalog) {
-      return;
-    }
-
-    const fetchPisoOptions = async () => {
-      try {
-        const data = await PlantsService.getAll({ perPage: 500 });
-        const pisos = [...new Set((data.data || []).map((plant) => `${plant?.piso ?? ''}`.trim()).filter((value) => value !== ''))]
-          .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true }));
-
-        setPisoOptions(pisos);
-      } catch {
-        return;
-      }
-    };
-
-    fetchPisoOptions();
   }, [canRenderPlantsCatalog]);
 
   useEffect(() => {
@@ -541,7 +526,7 @@ function Home({ onNavigate, currentPath }) {
   }, [routeComunaSlugs.length, routeComunaValues, routeFilters.legacySlug, routeProjectSlugs.length, routeProjectValues]);
 
   const loadPlants = useCallback(async () => {
-    if (!canRenderPlantsCatalog) {
+    if (canRenderPlantsCatalog === false) {
       setPlants([]);
       setTotalPages(1);
       setTotalPlants(0);
@@ -559,7 +544,6 @@ function Home({ onNavigate, currentPath }) {
 
       const filters = {
         page,
-        perPage: 12,
         // available: true,
       };
 
@@ -594,7 +578,19 @@ function Home({ onNavigate, currentPath }) {
       }
 
       if (selectedEntrega) {
-        filters.entrega = selectedEntrega;
+        const aliasProjectSlugs = getProjectSlugsByAlias(selectedEntrega);
+
+        if (aliasProjectSlugs.length > 0) {
+          if (Array.isArray(filters.project_slug) && filters.project_slug.length > 0) {
+            const intersection = filters.project_slug.filter((slug) => aliasProjectSlugs.includes(slug));
+            filters.project_slug = intersection;
+          } else {
+            filters.project_slug = aliasProjectSlugs;
+          }
+        } else {
+          const groupedStageKeys = getStageKeysByAlias(selectedEntrega);
+          filters.entrega = groupedStageKeys.length > 0 ? groupedStageKeys : selectedEntrega;
+        }
       }
 
       if (routeComunaSlugs.length > 0) {

@@ -351,6 +351,18 @@ class PlantController extends Controller
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
+        $pisos = Plant::query()
+            ->where('is_active', true)
+            ->whereHas('proyecto', function ($projectQuery) {
+                $projectQuery->where('is_active', true);
+            })
+            ->pluck('piso')
+            ->map(static fn (mixed $piso): string => trim((string) $piso))
+            ->filter(static fn (string $piso): bool => $piso !== '')
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
         $regions = $projects
             ->pluck('region')
             ->map(static fn (mixed $region): string => trim((string) $region))
@@ -398,6 +410,7 @@ class PlantController extends Controller
             'comunas_by_region' => $comunasByRegion,
             'orientaciones' => $orientaciones,
             'tipos_producto' => $tiposProducto,
+            'pisos' => $pisos,
             'entregas' => $entregas,
         ]);
     }

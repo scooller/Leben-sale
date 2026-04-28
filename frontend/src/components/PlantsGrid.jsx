@@ -1,5 +1,6 @@
 import { Suspense, lazy, useState, useRef, useEffect, useCallback } from 'react';
 import PlantsService from '../services/plants';
+import { resolveStageAlias } from '../utils/stageAlias';
 
 const PlantDetailDialog = lazy(() => import('./PlantDetailDialog'));
 
@@ -397,7 +398,7 @@ function PlantsGrid({
                     <wa-badge variant="neutral">{plant.tipoProducto}</wa-badge>
                     )}
                     {plant.proyectoEtapa && (
-                    <wa-badge variant="success" style={{ fontSize: 'var(--wa-font-size-xs)' }}>{plant.proyectoEtapa}</wa-badge>
+                    <wa-badge variant="success" style={{ fontSize: 'var(--wa-font-size-xs)' }}>{resolveStageAlias(plant.proyectoEtapa, plant.proyectoSlug)}</wa-badge>
                     )}
                     {plant.isPaid && (
                     <wa-badge variant="neutral"><wa-icon name="shop-slash" slot="start"></wa-icon>Pagada</wa-badge>

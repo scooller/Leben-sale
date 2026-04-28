@@ -372,10 +372,12 @@ class PlantApiFiltersTest extends TestCase
         $this->createPlant($projectInSantiago->salesforce_id, true, [
             'orientacion' => 'Norte',
             'tipo_producto' => 'DEPARTAMENTO',
+            'piso' => '3',
         ]);
         $this->createPlant($projectInProvidencia->salesforce_id, true, [
             'orientacion' => 'Sur',
             'tipo_producto' => 'LOCAL',
+            'piso' => '10',
         ]);
 
         $response = $this->getJson('/api/v1/plantas/filtros-ubicacion');
@@ -386,6 +388,7 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonFragment(['orientaciones' => ['Norte', 'Sur']]);
         $response->assertJsonFragment(['tipos_producto' => ['DEPARTAMENTO', 'LOCAL']]);
         $response->assertJsonFragment(['entregas' => ['Entrega', 'Obra gruesa']]);
+        $response->assertJsonFragment(['pisos' => ['10', '3']]);
         $response->assertJsonPath('comunas_by_region.Metropolitana.0', 'Providencia');
         $response->assertJsonPath('comunas_by_region.Metropolitana.1', 'Santiago');
     }

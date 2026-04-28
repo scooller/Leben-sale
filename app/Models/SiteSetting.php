@@ -374,6 +374,7 @@ class SiteSetting extends Model
             'custom_css' => $settings->custom_css,
             'header_scripts' => $settings->header_scripts,
             'footer_scripts' => $settings->footer_scripts,
+            'plants_per_page' => (int) ($settings->plants_per_page ?? 12),
             'maintenance_mode' => $settings->maintenance_mode,
             'maintenance_message' => $settings->maintenance_message,
             'hero' => [
