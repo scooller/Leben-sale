@@ -79,6 +79,7 @@ class ShortLinkInfolist
                             ->dateTime('d/m/Y H:i'),
                     ]),
                 Section::make('Metadata')
+                    ->description('Metadata guarda etiquetas internas del link (operacion/reportes). La atribucion publicitaria se registra por UTM en las visitas del short link.')
                     ->components([
                         KeyValueEntry::make('metadata')
                             ->label('Metadata')

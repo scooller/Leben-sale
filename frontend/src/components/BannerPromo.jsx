@@ -2,19 +2,23 @@
  * Componente de Banner Promocional
  * Se muestra antes del hero section si está configurado en el admin
  */
+import { appendSessionUtmsToExternalUrl, isExternalHttpUrl } from '../utils/externalLinks';
+
 export default function BannerPromo({ banner }) {
   if (!banner?.image) {
     return null;
   }
 
-  const handleBannerClick = (e) => {
+  const handleBannerClick = () => {
     if (banner.link) {
+      const trackedLink = appendSessionUtmsToExternalUrl(banner.link);
+
       // Si tiene link externo, abrir en nueva pestaña
-      if (banner.link.startsWith('http')) {
-        window.open(banner.link, '_blank');
+      if (isExternalHttpUrl(trackedLink)) {
+        window.open(trackedLink, '_blank');
       } else {
         // Si es ruta interna, usar navegación
-        window.location.href = banner.link;
+        window.location.href = trackedLink;
       }
     }
   };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { authService } from '../services/auth';
 import ReservationService from '../services/reservation';
 import { trackEvent } from '../utils/tagManager';
+import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 
 const MANUAL_PROOF_MAX_BYTES = 5 * 1024 * 1024;
 const MANUAL_PROOF_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'heic', 'heif'];
@@ -53,6 +54,7 @@ function PaymentGatewayDialog({
   const [turnstileReady, setTurnstileReady] = useState(Boolean(window.turnstile));
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileError, setTurnstileError] = useState(null);
+  const trackedManualPaymentLink = appendSessionUtmsToExternalUrl(manualPaymentLink);
 
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const isTurnstileEnabled = Boolean(turnstileSiteKey);
@@ -665,8 +667,8 @@ function PaymentGatewayDialog({
             {manualPaymentLink && (
               <div className="wa-stack wa-gap-2xs">
                 <strong>Link de pago</strong>
-                <a href={manualPaymentLink} target="_blank" rel="noreferrer noopener">
-                  {manualPaymentLink}
+                <a href={trackedManualPaymentLink} target="_blank" rel="noreferrer noopener">
+                  {trackedManualPaymentLink}
                 </a>
               </div>
             )}

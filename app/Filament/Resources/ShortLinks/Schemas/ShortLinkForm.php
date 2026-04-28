@@ -5,12 +5,12 @@ namespace App\Filament\Resources\ShortLinks\Schemas;
 use App\Enums\ShortLinkStatus;
 use App\Models\SiteSetting;
 use Filament\Forms\Components\DateTimePicker;
-use Illuminate\Support\Str;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class ShortLinkForm
 {
@@ -19,6 +19,7 @@ class ShortLinkForm
         return $schema
             ->components([
                 Section::make('Link corto')
+                    ->description('UTM (utm_source, utm_medium, utm_campaign, etc.) se pasan por query string en la URL destino y se registran por visita. Metadata es para clasificacion interna del link y no reemplaza UTM ni eventos de Google Analytics, Meta Pixel o TikTok Pixel.')
                     ->columns(2)
                     ->components([
                         TextInput::make('title')
@@ -45,6 +46,7 @@ class ShortLinkForm
                             ->url()
                             ->required()
                             ->maxLength(2048)
+                            ->helperText('Si necesitas atribucion de campana, agrega UTM a la URL (ej: ?utm_source=google&utm_medium=cpc&utm_campaign=lanzamiento).')
                             ->columnSpanFull(),
                         TextInput::make('tag_manager_id')
                             ->label('GTM ID (override)')
@@ -60,6 +62,7 @@ class ShortLinkForm
                             ->label('Metadata')
                             ->keyLabel('Clave')
                             ->valueLabel('Valor')
+                            ->helperText('Uso recomendado: contexto interno para reportes y segmentacion (ej: canal=paid_social, plataforma=tiktok_ads, creativo=video_a, objetivo=lead_gen).')
                             ->columnSpanFull(),
                     ]),
             ]);

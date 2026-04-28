@@ -704,7 +704,7 @@ class SiteSettings extends Page implements HasForms
                                             ->visible(fn (Get $get): bool => (bool) $get('extra_settings.qr.hasGradient')),
 
                                         Toggle::make('extra_settings.qr.hasEyeColor')
-                                            ->label('Usar color en ojos')
+                                            ->label('Usar color en cuadrados')
                                             ->default((bool) ($qrDefaults['hasEyeColor'] ?? false))
                                             ->live(),
 

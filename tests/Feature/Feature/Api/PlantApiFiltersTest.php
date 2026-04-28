@@ -748,6 +748,7 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonPath('proyecto.asesores.0.last_name', 'Diaz');
         $response->assertJsonPath('proyecto.asesores.0.email', 'camila@example.com');
         $response->assertJsonPath('proyecto.asesores.0.whatsapp_owner', '+56 9 8765 4321');
+        $response->assertJsonPath('proyecto.asesores.0.whatsapp_redirect_url', route('advisors.whatsapp.redirect', ['asesor' => $advisor]));
         $response->assertJsonPath('proyecto.asesores.0.avatar_manual_url', $advisorAvatarMedia->url);
         $response->assertJsonPath('proyecto.asesores.0.avatar_url', $advisorAvatarMedia->url);
         $response->assertJsonPath('asesores.0.id', $advisor->id);

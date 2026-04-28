@@ -555,6 +555,7 @@ class PlantController extends Controller
             'last_name' => $asesor->last_name,
             'email' => $asesor->email,
             'whatsapp_owner' => $asesor->whatsapp_owner,
+            'whatsapp_redirect_url' => route('advisors.whatsapp.redirect', ['asesor' => $asesor]),
             'avatar_manual_url' => $manualAvatarUrl,
             'avatar_url' => $manualAvatarUrl ?: $defaultAvatarUrl,
         ];

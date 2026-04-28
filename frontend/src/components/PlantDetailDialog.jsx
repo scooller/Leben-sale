@@ -1,5 +1,7 @@
 import { trackEvent } from '../utils/tagManager';
 import { useEffect, useRef } from 'react';
+import { getStoredUtmParams } from '../utils/utmSession';
+import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 
 function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = null, dialogRef, checkoutLoading, onCheckout, onClose }) {
     const closeNotifiedRef = useRef(false);
@@ -82,15 +84,53 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
 
     const getWhatsappUrl = (advisor) => {
         const phone = sanitizePhone(advisor?.whatsapp);
+        const redirectUrl = `${advisor?.whatsappRedirectUrl ?? advisor?.whatsapp_redirect_url ?? ''}`.trim();
 
-        if (!phone) {
+        if (!phone && !redirectUrl) {
             return null;
         }
 
         const advisorName = advisor?.fullName || advisor?.firstName || 'asesor';
         const message = getWhatsappMessage(advisorName);
 
-        return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        if (redirectUrl) {
+            try {
+                const redirectTarget = new URL(redirectUrl, window.location.origin);
+                const params = new URLSearchParams(redirectTarget.search);
+                const utmParams = getStoredUtmParams();
+
+                Object.entries(utmParams).forEach(([key, value]) => {
+                    const normalizedValue = `${value ?? ''}`.trim();
+
+                    if (normalizedValue !== '') {
+                        params.set(key, normalizedValue);
+                    }
+                });
+
+                params.set('text', message);
+                params.set('source', 'plant_detail_dialog');
+
+                if (plant?.id) {
+                    params.set('plant_id', `${plant.id}`);
+                }
+
+                if (plant?.nombre) {
+                    params.set('plant_name', `${plant.nombre}`);
+                }
+
+                if (plant?.proyectoNombre) {
+                    params.set('project_name', `${plant.proyectoNombre}`);
+                }
+
+                redirectTarget.search = params.toString();
+
+                return redirectTarget.toString();
+            } catch {
+                return redirectUrl;
+            }
+        }
+
+        return appendSessionUtmsToExternalUrl(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
     };
 
     const openImageZoom = async (event) => {
@@ -160,7 +200,7 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
 
             return {
                 href: isExternal
-                    ? parsedTarget.href
+                    ? appendSessionUtmsToExternalUrl(parsedTarget.href)
                     : `${parsedTarget.pathname}${parsedTarget.search}${parsedTarget.hash}` || fallbackPath,
                 isExternal,
             };

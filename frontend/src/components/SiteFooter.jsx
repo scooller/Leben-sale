@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 
 const normalizeFooterMenu = (menuItems) => {
   if (!Array.isArray(menuItems)) {
@@ -122,7 +123,7 @@ function SiteFooter({ config, onNavigate }) {
                     <wa-button
                       appearance="plain"
                       key={socialItem.key}
-                      href={socialItem.url}
+                      href={appendSessionUtmsToExternalUrl(socialItem.url)}
                       style={{ fontSize: 'var(--wa-font-size-l)' }}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -143,7 +144,7 @@ function SiteFooter({ config, onNavigate }) {
                     appearance="plain"
                     variant="neutral"
                     style={{ fontSize: 'var(--wa-font-size-sm)' }}
-                    href={menuItem.url}
+                  href={appendSessionUtmsToExternalUrl(menuItem.url)}
                     target={menuItem.newTab ? '_blank' : undefined}
                     rel={menuItem.newTab ? 'noopener noreferrer' : undefined}
                     onClick={(event) => handleFooterNavigation(event, menuItem.url, menuItem.newTab)}

@@ -3,6 +3,7 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import contactSubmissionsService from '../services/contactSubmissions';
 import { trackEvent } from '../utils/tagManager';
 import { getStoredUtmParams } from '../utils/utmSession';
+import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 import { proyectosService } from '../services/proyectos';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
@@ -1098,7 +1099,7 @@ function Contact({ onNavigate, currentPath }) {
                     <wa-button
                       appearance="filled"
                       key={socialItem.key}
-                      href={socialItem.url}
+                      href={appendSessionUtmsToExternalUrl(socialItem.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={socialItem.label}

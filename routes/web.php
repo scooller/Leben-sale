@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdvisorWhatsappRedirectController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\ShortLinkRedirectController;
 use App\Models\Payment;
@@ -24,6 +25,10 @@ Route::get('/curator/{path}', function (string $path) {
 Route::get('/s/{slug}', ShortLinkRedirectController::class)
     ->middleware('throttle:120,1')
     ->name('short-links.redirect');
+
+Route::get('/go/asesores/{asesor}/whatsapp', AdvisorWhatsappRedirectController::class)
+    ->middleware('throttle:120,1')
+    ->name('advisors.whatsapp.redirect');
 
 // Rutas de webhooks y retornos de pasarelas de pago
 Route::prefix('payments')->name('payment.')->group(function () {

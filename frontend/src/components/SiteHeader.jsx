@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { trackEvent } from '../utils/tagManager';
+import { appendSessionUtmsToExternalUrl } from '../utils/externalLinks';
 
 function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
   const { colorMode } = useSiteConfig();
@@ -58,6 +59,7 @@ function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
   };
 
   const siteUrl = `${config?.site_url || '/'}`.trim() || '/';
+  const trackedSiteUrl = appendSessionUtmsToExternalUrl(siteUrl);
   const logoSrc = colorMode === 'dark'
     ? (config?.logo_dark || config?.logo)
     : (config?.logo || config?.logo_dark);
@@ -95,7 +97,7 @@ function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
     <>
       <header className="site-header box-shadow-1 wa-px-xl wa-py-m">
         <div className="wa-split wa-gap-s wa-align-items-center" style={{ width: '100%' }}>
-          <wa-button appearance="plain" href={siteUrl} target="_blank">
+          <wa-button appearance="plain" href={trackedSiteUrl} target="_blank">
             {logoSrc ? (
               <img src={logoSrc} alt={config?.site_name || 'Logo'} className="site-logo" />
             ) : (
