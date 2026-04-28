@@ -27,7 +27,7 @@ class PlantsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('name', 'asc')
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
