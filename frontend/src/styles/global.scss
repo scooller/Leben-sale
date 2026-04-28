@@ -76,37 +76,43 @@ $directions: ('t', 'r', 'b', 'l', 'x', 'y', '');
   @each $dir in $directions {
     .wa-p#{$dir}-#{$size} {
       @if $dir == 't' {
-        padding-top: $value;
+        padding-top: $value!important;
       } @else if $dir == 'r' {
-        padding-right: $value;
+        padding-right: $value!important;
       } @else if $dir == 'b' {
-        padding-bottom: $value;
+        padding-bottom: $value!important;
       } @else if $dir == 'l' {
-        padding-left: $value;
+        padding-left: $value!important;
       } @else if $dir == 'x' {
-        padding-left: $value;
-        padding-right: $value;
+        padding-left: $value!important;
+        padding-right: $value!important;
       } @else if $dir == 'y' {
-        padding-top: $value;
-        padding-bottom: $value;
+        padding-top: $value!important;
+        padding-bottom: $value!important;
       }
     }
     .wa-m#{$dir}-#{$size} {
       @if $dir == 't' {
-        margin-top: $value;
+        margin-top: $value!important;
       } @else if $dir == 'r' {
-        margin-right: $value;
+        margin-right: $value!important;
       } @else if $dir == 'b' {
-        margin-bottom: $value;
+        margin-bottom: $value!important;
       } @else if $dir == 'l' {
-        margin-left: $value;
+        margin-left: $value!important;
       } @else if $dir == 'x' {
-        margin-left: $value;
-        margin-right: $value;
+        margin-left: $value!important;
+        margin-right: $value!important;
       } @else if $dir == 'y' {
-        margin-top: $value;
-        margin-bottom: $value;
+        margin-top: $value!important;
+        margin-bottom: $value!important;
       }
     }
   }
+}
+.wa-p-0 {
+  padding: 0!important;
+}
+.wa-m-0 {
+  margin: 0!important;
 }

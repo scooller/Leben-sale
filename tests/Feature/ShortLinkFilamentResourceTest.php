@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\ShortLinkStatus;
 use App\Filament\Resources\ShortLinks\ShortLinkResource;
+use App\Models\FrontendPreviewLink;
 use App\Models\ShortLink;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ShortLinkFilamentResourceTest extends TestCase
@@ -52,5 +54,31 @@ class ShortLinkFilamentResourceTest extends TestCase
             'slug' => 'lanzamiento',
             'status' => ShortLinkStatus::ACTIVE->value,
         ]);
+    }
+
+    public function test_short_link_index_shows_qr_action(): void
+    {
+        ShortLink::factory()->create([
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->get(ShortLinkResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('Ver QR');
+    }
+
+    public function test_frontend_preview_links_index_shows_qr_action(): void
+    {
+        FrontendPreviewLink::query()->create([
+            'name' => 'preview-admin',
+            'token' => 'preview-token',
+            'preview_path' => '/plantas',
+            'expires_at' => Carbon::now()->addHour(),
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->get('/admin/frontend-preview-links')
+            ->assertOk()
+            ->assertSee('Ver QR');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ShortLinks\Pages;
 
+use App\Filament\Actions\ShowQrCodeAction;
 use App\Filament\Resources\ShortLinks\ShortLinkResource;
 use App\Models\ShortLink;
 use Filament\Actions\Action;
@@ -19,6 +20,7 @@ class ViewShortLink extends ViewRecord
                 ->label('Abrir URL corta')
                 ->icon('heroicon-o-link')
                 ->url(fn (): string => $this->getRecord()->shortUrl(), true),
+            ShowQrCodeAction::make(fn (ShortLink $record): string => $record->shortUrl()),
             EditAction::make(),
         ];
     }

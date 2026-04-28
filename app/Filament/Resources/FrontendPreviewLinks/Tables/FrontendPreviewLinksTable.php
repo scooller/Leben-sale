@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\FrontendPreviewLinks\Tables;
 
+use App\Filament\Actions\ShowQrCodeAction;
 use App\Models\FrontendPreviewLink;
 use Filament\Actions\DeleteAction;
 use Filament\Tables\Columns\IconColumn;
@@ -52,6 +53,7 @@ class FrontendPreviewLinksTable
                     ->sortable(),
             ])
             ->recordActions([
+                ShowQrCodeAction::make(fn (FrontendPreviewLink $record): string => $record->previewUrl()),
                 DeleteAction::make()
                     ->label('Revocar')
                     ->modalHeading('Revocar link preview')

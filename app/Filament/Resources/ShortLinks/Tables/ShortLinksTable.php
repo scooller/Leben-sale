@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ShortLinks\Tables;
 
 use App\Enums\ShortLinkStatus;
 use App\Filament\Actions\ExportShortLinksAction;
+use App\Filament\Actions\ShowQrCodeAction;
 use App\Models\ShortLink;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -99,6 +100,7 @@ class ShortLinksTable
                     ->label('Abrir URL corta')
                     ->icon('heroicon-o-link')
                     ->url(fn (ShortLink $record): string => $record->shortUrl(), true),
+                ShowQrCodeAction::make(fn (ShortLink $record): string => $record->shortUrl()),
                 ViewAction::make(),
                 EditAction::make(),
             ])

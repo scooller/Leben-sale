@@ -386,10 +386,10 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                                                             <wa-icon name="user-tie"></wa-icon>
                                                         </span>
                                                     )}
-                                                    <div className="wa-stack wa-gap-3xs advisor-contact-meta">
-                                                        <strong className='wa-x-m'>{advisorName}</strong>
+                                                    <div className="wa-stack wa-gap-3xs advisor-contact-meta text-left">
+                                                        <strong className='wa-px-s'>{advisorName}</strong>
                                                         {advisor.email && (
-                                                            <wa-button appearance="plain" variant="neutral" href={`mailto:${advisor.email}`} target="_blank">{advisor.email}</wa-button>
+                                                            <a target="_blank" className="wa-m-0 wa-px-s" href={`mailto:${advisor.email}`}>{advisor.email}</a>
                                                         )}
                                                     </div>
                                                 </div>
