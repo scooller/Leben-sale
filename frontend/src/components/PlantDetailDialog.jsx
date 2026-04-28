@@ -93,21 +93,6 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
         return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     };
 
-    const getAdvisorInitials = (advisor) => {
-        const source = `${advisor?.fullName || `${advisor?.firstName || ''} ${advisor?.lastName || ''}`}`.trim();
-
-        if (!source) {
-            return 'AS';
-        }
-
-        return source
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((part) => part[0]?.toUpperCase() || '')
-            .join('');
-    };
-
     const openImageZoom = async (event) => {
         event.preventDefault();
 
@@ -159,33 +144,48 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
         return '/contacto';
     };
 
-    const goToContact = () => {
+    const getContactLinkMeta = () => {
+        const fallbackPath = '/contacto';
+
         if (typeof window === 'undefined') {
-            return;
-        }
-
-        const target = resolveContactTarget();
-
-        if (dialogRef?.current && typeof dialogRef.current.hide === 'function') {
-            dialogRef.current.hide();
+            return {
+                href: resolveContactTarget() || fallbackPath,
+                isExternal: false,
+            };
         }
 
         try {
-            const parsedTarget = new URL(target, window.location.origin);
+            const parsedTarget = new URL(resolveContactTarget(), window.location.origin);
+            const isExternal = parsedTarget.origin !== window.location.origin;
 
-            if (parsedTarget.origin === window.location.origin) {
-                const nextPath = `${parsedTarget.pathname}${parsedTarget.search}${parsedTarget.hash}`;
-                window.history.pushState({}, '', nextPath || '/contacto');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-
-            window.location.assign(parsedTarget.href);
+            return {
+                href: isExternal
+                    ? parsedTarget.href
+                    : `${parsedTarget.pathname}${parsedTarget.search}${parsedTarget.hash}` || fallbackPath,
+                isExternal,
+            };
         } catch {
-            window.history.pushState({}, '', '/contacto');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return {
+                href: fallbackPath,
+                isExternal: false,
+            };
+        }
+    };
+
+    const contactLinkMeta = getContactLinkMeta();
+
+    const handleContactLinkClick = () => {
+        trackEvent('wa_link', {
+            source: 'plant_detail_dialog',
+            action: 'advisor_cta_click',
+            plant_id: plant?.id || null,
+            plant_name: plant?.nombre || null,
+            project_name: plant?.proyectoNombre || null,
+            destination: contactLinkMeta.href,
+        });
+
+        if (dialogRef?.current && typeof dialogRef.current.hide === 'function') {
+            dialogRef.current.hide();
         }
     };
 
@@ -370,23 +370,24 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                         <>
                             <wa-divider></wa-divider>
                             <wa-details summary="Contacto" appearance="plain" open>
-                                <div className="wa-stack wa-gap-s advisor-contact-list">
+                                <div className="wa-stack wa-gap-3xs advisor-contact-list">
                                     {plant.asesores.map((advisor) => {
                                         const advisorName = advisor.fullName || `${advisor.firstName || ''} ${advisor.lastName || ''}`.trim() || 'Asesor';
                                         const whatsappUrl = getWhatsappUrl(advisor);
+                                        const manualAvatarUrl = `${advisor?.manualAvatarUrl ?? advisor?.avatarManualUrl ?? advisor?.avatar_manual_url ?? ''}`.trim();
 
                                         return (
                                             <article key={advisor.id} className="advisor-contact-card">
                                                 <div className="wa-cluster wa-gap-s wa-align-items-center advisor-contact-header">
-                                                    {advisor.avatarUrl ? (
-                                                        <img src={advisor.avatarUrl} alt={advisorName} className="advisor-avatar" />
+                                                    {manualAvatarUrl ? (
+                                                        <img src={manualAvatarUrl} alt={advisorName} className="advisor-avatar" />
                                                     ) : (
                                                         <span className="advisor-avatar-fallback" aria-hidden="true">
-                                                            {getAdvisorInitials(advisor)}
+                                                            <wa-icon name="user-tie"></wa-icon>
                                                         </span>
                                                     )}
                                                     <div className="wa-stack wa-gap-3xs advisor-contact-meta">
-                                                        <strong>{advisorName}</strong>
+                                                        <strong className='wa-x-m'>{advisorName}</strong>
                                                         {advisor.email && (
                                                             <wa-button appearance="plain" variant="neutral" href={`mailto:${advisor.email}`} target="_blank">{advisor.email}</wa-button>
                                                         )}
@@ -465,7 +466,10 @@ function PlantDetailDialog({ plant, isSaleEventActive = false, saleLogoUrl = nul
                     <wa-button
                         variant="success"
                         size={mobile ? 'small' : 'large'}
-                        onClick={goToContact}
+                        href={contactLinkMeta.href}
+                        target={contactLinkMeta.isExternal ? '_blank' : undefined}
+                        rel={contactLinkMeta.isExternal ? 'noopener noreferrer' : undefined}
+                        onClick={handleContactLinkClick}
                     >
                         <wa-icon name="envelope" slot="start"></wa-icon>
                         Asesorate aquí

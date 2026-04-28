@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { trackEvent } from '../utils/tagManager';
 
 function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
   const { colorMode } = useSiteConfig();
@@ -77,8 +78,16 @@ function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
     window.requestAnimationFrame(closeMobileMenu);
   };
 
-  const goToContact = () => {
-    onNavigate?.('/contacto');
+  const contactHref = '/contacto';
+
+  const handleContactClick = () => {
+    trackEvent('wa_link', {
+      source: isMobileView ? 'site_header_mobile' : 'site_header_desktop',
+      action: 'advisor_cta_click',
+      destination: contactHref,
+      current_path: currentPath,
+    });
+
     window.requestAnimationFrame(closeMobileMenu);
   };
 
@@ -118,7 +127,7 @@ function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
                 </wa-button>
                 </>
               )}
-              <wa-button appearance={currentPath === '/contacto' ? 'filled-outlined' : 'plain'} onClick={goToContact} variant="danger">
+              <wa-button appearance={currentPath === '/contacto' ? 'filled-outlined' : 'plain'} href={contactHref} onClick={handleContactClick} variant="danger">
                 <wa-icon name="envelope" slot="start"></wa-icon>
                 Asesorate aquí
               </wa-button>
@@ -152,7 +161,7 @@ function SiteHeader({ config, currentPath = '/', onNavigate, onMenuClick }) {
                     Plantas
                   </wa-button>
                 )}
-                <wa-button appearance={currentPath === '/contacto' ? 'filled-outlined' : 'plain'} onClick={goToContact}>
+                <wa-button appearance={currentPath === '/contacto' ? 'filled-outlined' : 'plain'} href={contactHref} onClick={handleContactClick}>
                     <wa-icon name="envelope" slot="start"></wa-icon>
                     Asesorate aquí
                 </wa-button>

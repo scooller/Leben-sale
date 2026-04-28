@@ -26,6 +26,6 @@ export default defineConfig({
       },
     },
     // Aumentar el límite para CSS (el theme es legítimamente grande)
-    chunkSizeWarningLimit: 750,
+    chunkSizeWarningLimit: 600,
   },
 })

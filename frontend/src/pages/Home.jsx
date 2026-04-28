@@ -447,6 +447,7 @@ function Home({ onNavigate, currentPath }) {
           lastName: asesor.last_name,
           email: asesor.email,
           whatsapp: asesor.whatsapp_owner,
+          manualAvatarUrl: `${asesor.avatar_manual_url ?? asesor.avatar_image_media?.url ?? ''}`.trim() || null,
           avatarUrl: asesor.avatar_url,
         })),
       isPaid: !!plant.is_paid,

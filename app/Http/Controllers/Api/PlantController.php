@@ -546,6 +546,8 @@ class PlantController extends Controller
 
     private function asesorPayload(Asesor $asesor, string $defaultAvatarUrl): array
     {
+        $manualAvatarUrl = $asesor->avatarImageMedia?->url;
+
         return [
             'id' => $asesor->id,
             'full_name' => $asesor->full_name,
@@ -553,7 +555,8 @@ class PlantController extends Controller
             'last_name' => $asesor->last_name,
             'email' => $asesor->email,
             'whatsapp_owner' => $asesor->whatsapp_owner,
-            'avatar_url' => $asesor->avatarImageMedia?->url ?: $defaultAvatarUrl,
+            'avatar_manual_url' => $manualAvatarUrl,
+            'avatar_url' => $manualAvatarUrl ?: $defaultAvatarUrl,
         ];
     }
 

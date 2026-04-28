@@ -702,11 +702,26 @@ class PlantApiFiltersTest extends TestCase
             'logo_id' => $logoMedia->id,
         ]);
 
+        $advisorAvatarMedia = Media::query()->create([
+            'disk' => 'curator',
+            'directory' => null,
+            'visibility' => 'public',
+            'name' => 'advisor-avatar',
+            'path' => 'advisor-avatar.png',
+            'width' => 320,
+            'height' => 320,
+            'size' => 10240,
+            'type' => 'image/png',
+            'ext' => 'png',
+            'title' => 'Advisor Avatar',
+        ]);
+
         $advisor = Asesor::factory()->create([
             'first_name' => 'Camila',
             'last_name' => 'Diaz',
             'email' => 'camila@example.com',
             'whatsapp_owner' => '+56 9 8765 4321',
+            'avatar_image_id' => $advisorAvatarMedia->id,
             'is_active' => true,
         ]);
 
@@ -733,7 +748,8 @@ class PlantApiFiltersTest extends TestCase
         $response->assertJsonPath('proyecto.asesores.0.last_name', 'Diaz');
         $response->assertJsonPath('proyecto.asesores.0.email', 'camila@example.com');
         $response->assertJsonPath('proyecto.asesores.0.whatsapp_owner', '+56 9 8765 4321');
-        $response->assertJsonPath('proyecto.asesores.0.avatar_url', $logoMedia->url);
+        $response->assertJsonPath('proyecto.asesores.0.avatar_manual_url', $advisorAvatarMedia->url);
+        $response->assertJsonPath('proyecto.asesores.0.avatar_url', $advisorAvatarMedia->url);
         $response->assertJsonPath('asesores.0.id', $advisor->id);
     }
 
