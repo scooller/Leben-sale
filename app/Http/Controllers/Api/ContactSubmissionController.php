@@ -54,7 +54,7 @@ class ContactSubmissionController extends Controller
                 'email' => $submission->email,
             ]);
 
-            CreateSalesforceCaseJob::dispatchSync($submission);
+            CreateSalesforceCaseJob::dispatchSync($submission, 'automatic');
 
             Log::info('ContactSubmissionController: Finalizó sincronización Salesforce Lead', [
                 'contact_submission_id' => $submission->id,

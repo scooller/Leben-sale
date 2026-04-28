@@ -17,13 +17,14 @@ class CreateSalesforceCaseJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public ContactSubmission $submission) {}
+    public function __construct(public ContactSubmission $submission, public string $syncTrigger = 'automatic') {}
 
     /**
      * Execute the job.
      */
     public function handle(SalesforceService $salesforceService, SalesforceCaseMapper $mapper): void
     {
+        $syncTrigger = $this->normalizeSyncTrigger($this->syncTrigger);
         $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
 
         Log::debug('CreateSalesforceCaseJob: Inicio de ejecución', [
@@ -59,6 +60,8 @@ class CreateSalesforceCaseJob implements ShouldQueue
             $submission->update([
                 'salesforce_case_id' => $leadId !== '' ? $leadId : null,
                 'salesforce_case_error' => null,
+                'salesforce_synced_at' => now(),
+                'salesforce_sync_trigger' => $syncTrigger,
             ]);
 
             Log::debug('CreateSalesforceCaseJob: Lead creado correctamente', [
@@ -73,6 +76,8 @@ class CreateSalesforceCaseJob implements ShouldQueue
 
             $submission->update([
                 'salesforce_case_error' => $errorMessage,
+                'salesforce_synced_at' => now(),
+                'salesforce_sync_trigger' => $syncTrigger,
             ]);
 
             Log::error('CreateSalesforceCaseJob: Error al crear Lead', [
@@ -111,5 +116,10 @@ class CreateSalesforceCaseJob implements ShouldQueue
             : Str::limit($body, 4000, '');
 
         return $context;
+    }
+
+    private function normalizeSyncTrigger(string $syncTrigger): string
+    {
+        return $syncTrigger === 'manual' ? 'manual' : 'automatic';
     }
 }

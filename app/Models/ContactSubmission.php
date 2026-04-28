@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\LogsModelActivity;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,11 +24,14 @@ class ContactSubmission extends Model
         'submitted_at',
         'salesforce_case_id',
         'salesforce_case_error',
+        'salesforce_synced_at',
+        'salesforce_sync_trigger',
     ];
 
     protected $casts = [
         'fields' => 'array',
         'submitted_at' => 'datetime',
+        'salesforce_synced_at' => 'datetime',
     ];
 
     public function channel(): BelongsTo
@@ -50,5 +54,47 @@ class ContactSubmission extends Model
         }
 
         return sprintf('%s/lightning/r/Lead/%s/view', $instanceUrl, $leadId);
+    }
+
+    public function hasSalesforceSyncInfo(): bool
+    {
+        return filled($this->salesforce_case_id)
+            || filled($this->salesforce_case_error)
+            || $this->salesforce_synced_at !== null
+            || filled($this->salesforce_sync_trigger);
+    }
+
+    public function salesforceSyncedAt(): ?CarbonInterface
+    {
+        if (! $this->hasSalesforceSyncInfo()) {
+            return null;
+        }
+
+        return $this->salesforce_synced_at ?? $this->updated_at;
+    }
+
+    public function salesforceSyncModeLabel(): ?string
+    {
+        if (! $this->hasSalesforceSyncInfo()) {
+            return null;
+        }
+
+        $syncTrigger = trim((string) $this->salesforce_sync_trigger);
+
+        if ($syncTrigger === 'manual') {
+            return 'Manual';
+        }
+
+        if ($syncTrigger === 'automatic') {
+            return 'Automática';
+        }
+
+        if ($this->submitted_at === null || $this->updated_at === null) {
+            return null;
+        }
+
+        return $this->updated_at->greaterThan($this->submitted_at->copy()->addSeconds(30))
+            ? 'Manual'
+            : 'Automática';
     }
 }

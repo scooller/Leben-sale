@@ -35,14 +35,14 @@ class ResyncSalesforceLeadAction
                 // Limpiar error previo antes de reintentar
                 $record->update(['salesforce_case_error' => null]);
 
-                CreateSalesforceCaseJob::dispatchSync($record);
+                CreateSalesforceCaseJob::dispatchSync($record, 'manual');
 
                 $record->refresh();
 
                 if (filled($record->salesforce_case_id)) {
                     Notification::make()
                         ->title('Lead sincronizado')
-                        ->body('Lead creado en Salesforce con ID: '.$record->salesforce_case_id)
+                        ->body('Lead creado en Salesforce con ID: ' . $record->salesforce_case_id)
                         ->success()
                         ->send();
                 } else {
