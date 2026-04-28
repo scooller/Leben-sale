@@ -145,7 +145,13 @@ class Proyecto extends Model
             return $normalizedKey;
         }
 
-        return self::ETAPA_ALIASES[$normalizedKey] ?? null;
+        $aliasMatch = self::ETAPA_ALIASES[$normalizedKey] ?? null;
+        if ($aliasMatch !== null) {
+            return $aliasMatch;
+        }
+
+        // Fallback robusto para textos con codificación irregular (ej: "edificaciÃ³n").
+        return self::matchEtapaByKeywords($normalizedKey);
     }
 
     public static function etapaLabel(mixed $value): ?string
@@ -170,12 +176,64 @@ class Proyecto extends Model
         return (string) $ascii;
     }
 
+    private static function matchEtapaByKeywords(string $normalizedKey): ?string
+    {
+        if (str_contains($normalizedKey, 'permiso') && str_contains($normalizedKey, 'edific')) {
+            return 'permiso_edificacion';
+        }
+
+        if (str_contains($normalizedKey, 'demol')) {
+            return 'demolicion';
+        }
+
+        if (str_contains($normalizedKey, 'inicio') && str_contains($normalizedKey, 'obra')) {
+            return 'inicio_obra';
+        }
+
+        if (str_contains($normalizedKey, 'excav')) {
+            return 'excavacion_masiva';
+        }
+
+        if (str_contains($normalizedKey, 'obra') && (str_contains($normalizedKey, 'grues') || str_contains($normalizedKey, 'constru'))) {
+            return 'obra_gruesa';
+        }
+
+        if (str_contains($normalizedKey, 'termina')) {
+            return 'terminaciones';
+        }
+
+        if (str_contains($normalizedKey, 'recepcion') && str_contains($normalizedKey, 'municip')) {
+            return 'recepcion_municipal_y_copropiedad';
+        }
+
+        if (str_contains($normalizedKey, 'escritur')) {
+            return 'escrituracion';
+        }
+
+        if (str_contains($normalizedKey, 'entrega')) {
+            return 'entrega';
+        }
+
+        if (str_contains($normalizedKey, 'postventa')) {
+            return 'postventa';
+        }
+
+        return null;
+    }
+
     protected function etapa(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value): ?string => self::normalizeEtapa($value) ?? $value,
-            set: fn (mixed $value): ?string => self::normalizeEtapa($value),
+            get: fn(?string $value): ?string => self::normalizeEtapa($value) ?? $value,
+            set: fn(mixed $value): ?string => self::normalizeEtapa($value) ?? ($this->normalizeRawString($value)),
         );
+    }
+
+    private function normalizeRawString(mixed $value): ?string
+    {
+        $raw = trim((string) $value);
+
+        return $raw === '' ? null : $raw;
     }
 
     /**
@@ -192,7 +250,7 @@ class Proyecto extends Model
      */
     protected function imageUrl(): Attribute
     {
-        return Attribute::get(fn (): string => ProjectImageService::getProjectImageUrl($this));
+        return Attribute::get(fn(): string => ProjectImageService::getProjectImageUrl($this));
     }
 
     /**

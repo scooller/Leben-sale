@@ -33,6 +33,20 @@ Todos los cambios relevantes de este proyecto serán documentados en este archiv
 - Eliminación de rol duplicado al registrar usuarios
 - Restricción de acceso al panel administrativo según permisos Spatie
 
+#### QR y Enlaces de Asesores
+- Acción de creación de shortlink QR desde la tabla de asesores
+- Mejoras de descripción y formato en formularios/infolist de Short Links
+- Nuevo flujo de redirección WhatsApp para asesores con helpers UTM
+
+### 🔄 Cambios
+
+#### Salesforce — Etapas de Proyecto
+- Normalización centralizada de `etapa` con catálogo canónico y aliases legacy
+- Sincronización de proyectos normaliza `Etapa__c` antes de persistir
+- API y tablas del panel homologan representación de etapa (filtros, badges y payload)
+- Migración de backfill para normalizar valores históricos en `proyectos.etapa`
+- Tests unitarios y feature actualizados para cubrir normalización y casos legacy
+
 ---
 
 ## [1.8.0] - 2026-04-14

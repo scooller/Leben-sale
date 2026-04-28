@@ -90,4 +90,19 @@ class ProyectoTest extends TestCase
         $this->assertSame('entrega', Proyecto::normalizeEtapa('Entrega Inmediata'));
         $this->assertNull(Proyecto::normalizeEtapa('Etapa inexistente'));
     }
+
+    public function test_it_normalizes_mojibake_stage_values_to_canonical_values(): void
+    {
+        $this->assertSame('permiso_edificacion', Proyecto::normalizeEtapa('Permiso de edificaciÃ³n'));
+        $this->assertSame('inicio_obra', Proyecto::normalizeEtapa('Inicio de obra'));
+    }
+
+    public function test_it_does_not_persist_null_when_stage_is_unknown(): void
+    {
+        $proyecto = Proyecto::factory()->create([
+            'etapa' => 'Etapa ???',
+        ]);
+
+        $this->assertSame('Etapa ???', $proyecto->getRawOriginal('etapa'));
+    }
 }

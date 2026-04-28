@@ -128,6 +128,8 @@ frontend/
 - **Actividad de usuarios** — Página personalizada `UserActivitiesPage` en Filament con vista de historial detallado
 - **Logo modo oscuro** — Campo `logo_dark_id` con selección dinámica según el modo activo del panel
 - **Short Links** — Gestión de URLs cortas con Filament Resource, etiquetas UTM y exportación
+- **QR + WhatsApp asesores** — Generación de shortlinks QR desde asesores y redirección WhatsApp con UTM helpers
+- **Etapas homologadas** — Normalización de `etapa` en sync/API/panel con aliases legacy y backfill de datos históricos
 - **Salesforce Leads** — El formulario de contacto crea Leads con reintentos automáticos y mapeo UTM completo
 - **SEO configurable** — Tab SEO en SiteSettings con meta tags y Open Graph aplicados en frontend
 - **Cloudflare Turnstile** — Captcha integrado en el formulario de contacto con validación server-side
@@ -299,7 +301,7 @@ Lista de proyectos disponibles.
       "direccion": "Av. Principal 123",
       "comuna": "Santiago",
       "region": "Metropolitana",
-      "etapa": "En Construcción",
+      "etapa": "obra_gruesa",
       "fecha_entrega": "2026-12-31"
     }
   ],
@@ -396,7 +398,7 @@ GET /api/v1/plantas?disponible=0
         "provincia": "Santiago",
         "region": "Metropolitana",
         "pagina_web": "https://proyecto.test",
-        "etapa": "En Construcción",
+        "etapa": "Obra gruesa",
         "horario_atencion": "Lunes a Viernes 9:00 - 18:00",
         "entrega_inmediata": false,
         "is_active": true
@@ -469,7 +471,7 @@ Detalle de una planta específica.
     "provincia": "Santiago",
     "region": "Metropolitana",
     "pagina_web": "https://proyecto.test",
-    "etapa": "En Construcción",
+    "etapa": "Obra gruesa",
     "horario_atencion": "Lunes a Viernes 9:00 - 18:00",
     "entrega_inmediata": false,
     "is_active": true
