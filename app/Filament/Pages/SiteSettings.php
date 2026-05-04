@@ -119,6 +119,26 @@ class SiteSettings extends Page implements HasForms
         data_set($data, 'extra_settings.qr', $settings->qrOptions());
 
         $this->form->fill($data);
+
+        if (session()->pull('salesforce_connected')) {
+            Notification::make()
+                ->success()
+                ->title('Salesforce conectado')
+                ->body('La conexión con Salesforce se ha establecido correctamente.')
+                ->persistent()
+                ->send();
+        }
+
+        if ($errors = session('errors')) {
+            if ($msg = $errors->first('salesforce')) {
+                Notification::make()
+                    ->danger()
+                    ->title('Error al conectar con Salesforce')
+                    ->body($msg)
+                    ->persistent()
+                    ->send();
+            }
+        }
     }
 
     public function form(Schema $schema): Schema
