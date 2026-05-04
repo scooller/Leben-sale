@@ -12,7 +12,7 @@ Route::get('/', function () {
 
 // Servir archivos del almacenamiento público bajo la ruta /curator/ (para compatibilidad con Curator)
 Route::get('/curator/{path}', function (string $path) {
-    $fullPath = storage_path('app/public/'.$path);
+    $fullPath = storage_path('app/public/' . $path);
 
     if (! file_exists($fullPath)) {
         abort(404);
@@ -71,4 +71,14 @@ Route::prefix('payments')->name('payment.')->group(function () {
     Route::get('pending/{payment?}', function ($payment = null) {
         return view('payments.pending', compact('payment'));
     })->name('pending');
+});
+
+// Rutas de integración Salesforce OAuth
+Route::prefix('salesforce')->name('salesforce.')->group(function () {
+    Route::get('oauth/connect', [\App\Http\Controllers\SalesforceOAuthController::class, 'connect'])
+        ->middleware('auth')
+        ->name('oauth.connect');
+
+    Route::get('callback', [\App\Http\Controllers\SalesforceOAuthController::class, 'callback'])
+        ->name('callback');
 });

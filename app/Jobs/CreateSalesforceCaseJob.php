@@ -49,6 +49,8 @@ class CreateSalesforceCaseJob implements ShouldQueue
         }
 
         try {
+            $salesforceService->authenticate();
+
             // Flujo Case pausado temporalmente:
             // $payload = $mapper->map($submission);
             // $response = $salesforceService->createCase($payload);

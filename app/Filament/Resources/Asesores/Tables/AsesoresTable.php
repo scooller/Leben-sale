@@ -28,7 +28,7 @@ class AsesoresTable
             ->columns([
                 ImageColumn::make('avatar_url')
                     ->label('Avatar')
-                    ->getStateUsing(fn ($record): ?string => $record->resolved_avatar_url)
+                    ->getStateUsing(fn($record): ?string => $record->resolved_avatar_url)
                     ->circular(),
 
                 TextColumn::make('full_name')
@@ -47,9 +47,9 @@ class AsesoresTable
 
                 TextColumn::make('qr_short_url')
                     ->label('Link QR')
-                    ->state(fn (Asesor $record): ?string => self::resolveExistingWhatsappShortLinkUrl($record))
+                    ->state(fn(Asesor $record): ?string => self::resolveExistingWhatsappShortLinkUrl($record))
                     ->placeholder('Sin link QR')
-                    ->copyable(fn (?string $state): bool => filled($state))
+                    ->copyable(fn(?string $state): bool => filled($state))
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('salesforce_id')
@@ -81,8 +81,8 @@ class AsesoresTable
                     ->label('Crear QR')
                     ->icon('heroicon-o-qr-code')
                     ->color('gray')
-                    ->disabled(fn (Asesor $record): bool => ! $record->is_active || blank($record->whatsapp_owner))
-                    ->tooltip(fn (Asesor $record): ?string => (! $record->is_active || blank($record->whatsapp_owner))
+                    ->disabled(fn(Asesor $record): bool => ! $record->is_active || blank($record->whatsapp_owner))
+                    ->tooltip(fn(Asesor $record): ?string => (! $record->is_active || blank($record->whatsapp_owner))
                         ? 'El asesor debe estar activo y con WhatsApp para generar su QR.'
                         : null)
                     ->modalHeading('Codigo QR del asesor')
@@ -99,7 +99,7 @@ class AsesoresTable
                             'qrSvg' => Qr::render(data: $shortUrl, options: $qrOptions, downloadable: false),
                         ]);
                     })
-                    ->action(static fn (): null => null),
+                    ->action(static fn(): null => null),
                 EditAction::make(),
             ])
             ->toolbarActions([
