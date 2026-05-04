@@ -115,9 +115,9 @@ class SalesforceCaseMapperTest extends TestCase
         $this->assertSame('+56942221542', $payload['wsp_owner__c'] ?? null);
         $this->assertSame('+56942221542', $payload['Telefono_owner__c'] ?? null);
         $this->assertSame('+56942221542', $payload['owner_phone__c'] ?? null);
-        $this->assertSame('992285134', $payload['whatsapp_phone__c'] ?? null);
-        $this->assertSame('https://wa.me/992285134?text=Hola%20ALEJANDRO%2C%20te%20contacto%20desde%20Leben.%20%C2%BFTienes%20un%20minuto%3F', $payload['Whatsapp_Link__c'] ?? null);
-        $this->assertSame('<a href="https://wa.me/992285134?text=Hola%20ALEJANDRO%2C%20te%20contacto%20desde%20Leben.%20%C2%BFTienes%20un%20minuto%3F" target="_blank">Link</a>', $payload['Whatsapp_Link_URL__c'] ?? null);
+        $this->assertArrayNotHasKey('whatsapp_phone__c', $payload);
+        $this->assertArrayNotHasKey('Whatsapp_Link__c', $payload);
+        $this->assertArrayNotHasKey('Whatsapp_Link_URL__c', $payload);
         $this->assertSame('direct', $payload['utm_source__c'] ?? null);
         $this->assertSame('organic', $payload['utm_medium__c'] ?? null);
         $this->assertSame('BlackFriday', $payload['utm_campaign__c'] ?? null);
