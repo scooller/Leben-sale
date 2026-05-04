@@ -99,7 +99,7 @@ class SalesforceCaseMapper
             'wsp_owner__c' => $wspOwnerPhone,
             'Telefono_owner__c' => $telefonoOwnerPhone,
             'owner_phone__c' => $ownerPhone,
-            'whatsapp_phone__c' => $whatsappPhone,
+            // whatsapp_phone__c no existe en el objeto Lead de este org
             'Whatsapp_Link__c' => $whatsappLink,
             'Whatsapp_Link_URL__c' => $whatsappLinkUrl,
             'utm_source__c' => $utmSource,
@@ -111,7 +111,7 @@ class SalesforceCaseMapper
 
         $payload = $this->normalizeLegacyCustomFieldsInPayload($payload);
 
-        return array_filter($payload, static fn (mixed $value): bool => $value !== null && $value !== '');
+        return array_filter($payload, static fn(mixed $value): bool => $value !== null && $value !== '');
     }
 
     /**
@@ -178,9 +178,9 @@ class SalesforceCaseMapper
 
         if (is_array($value)) {
             $items = array_values(array_filter(array_map(
-                static fn (mixed $item): string => trim((string) $item),
+                static fn(mixed $item): string => trim((string) $item),
                 $value
-            ), static fn (string $item): bool => $item !== ''));
+            ), static fn(string $item): bool => $item !== ''));
 
             return $items === [] ? null : implode(', ', $items);
         }
@@ -225,7 +225,7 @@ class SalesforceCaseMapper
                 ->title()
                 ->toString();
 
-            return 'UTM '.$suffix;
+            return 'UTM ' . $suffix;
         }
 
         return Str::of($key)
@@ -305,7 +305,7 @@ class SalesforceCaseMapper
         $asesores = $project->asesores;
 
         $advisor = $asesores
-            ->sortByDesc(static fn ($asesor): int => $asesor->is_active ? 1 : 0)
+            ->sortByDesc(static fn($asesor): int => $asesor->is_active ? 1 : 0)
             ->first();
 
         return $this->normalizePhone($advisor?->whatsapp_owner);

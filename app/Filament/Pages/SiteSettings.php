@@ -120,7 +120,7 @@ class SiteSettings extends Page implements HasForms
 
         $this->form->fill($data);
 
-        if (session()->pull('salesforce_connected')) {
+        if (\Illuminate\Support\Facades\Cache::pull('salesforce_oauth_just_connected')) {
             Notification::make()
                 ->success()
                 ->title('Salesforce conectado')

@@ -45,7 +45,8 @@ class SalesforceOAuthController extends Controller
 
             Log::info('Salesforce OAuth: Autenticación completada exitosamente');
 
-            session()->flash('salesforce_connected', true);
+            // Guardar en cache por 5 minutos para que la notificación se muestre una sola vez
+            \Illuminate\Support\Facades\Cache::put('salesforce_oauth_just_connected', true, now()->addMinutes(5));
 
             return redirect('/admin/site-settings');
         } catch (\Throwable $e) {
