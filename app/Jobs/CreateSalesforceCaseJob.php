@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Omniphx\Forrest\Exceptions\MissingResourceException;
 
 class CreateSalesforceCaseJob implements ShouldQueue
 {
@@ -49,7 +50,9 @@ class CreateSalesforceCaseJob implements ShouldQueue
         }
 
         try {
-            $salesforceService->authenticate();
+            // WebServer flow: el token se obtiene vía OAuth interactivo desde el panel admin.
+            // No llamar authenticate() aquí porque en WebServer flow intenta redirigir al navegador.
+            // Si no hay token, Forrest lanzará MissingResourceException con mensaje claro.
 
             // Flujo Case pausado temporalmente:
             // $payload = $mapper->map($submission);
@@ -73,6 +76,19 @@ class CreateSalesforceCaseJob implements ShouldQueue
                 'salesforce_errors' => $response['errors'] ?? null,
                 'salesforce_response' => $response,
             ]);
+        } catch (\Omniphx\Forrest\Exceptions\MissingResourceException $exception) {
+            // Token no disponible en cache — requiere reconexión OAuth desde el panel admin
+            Log::critical('CreateSalesforceCaseJob: Token de Salesforce no disponible. Reconecta en /admin/site-settings → "Conectar con Salesforce"', [
+                'contact_submission_id' => $submission->id,
+            ]);
+
+            $submission->update([
+                'salesforce_case_error' => 'Token Salesforce expirado. Reconectar en panel admin.',
+                'salesforce_synced_at' => now(),
+                'salesforce_sync_trigger' => $syncTrigger,
+            ]);
+
+            // No relanzar — no tiene sentido reintentar sin token
         } catch (\Throwable $exception) {
             $errorMessage = Str::limit($exception->getMessage(), 65535, '');
 

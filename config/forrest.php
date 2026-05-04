@@ -67,8 +67,8 @@ return [
     'storage' => [
         'type' => 'cache', // Options include: 'session', 'cache', 'object', or class instance of Omniphx\Forrest\Interfaces\StorageInterface
         'path' => 'forrest_', // unique storage path to avoid collisions
-        'expire_in' => 3600, // number of seconds to expire cache/session
-        'store_forever' => false, // never expire cache/session
+        'expire_in' => 86400, // 24 horas - el refresh token renueva automáticamente
+        'store_forever' => true, // no expirar - el token se renueva vía refresh token
     ],
 
     /*
