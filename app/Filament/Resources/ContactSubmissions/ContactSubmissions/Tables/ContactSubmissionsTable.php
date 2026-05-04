@@ -3,20 +3,25 @@
 namespace App\Filament\Resources\ContactSubmissions\ContactSubmissions\Tables;
 
 use App\Filament\Exports\ContactSubmissionExporter;
+use App\Jobs\CreateSalesforceCaseJob;
 use App\Models\ContactChannel;
+use App\Models\ContactSubmission;
 use App\Models\SiteSetting;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
 
@@ -59,6 +64,56 @@ class ContactSubmissionsTable
                     ->icon('heroicon-o-document-arrow-up')
                     ->exporter(ContactSubmissionExporter::class),
                 BulkActionGroup::make([
+                    BulkAction::make('syncSelectedToSalesforce')
+                        ->label('Sincronizar con Salesforce')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('¿Sincronizar contactos seleccionados con Salesforce?')
+                        ->modalDescription('Se intentará crear o actualizar el Lead en Salesforce para cada contacto seleccionado. Los errores previos serán limpiados antes del reintento.')
+                        ->modalSubmitActionLabel('Sí, sincronizar')
+                        ->action(function (Collection $records): void {
+                            $leadEnabled = (bool) config('services.salesforce.lead_enabled', config('services.salesforce.case_enabled', false));
+
+                            if (! $leadEnabled) {
+                                Notification::make()
+                                    ->title('Salesforce deshabilitado')
+                                    ->body('La sincronización con Salesforce está deshabilitada en la configuración.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $synced = 0;
+                            $failed = 0;
+
+                            $records->each(function (ContactSubmission $record) use (&$synced, &$failed): void {
+                                $record->update(['salesforce_case_error' => null]);
+                                CreateSalesforceCaseJob::dispatchSync($record, 'manual');
+                                $record->refresh();
+
+                                if (filled($record->salesforce_case_id)) {
+                                    $synced++;
+                                } else {
+                                    $failed++;
+                                }
+                            });
+
+                            if ($failed === 0) {
+                                Notification::make()
+                                    ->title('Sincronización completada')
+                                    ->body("Se sincronizaron {$synced} contacto(s) con Salesforce.")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Sincronización parcial')
+                                    ->body("Sincronizados: {$synced}. Con error: {$failed}.")
+                                    ->warning()
+                                    ->send();
+                            }
+                        }),
                     DeleteBulkAction::make()
                         ->modalHeading('¿Eliminar contactos seleccionados?')
                         ->modalDescription('Esta acción es irreversible. Se eliminarán permanentemente todos los envíos seleccionados y no podrán recuperarse.')
@@ -124,7 +179,7 @@ class ContactSubmissionsTable
                 ->label('Enviado')
                 ->dateTime()
                 ->sortable(),
-            //sincronizado con salesforce
+            // sincronizado con salesforce
             TextColumn::make('salesforce_synced_at')
                 ->label('Sincronizado con Salesforce')
                 ->state(fn($record) => $record->salesforceSyncedAt())
