@@ -60,16 +60,13 @@
   margin-top: var(--wa-space-s);
 }
 
-.turnstile-wrapper {
-  margin-top: var(--wa-space-2xs);
+// Extiende la base global de .turnstile-wrapper (definida en global.scss)
+// agregando posicionamiento para superponer el skeleton de carga.
+.contact-form .turnstile-wrapper {
   position: relative;
 }
 
-.turnstile-wrapper > div {
-  min-height: 66px;
-}
-
-.turnstile-wrapper wa-skeleton {
+.contact-form .turnstile-wrapper wa-skeleton {
   position: absolute;
   top: 0;
   left: 0;

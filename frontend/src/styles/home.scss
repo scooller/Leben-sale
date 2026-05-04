@@ -3,39 +3,6 @@
  * Usa Web Awesome design tokens y componentes
  * Minimalista: Deja que Web Awesome haga el trabajo, solo layout y spacing
  */
-html #root{
-    transition: background-color 0.8s ease;
-}
-html.wa-dark #root{
-    background-color: rgba(var(--wa-color-black-rgb), 1);
-}
-html.wa-light #root{
-    background-color: rgba(var(--wa-color-black-rgb), .6);
-}
-.app{
-  background-image:
-    url(https://new.ileben.cl/curator/a162e112-ded8-465f-b1d3-69a02d0ee80f.svg);
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-}
-/* header */
-.site-header{
-    background: var(--wa-color-surface-raised);
-    border-bottom: 1px solid rgba(var(--wa-color-neutral-border-normal-rgb), 0.42);
-    position: sticky;
-    top: 0;
-    width: 100%;
-    z-index: 30;
-    .site-logo{
-        height: 45px;
-    }
-}
-
-.site-header-nav {
-  align-items: center;
-}
-
 .home-container {
   padding: 2rem 1rem;
   max-width: 1200px;
@@ -582,14 +549,6 @@ html.wa-light {
   font-weight: var(--wa-font-weight-medium);
 }
 
-.turnstile-wrapper {
-  margin-top: var(--wa-space-2xs);
-}
-
-.turnstile-wrapper > div {
-  min-height: 66px;
-}
-
 .manual-proof-upload {
   gap: var(--wa-space-2xs);
 }
@@ -625,13 +584,6 @@ html.wa-light {
 
 .manual-proof-file-name {
   color: var(--wa-color-text-quiet);
-}
-
-.box-shadow-1{
-    box-shadow: rgb(var(--wa-color-black-rgb)) 0px 20px 30px -10px;
-}
-.box-shadow-2{
-    box-shadow: rgba(var(--wa-color-black-rgb), 0.25) 0px 14px 28px, rgba(var(--wa-color-black-rgb), 0.22) 0px 10px 10px;
 }
 
 @media (min-width: 992px) {
