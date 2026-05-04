@@ -11,6 +11,10 @@ use Omniphx\Forrest\Providers\Laravel\Facades\Forrest;
 
 class SalesforceService
 {
+    private const LEAD_CREATABLE_FIELDS_CACHE_KEY = 'salesforce:lead:creatable-fields';
+
+    private const LEAD_CREATABLE_FIELDS_CACHE_TTL_SECONDS = 86400;
+
     private const LEAD_UNAVAILABLE_FIELDS_CACHE_KEY = 'salesforce:lead:unavailable-fields';
 
     private const LEAD_UNAVAILABLE_FIELDS_CACHE_TTL_SECONDS = 86400;
@@ -120,7 +124,8 @@ class SalesforceService
      */
     public function createLead(array $payload): array
     {
-        $currentPayload = $this->sanitizeLeadPayloadWithKnownUnavailableFields($payload);
+        $currentPayload = $this->sanitizeLeadPayloadWithCreatableFields($payload);
+        $currentPayload = $this->sanitizeLeadPayloadWithKnownUnavailableFields($currentPayload);
 
         Log::debug('Salesforce: Enviando solicitud de creación de Lead', [
             'email' => $currentPayload['Email'] ?? null,
@@ -306,6 +311,97 @@ class SalesforceService
         $field = trim((string) ($matches[1] ?? ''));
 
         return $field !== '' ? $field : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function sanitizeLeadPayloadWithCreatableFields(array $payload): array
+    {
+        $creatableFields = $this->leadCreatableFieldNames();
+
+        if ($creatableFields === []) {
+            return $payload;
+        }
+
+        $allowedFields = array_fill_keys($creatableFields, true);
+        $removedFields = [];
+
+        foreach (array_keys($payload) as $field) {
+            if (! is_string($field) || array_key_exists($field, $allowedFields)) {
+                continue;
+            }
+
+            unset($payload[$field]);
+            $removedFields[] = $field;
+        }
+
+        if ($removedFields !== []) {
+            Log::warning('Salesforce: Campos removidos del payload de Lead por metadata describe', [
+                'removed_fields' => array_values(array_unique($removedFields)),
+            ]);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function leadCreatableFieldNames(): array
+    {
+        $cached = Cache::get(self::LEAD_CREATABLE_FIELDS_CACHE_KEY);
+
+        if (is_array($cached) && $cached !== []) {
+            return array_values(array_unique(array_filter(array_map(
+                static fn (mixed $field): string => trim((string) $field),
+                $cached
+            ), static fn (string $field): bool => $field !== '')));
+        }
+
+        try {
+            $describe = Forrest::describe('Lead');
+            $fields = is_array($describe['fields'] ?? null) ? $describe['fields'] : [];
+
+            $creatableFields = [];
+
+            foreach ($fields as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+
+                if (($field['createable'] ?? false) !== true) {
+                    continue;
+                }
+
+                $name = trim((string) ($field['name'] ?? ''));
+
+                if ($name === '') {
+                    continue;
+                }
+
+                $creatableFields[] = $name;
+            }
+
+            $creatableFields = array_values(array_unique($creatableFields));
+
+            if ($creatableFields !== []) {
+                Cache::put(
+                    self::LEAD_CREATABLE_FIELDS_CACHE_KEY,
+                    $creatableFields,
+                    now()->addSeconds(self::LEAD_CREATABLE_FIELDS_CACHE_TTL_SECONDS)
+                );
+            }
+
+            return $creatableFields;
+        } catch (\Throwable $exception) {
+            Log::debug('Salesforce: No se pudo obtener describe de Lead, se omite filtro preventivo', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
