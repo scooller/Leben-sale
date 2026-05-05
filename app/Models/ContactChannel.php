@@ -39,6 +39,41 @@ class ContactChannel extends Model
     }
 
     /**
+     * @param  iterable<int, int|string>  $recordKeys
+     * @return array{updated:int, skipped:int}
+     */
+    public static function bulkSetActive(iterable $recordKeys, bool $isActive): array
+    {
+        $keys = collect($recordKeys)
+            ->map(fn (mixed $key): int => (int) $key)
+            ->filter(fn (int $key): bool => $key > 0)
+            ->unique()
+            ->values();
+
+        if ($keys->isEmpty()) {
+            return [
+                'updated' => 0,
+                'skipped' => 0,
+            ];
+        }
+
+        $query = static::query()->whereIn('id', $keys->all());
+
+        if (! $isActive) {
+            $query->where('is_default', false);
+        }
+
+        $updated = $query->update([
+            'is_active' => $isActive,
+        ]);
+
+        return [
+            'updated' => $updated,
+            'skipped' => max($keys->count() - $updated, 0),
+        ];
+    }
+
+    /**
      * Finds an active channel by its slug.
      */
     public static function findBySlug(string $slug): ?self

@@ -4,12 +4,16 @@ namespace App\Filament\Resources\ContactChannels\Tables;
 
 use App\Filament\Resources\ContactChannels\ContactChannelResource;
 use App\Models\ContactChannel;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 
 class ContactChannelsTable
 {
@@ -65,6 +69,50 @@ class ContactChannelsTable
                     ->modalSubmitActionLabel('Sí, eliminar')
                     ->modalIcon('heroicon-o-exclamation-triangle')
                     ->visible(fn (ContactChannel $record): bool => ContactChannelResource::canDelete($record)),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('activateSelected')
+                        ->label('Activar seleccionados')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('¿Activar canales seleccionados?')
+                        ->modalDescription('Los canales seleccionados quedarán habilitados para recibir contactos.')
+                        ->modalSubmitActionLabel('Sí, activar')
+                        ->action(function (Collection $records): void {
+                            $result = ContactChannel::bulkSetActive($records->modelKeys(), true);
+
+                            Notification::make()
+                                ->title('Canales activados')
+                                ->body("Se actualizaron {$result['updated']} canal(es).")
+                                ->success()
+                                ->send();
+                        }),
+                    BulkAction::make('deactivateSelected')
+                        ->label('Desactivar seleccionados')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('¿Desactivar canales seleccionados?')
+                        ->modalDescription('Los canales desactivados no podrán usarse en el formulario de contacto.')
+                        ->modalSubmitActionLabel('Sí, desactivar')
+                        ->action(function (Collection $records): void {
+                            $result = ContactChannel::bulkSetActive($records->modelKeys(), false);
+
+                            $message = "Se desactivaron {$result['updated']} canal(es).";
+
+                            if ($result['skipped'] > 0) {
+                                $message .= " {$result['skipped']} canal(es) no se pudieron desactivar (por ejemplo, canal por defecto).";
+                            }
+
+                            Notification::make()
+                                ->title('Canales desactivados')
+                                ->body($message)
+                                ->warning()
+                                ->send();
+                        }),
+                ]),
             ]);
     }
 
