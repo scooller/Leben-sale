@@ -153,6 +153,7 @@ function Contact({ onNavigate, currentPath }) {
   const [turnstileLoading, setTurnstileLoading] = useState(false);
 
   const storedUtmParams = useMemo(() => getStoredUtmParams(), []);
+  const channelSlug = useMemo(() => new URLSearchParams(window.location.search).get('channel') ?? 'sale', []);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
@@ -678,7 +679,7 @@ function Contact({ onNavigate, currentPath }) {
       await contactSubmissionsService.create({
         ...storedUtmParams,
         ...submissionValues,
-      }, turnstileToken);
+      }, turnstileToken, channelSlug || null);
 
       trackEvent('form_submit', {
         form_name: 'contact',

@@ -118,6 +118,7 @@ class StoreContactSubmissionRequest extends FormRequest
     {
         $attributes = [
             'fields' => 'campos del formulario',
+            'channel' => 'Canal de contacto',
             'turnstile_token' => 'verificacion de seguridad',
         ];
 
@@ -145,6 +146,7 @@ class StoreContactSubmissionRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            $this->validateChannelField($validator);
             $this->validateRequiredContactSelectionFields($validator);
 
             if (! $this->isTurnstileEnabled()) {
@@ -167,6 +169,25 @@ class StoreContactSubmissionRequest extends FormRequest
                 $validator->errors()->add('turnstile_token', 'No pudimos verificar la validacion de seguridad. Intenta nuevamente.');
             }
         });
+    }
+
+    private function validateChannelField(Validator $validator): void
+    {
+        if ($validator->errors()->has('channel')) {
+            return;
+        }
+
+        $channelBody = trim((string) $this->input('channel', ''));
+
+        if ($channelBody !== '' && ! ContactChannel::query()->where('slug', $channelBody)->where('is_active', true)->exists()) {
+            $validator->errors()->add('channel', 'El canal de contacto seleccionado no es válido o está inactivo.');
+
+            return;
+        }
+
+        if ($this->resolvedChannel() === null) {
+            $validator->errors()->add('channel', 'El campo Canal de contacto es obligatorio.');
+        }
     }
 
     /**
@@ -324,11 +345,9 @@ class StoreContactSubmissionRequest extends FormRequest
 
     /**
      * Resolves the contact channel from the request.
-     * Resolution order (backward-compatible — all steps optional):
-     *   1. Explicit `channel` field in the request body.
-     *   2. `X-Contact-Channel` request header.
-     *   3. Domain matching via utm_site / Origin / Referer.
-     *   4. The configured default channel.
+     * Resolution order:
+     *   1. Explicit `channel` field in the request body (required).
+     *   2. `X-Contact-Channel` request header (for programmatic API clients).
      */
     public function resolvedChannel(): ?ContactChannel
     {
@@ -347,7 +366,7 @@ class StoreContactSubmissionRequest extends FormRequest
             }
         }
 
-        // 2. X-Contact-Channel header.
+        // 2. X-Contact-Channel header (fallback for programmatic API clients).
         $headerSlug = trim((string) $this->headers->get('X-Contact-Channel', ''));
 
         if ($headerSlug !== '') {
@@ -358,23 +377,7 @@ class StoreContactSubmissionRequest extends FormRequest
             }
         }
 
-        // 3. Domain pattern matching from utm_site / Origin / Referer.
-        $domainCandidates = array_filter([
-            trim((string) ($this->input('fields.utm_site', '') ?? '')),
-            parse_url((string) $this->headers->get('Origin', ''), PHP_URL_HOST) ?? '',
-            parse_url((string) $this->headers->get('Referer', ''), PHP_URL_HOST) ?? '',
-        ], fn (string $v): bool => $v !== '');
-
-        foreach ($domainCandidates as $domain) {
-            $channel = ContactChannel::findByDomain($domain);
-
-            if ($channel !== null) {
-                return $this->cachedChannel = $channel;
-            }
-        }
-
-        // 4. Default channel fallback.
-        return $this->cachedChannel = ContactChannel::getDefault();
+        return null;
     }
 
     /**

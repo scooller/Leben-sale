@@ -21,6 +21,15 @@ class ContactSubmissionApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function postContactSubmission(array $payload, array $headers = []): \Illuminate\Testing\TestResponse
+    {
+        if (! array_key_exists('channel', $payload)) {
+            $payload['channel'] = 'sale';
+        }
+
+        return $this->postJson('/api/v1/contact-submissions', $payload, $headers);
+    }
+
     public function test_it_stores_contact_submission_and_sends_email_to_configured_recipient(): void
     {
         Mail::fake();
@@ -47,7 +56,7 @@ class ContactSubmissionApiTest extends TestCase
             'contact_notification_email' => 'leads@ileben.cl',
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan Perez',
                 'rut' => '12.345.678-5',
@@ -97,7 +106,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Sin Email',
             ],
@@ -117,7 +126,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Sin comuna ni proyecto',
                 'email' => 'sin-comuna@example.com',
@@ -140,19 +149,17 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this
-            ->withHeaders([
-                'Referer' => 'https://sale.ileben.cl/landing/campana',
-            ])
-            ->postJson('/api/v1/contact-submissions', [
-                'fields' => [
-                    'name' => 'Sin UTM Site',
-                    'email' => 'sin-utmsite@example.com',
-                    'comuna' => 'Santiago',
-                    'proyecto' => 'Proyecto Referer',
-                    'utm_source' => 'instagram',
-                ],
-            ]);
+        $response = $this->postContactSubmission([
+            'fields' => [
+                'name' => 'Sin UTM Site',
+                'email' => 'sin-utmsite@example.com',
+                'comuna' => 'Santiago',
+                'proyecto' => 'Proyecto Referer',
+                'utm_source' => 'instagram',
+            ],
+        ], [
+            'Referer' => 'https://sale.ileben.cl/landing/campana',
+        ]);
 
         $response->assertCreated();
 
@@ -180,7 +187,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'rut' => '12.345.678-9',
                 'reason' => 'otro',
@@ -203,7 +210,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan Perez',
                 'email' => 'juan@example.com',
@@ -232,7 +239,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan Perez',
                 'email' => 'juan@example.com',
@@ -266,7 +273,7 @@ class ContactSubmissionApiTest extends TestCase
             'contact_notification_email' => 'leads@ileben.cl',
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan Perez',
                 'email' => 'juan@example.com',
@@ -319,7 +326,7 @@ class ContactSubmissionApiTest extends TestCase
             'contact_notification_email' => 'leads@ileben.cl',
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan Perez',
                 'email' => 'juan@example.com',
@@ -465,7 +472,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'proyecto' => 'Proyecto Icon',
                 'comuna' => 'Providencia',
@@ -506,7 +513,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'rango' => 'icon_1',
             ],
@@ -552,7 +559,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Juan',
                 'rango' => 'best_1',
@@ -591,7 +598,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'proyecto' => 'Proyecto Best',
                 'comuna' => 'Santiago',
@@ -621,7 +628,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Alejandro',
                 'email' => 'alejandro@example.com',
@@ -654,7 +661,7 @@ class ContactSubmissionApiTest extends TestCase
             ],
         ]);
 
-        $response = $this->postJson('/api/v1/contact-submissions', [
+        $response = $this->postContactSubmission([
             'fields' => [
                 'name' => 'Alejandro',
                 'email' => 'alejandro@example.com',

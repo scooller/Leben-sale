@@ -21,6 +21,7 @@ use Awcodes\Curator\Components\Forms\RichEditor\AttachCuratorMediaPlugin;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -37,7 +38,10 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Halt;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
+use Omniphx\Forrest\Providers\Laravel\Facades\Forrest;
 
 class SiteSettings extends Page implements HasForms
 {
@@ -1069,7 +1073,19 @@ class SiteSettings extends Page implements HasForms
                                 Section::make('Conexión OAuth')
                                     ->description('Conecta con Salesforce para autorizar la integración.')
                                     ->schema([
-                                        // El botón se renderiza como acción, no como campo del formulario
+                                        Placeholder::make('salesforce_oauth_connection_info')
+                                            ->label('Estado de conexión')
+                                            ->content(function (): HtmlString {
+                                                $details = $this->salesforceOauthConnectionDetails();
+
+                                                $listItems = [
+                                                    '<li><strong>Conexión actual:</strong> ' . e($details['current_connection_status']) . '</li>',
+                                                    '<li><strong>Última conexión:</strong> ' . e($details['last_connection_at']) . '</li>',
+                                                    '<li><strong>Método OAuth:</strong> ' . e($details['auth_method']) . '</li>',
+                                                ];
+
+                                                return new HtmlString('<ul class="list-disc ps-5 space-y-1">' . implode('', $listItems) . '</ul>');
+                                            }),
                                     ])
                                     ->columns(1),
                             ]),
@@ -1164,6 +1180,46 @@ class SiteSettings extends Page implements HasForms
                 ->url(route('salesforce.oauth.connect'))
                 ->openUrlInNewTab()
                 ->tooltip('Abre el login de Salesforce para autorizar la integración'),
+        ];
+    }
+
+    /**
+     * @return array{current_connection_status: string, last_connection_at: string, auth_method: string}
+     */
+    protected function salesforceOauthConnectionDetails(): array
+    {
+        $settings = SiteSetting::current();
+        $extraSettings = is_array($settings->extra_settings) ? $settings->extra_settings : [];
+        $oauthMetadata = data_get($extraSettings, 'salesforce_oauth', []);
+
+        $hasCurrentToken = false;
+
+        try {
+            $hasCurrentToken = Forrest::hasToken();
+        } catch (\Throwable) {
+            $hasCurrentToken = false;
+        }
+
+        $lastConnectionAt = 'Sin registros';
+        $rawLastConnectionAt = data_get($oauthMetadata, 'last_connected_at');
+
+        if (is_string($rawLastConnectionAt) && trim($rawLastConnectionAt) !== '') {
+            try {
+                $lastConnectionAt = Carbon::parse($rawLastConnectionAt)->setTimezone((string) config('app.timezone'))->format('d-m-Y H:i:s');
+            } catch (\Throwable) {
+                $lastConnectionAt = $rawLastConnectionAt;
+            }
+        }
+
+        $authMethod = trim((string) (data_get($oauthMetadata, 'auth_method') ?: config('forrest.authentication', 'No definido')));
+        if ($authMethod === '') {
+            $authMethod = 'No definido';
+        }
+
+        return [
+            'current_connection_status' => $hasCurrentToken ? 'Conectado' : 'No conectado',
+            'last_connection_at' => $lastConnectionAt,
+            'auth_method' => $authMethod,
         ];
     }
 

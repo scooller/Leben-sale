@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Omniphx\Forrest\Providers\Laravel\Facades\Forrest;
@@ -42,6 +43,21 @@ class SalesforceOAuthController extends Controller
         try {
             // Forrest intercambia el código por token y lo guarda en cache
             Forrest::callback();
+
+            $siteSettings = SiteSetting::current();
+            $extraSettings = is_array($siteSettings->extra_settings) ? $siteSettings->extra_settings : [];
+
+            data_set($extraSettings, 'salesforce_oauth.connected', true);
+            data_set($extraSettings, 'salesforce_oauth.last_connected_at', now()->toIso8601String());
+            data_set($extraSettings, 'salesforce_oauth.auth_method', (string) config('forrest.authentication', ''));
+
+            if (auth()->check()) {
+                data_set($extraSettings, 'salesforce_oauth.connected_by_user_id', auth()->id());
+            }
+
+            $siteSettings->update([
+                'extra_settings' => $extraSettings,
+            ]);
 
             Log::info('Salesforce OAuth: Autenticación completada exitosamente');
 

@@ -1,3 +1,316 @@
+# AGENTS.md - Proyecto Leben
+
+## Resumen Ejecutivo
+
+**Leben** es una plataforma backend-first construida con **Laravel 12** + **Filament 5**, especializada en la gestión de ventas de proyectos inmobiliarios con integración Salesforce, procesamiento de pagos y sincronización de datos en tiempo real.
+
+La aplicación soporta:
+- **Panel administrativo** (Filament) para gestión de proyectos, plantas, asesores y contactos
+- **API REST** pública para integraciones externas (WordPress, PHP, etc.)
+- **Sincronización bidireccional** con Salesforce (leads, casos, asesores)
+- **Gestión de pagos** (Transbank, Mercado Pago)
+- **QR codes** dinámicos para asesores
+- **Formularios de contacto** multi-canal
+- **Short links** con tracking de visitas
+
+---
+
+## Estado del Proyecto (Últimos 30 commits)
+
+### Trabajo Completado Recientemente
+- ✅ **Bulk Salesforce Sync**: Acción para sincronizar múltiples registros a Salesforce
+- ✅ **Filtrado de campos Salesforce**: Payload de Lead filtrado por campos creables
+- ✅ **OAuth Salesforce**: Autenticación y flujo de callback con caché
+- ✅ **Notificaciones de conexión**: Indicadores visuales de estado Salesforce
+- ✅ **QR Codes**: Generación y gestión en tabla de Asesores
+- ✅ **Normalización de Etapas**: Conversión de etapas de proyectos (proyecto_etapa)
+- ✅ **Website Preview**: Links de vista previa y normalización de URLs
+- ✅ **Settings dinámicos**: Configuración de plantas por página en API
+
+### Módulos Activos
+1. **Salesforce Integration** - Sincronización de leads/casos, OAuth, caché
+2. **Contact Submissions** - Formulario público con validación y canales
+3. **Plant Management** - Plantas con filtros, precios y links
+4. **Asesor Management** - Asesores con avatares, WhatsApp, QR codes
+5. **Proyecto Management** - Proyectos con normalización de etapas
+6. **Short Links** - Links cortos con tracking y UTM
+7. **Payments** - Transbank y Mercado Pago
+8. **Activity Logging** - Registros de auditoría
+
+---
+
+## Arquitectura de Directorios
+
+```
+app/
+├── Services/           # Servicios de dominio
+│   ├── Salesforce/    # SalesforceService, SalesforceCaseMapper, etc.
+│   ├── Payment/       # Pasarelas de pago
+│   ├── FinMail/       # Gestión de correos
+│   └── ShortLink/     # Manejo de links cortos
+├── Models/            # Modelos Eloquent (Asesor, Plant, Proyecto, etc.)
+├── Jobs/              # Trabajos encolados
+├── Http/
+│   ├── Controllers/   # Controllers API y OAuth
+│   ├── Requests/      # Form Requests con validación
+│   └── Resources/     # API Resources
+├── Filament/          # Panel administrativo
+│   ├── Resources/     # Recursos de tablas/formularios
+│   ├── Pages/         # Páginas customizadas
+│   ├── Widgets/       # Widgets del dashboard
+│   └── Actions/       # Acciones en tablas/registros
+├── Mail/              # Mailable classes
+├── Observers/         # Observadores de modelos
+└── Enums/             # Enumeraciones (PaymentGateway, ReservationStatus, etc.)
+
+database/
+├── migrations/        # Migraciones de BD
+├── factories/         # Factories para testing
+└── seeders/          # Seeders
+
+frontend/             # React app (separada, Vite)
+tests/                # Tests PHPUnit
+routes/
+├── api.php           # API routes (v1)
+├── web.php           # Web routes
+└── console.php       # Comandos Artisan
+```
+
+---
+
+## Modelos Principales
+
+| Modelo | Propósito | Características |
+|--------|-----------|-----------------|
+| **Asesor** | Vendedor/representante de ventas | Avatar, WhatsApp redirect, QR code |
+| **Plant** | Departamento/unidad inmobiliaria | Precio, imágenes, filters (piso, type) |
+| **Proyecto** | Proyecto inmobiliario | Etapa normalizada, asesores, plantas |
+| **ContactSubmission** | Formulario de contacto | Canal, validación, sincronización Salesforce |
+| **ContactChannel** | Tipo de canal (sale, info, etc.) | Configuración de comportamiento |
+| **Payment** | Registro de pago | Gateway (transbank/mercadopago), estado |
+| **ShortLink** | Link corto para tracking | URL destino, visitas, UTM |
+| **PlantReservation** | Reserva temporal de planta | Usuario, estado, validación |
+| **SiteSetting** | Configuración global | Key-value dinámico |
+| **FrontendPreviewLink** | Link de vista previa | Token, expira |
+
+---
+
+## Servicios Clave
+
+### SalesforceService
+```php
+// Ubicación: app/Services/Salesforce/SalesforceService.php
+// Responsabilidades:
+- Consultas SOQL con caché (Cache::remember)
+- Mapeo de objetos Salesforce a modelos Laravel
+- Sincronización de campos filtrados
+- Gestión de OAuth y tokens
+```
+
+### PaymentGateway Services
+```php
+// Transbank: app/Services/Payment/TransbankService.php
+// Mercado Pago: app/Services/Payment/MercadoPagoService.php
+// Responsabilidades:
+- Crear transacciones
+- Procesar webhooks
+- Actualizar estado de pagos
+```
+
+### ShortLink Service
+```php
+// Generación de links cortos
+// Tracking de visitas
+// Construcción de URLs con UTM
+```
+
+---
+
+## API Endpoints Principales
+
+### Contactos
+```
+POST   /api/v1/contact-submissions       # Crear contacto
+GET    /api/v1/contact-submissions/:id   # Ver contacto
+```
+
+### Plantas
+```
+GET    /api/v1/plants                     # Listar plantas
+GET    /api/v1/plants/:id                 # Detalles planta
+GET    /api/v1/plants/:id/advisors        # Asesores de planta
+```
+
+### Asesores
+```
+GET    /api/v1/advisors                   # Listar asesores
+GET    /api/v1/advisors/:id/shortlink     # QR/Short link del asesor
+```
+
+### Proyectos
+```
+GET    /api/v1/projects                   # Listar proyectos
+GET    /api/v1/projects/:id/plants        # Plantas del proyecto
+```
+
+### Pagos
+```
+POST   /api/v1/payments                   # Crear pago
+POST   /api/v1/payments/transbank/webhook # Webhook Transbank
+POST   /api/v1/payments/mercadopago/webhook # Webhook Mercado Pago
+```
+
+---
+
+## Variables de Configuración (.env)
+
+```ini
+# Salesforce
+SALESFORCE_USERNAME=
+SALESFORCE_PASSWORD=
+SALESFORCE_SECURITY_TOKEN=
+SALESFORCE_CONSUMER_KEY=
+SALESFORCE_CONSUMER_SECRET=
+SALESFORCE_REDIRECT_URI=
+
+# Pagos
+TRANSBANK_COMMERCE_CODE=
+TRANSBANK_API_KEY=
+MERCADOPAGO_TOKEN=
+MERCADOPAGO_WEBHOOK_TOKEN=
+
+# Short Links
+SHORT_LINK_DOMAIN=
+
+# API
+TURNSTILE_TOKEN=  # Cloudflare Turnstile para CAPTCHA
+
+# Cache
+CACHE_DRIVER=redis  # Recomendado para Salesforce
+```
+
+---
+
+## Convenciones del Proyecto
+
+### Nombres y Códigos
+- **Proyecto**: Usa `proyecto_etapa` (slug normalizado, ej: "venta", "pre_venta")
+- **Asesor**: Identificado por ID o email en Salesforce
+- **Plant/Planta**: Unidad inmobiliaria dentro de proyecto
+
+### Enums Principales
+```php
+PaymentGateway::Transbank | MercadoPago
+PaymentStatus::Pending | Approved | Failed | Refunded
+ReservationStatus::Reserved | Cancelled | Completed
+ShortLinkStatus::Active | Expired | Disabled
+ContactChannel::Sale | Info | Complaint  // Configurables
+```
+
+### Patrones de Código
+- **Services** para lógica de integración (Salesforce, Pagos)
+- **Jobs** para operaciones asincrónicas (sincronización, emails)
+- **Observers** para eventos de modelos (auditoría, sincronización)
+- **Form Requests** para validación con reglas complejas
+- **API Resources** para formato de respuestas
+
+---
+
+## Testing
+
+**Cobertura actual:**
+- Tests unitarios para Salesforce (SalesforceCaseMapper, lead field cache)
+- Tests de normalización de etapas
+- Tests para validación de form requests
+
+**Ejecutar tests:**
+```bash
+php artisan test --compact                    # Todos
+php artisan test --compact tests/Feature/...  # Por file
+php artisan test --compact --filter=testName  # Por test
+```
+
+---
+
+## Cambios Recientes por Área
+
+### Salesforce
+- Bulk sync action en tabla ContactSubmissions
+- Filtrado dinámico de campos creables (Lead)
+- Manejo robusto de tokens expirados
+- Caché ampliado para consultas SOQL
+- OAuth con flujo authenticate/callback
+
+### Contactos
+- Validación por canal (sale, info, etc.)
+- Sincronización automática a Salesforce
+- Rate limiting (throttle:10,1)
+- **[WIP]** Integración de `channel` como parámetro de query string en frontend
+- **[WIP]** Refactorización del flujo de contactos con validación mejorada
+
+### Plantas & Proyectos
+- Normalización de etapas (proyecto_etapa)
+- Filtros por piso, tipo
+- Precios con descuento
+- Ordenamiento dinámico
+
+### UI/Frontend
+- Estilos centralizados
+- Upload de archivos con límite mayor
+- Website preview links
+- QR code en Asesores
+
+---
+
+## Trabajos en Progreso (WIP)
+
+### Contact Submissions - Integración de Canales
+**Estado**: 80% completado, pendiente commit
+
+**Cambios**:
+- Frontend (Contact.jsx): Lectura de parámetro `channel` desde query string, fallback a 'sale'
+- Service (contactSubmissions.js): Actualizado para pasar canal al backend
+- Backend (StoreContactSubmissionRequest.php): Validación mejorada del canal
+- Tests (ContactSubmissionApiTest.php): Nuevo test para validar endpoint
+
+**Archivos modificados sin commit**:
+- `frontend/src/pages/Contact.jsx`
+- `frontend/src/services/contactSubmissions.js`
+- `app/Http/Requests/StoreContactSubmissionRequest.php`
+- `tests/Feature/ContactSubmissionApiTest.php` (nuevo)
+- `agente/memoria-contact-submit-canales.md` (documentación actualizada)
+
+**Próximos pasos**:
+1. Completar tests unitarios
+2. Validar flujo end-to-end (frontend → backend → Salesforce)
+3. Hacer commit con mensaje descriptivo
+4. Deployment a staging para validar
+
+**Referencias**:
+- Documentación: `agente/memoria-contact-submit-canales.md`
+- API endpoint: `POST /api/v1/contact-submissions`
+- Rate limit: `throttle:10,1` (10 requests/minuto por IP)
+
+---
+
+## Dependencias Principales
+
+```json
+{
+  "filament/filament": "5.0",
+  "laravel/framework": "^12.0",
+  "laravel/sanctum": "^4.3",
+  "omniphx/forrest": "^2.20",          // Salesforce
+  "mercadopago/dx-php": "^3.8",        // Mercado Pago
+  "transbank/transbank-sdk": "^5.1",   // Transbank
+  "lara-zeus/qr": "^3.0",              // QR codes
+  "spatie/laravel-permission": "^7.3", // RBAC
+  "finity-labs/fin-mail": "*"          // Email
+}
+```
+
+---
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -9,17 +322,12 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.16
+- php - 8.2+
 - filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v12
-- laravel/prompts (PROMPTS) - v0
 - laravel/sanctum (SANCTUM) - v4
 - livewire/livewire (LIVEWIRE) - v4
 - laravel/boost (BOOST) - v2
-- laravel/mcp (MCP) - v0
-- laravel/pail (PAIL) - v1
-- laravel/pint (PINT) - v1
-- laravel/sail (SAIL) - v1
 - phpunit/phpunit (PHPUNIT) - v11
 - tailwindcss (TAILWINDCSS) - v4
 
