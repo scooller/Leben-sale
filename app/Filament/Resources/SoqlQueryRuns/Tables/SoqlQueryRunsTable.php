@@ -9,6 +9,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -60,28 +61,38 @@ class SoqlQueryRunsTable
                     ->icon('heroicon-o-arrow-path')
                     ->color('info')
                     ->modalHeading('Reutilizar consulta SOQL')
-                    ->modalDescription('Puedes ajustar la consulta antes de ejecutar. Debe incluir SELECT y LIMIT.')
+                    ->modalDescription('Puedes ajustar la consulta antes de ejecutar. El LIMIT se agrega automáticamente.')
                     ->modalSubmitActionLabel('Ejecutar')
                     ->form([
                         Textarea::make('soql')
                             ->label('Consulta SOQL')
-                            ->rows(10)
+                            ->rows(8)
                             ->required()
                             ->maxLength(8000)
-                            ->default(fn(SoqlQueryRun $record): string => $record->soql)
+                            ->default(fn(SoqlQueryRun $record): string => trim(preg_replace('/\s+limit\s+[0-9]+\s*$/i', '', trim($record->soql))))
                             ->rules([
                                 'required',
                                 'string',
                                 'max:8000',
                                 'regex:/^\s*select\b/i',
-                                'regex:/\blimit\s+[1-9][0-9]*\b/i',
                             ])
                             ->validationMessages([
-                                'regex' => 'La consulta debe comenzar con SELECT e incluir LIMIT mayor a 0.',
+                                'regex' => 'La consulta debe comenzar con SELECT.',
                             ]),
+                        TextInput::make('limit')
+                            ->label('LIMIT')
+                            ->numeric()
+                            ->default(fn(SoqlQueryRun $record): int => $record->limit_value ?? 10)
+                            ->minValue(1)
+                            ->maxValue(2000)
+                            ->required()
+                            ->suffix('registros')
+                            ->rules(['required', 'integer', 'min:1', 'max:2000']),
                     ])
                     ->action(function (array $data): void {
-                        self::executeAndStoreSoqlRun((string) ($data['soql'] ?? ''));
+                        $limitValue = max(1, (int) ($data['limit'] ?? 10));
+                        $soql = trim(preg_replace('/\s+limit\s+[0-9]+\s*$/i', '', trim((string) ($data['soql'] ?? ''))));
+                        self::executeAndStoreSoqlRun($soql . ' LIMIT ' . $limitValue);
                     }),
                 Action::make('ver_resultado')
                     ->label('Ver Resultado')

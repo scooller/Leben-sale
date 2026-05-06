@@ -7,6 +7,7 @@ use App\Models\SoqlQueryRun;
 use App\Services\Salesforce\SalesforceService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Arr;
@@ -24,28 +25,38 @@ class ListSoqlQueryRuns extends ListRecords
                 ->icon('heroicon-o-play')
                 ->color('primary')
                 ->modalHeading('Ejecutar consulta SOQL')
-                ->modalDescription('La consulta debe comenzar con SELECT e incluir LIMIT.<br>Ejemplo: SELECT FIELDS(ALL) FROM Product2 LIMIT 3')
+                ->modalDescription('Ejemplo: SELECT FIELDS(ALL) FROM Product2 — El LIMIT se agrega automáticamente.')
                 ->modalSubmitActionLabel('Ejecutar')
                 ->form([
                     Textarea::make('soql')
                         ->label('Consulta SOQL')
-                        ->rows(10)
+                        ->rows(8)
                         ->required()
                         ->maxLength(8000)
-                        ->placeholder('SELECT Id, Name FROM Lead LIMIT 10')
+                        ->placeholder('SELECT Id, Name, Email FROM Lead')
                         ->rules([
                             'required',
                             'string',
                             'max:8000',
                             'regex:/^\s*select\b/i',
-                            'regex:/\blimit\s+[1-9][0-9]*\b/i',
                         ])
                         ->validationMessages([
-                            'regex' => 'La consulta debe comenzar con SELECT e incluir LIMIT mayor a 0.',
+                            'regex' => 'La consulta debe comenzar con SELECT.',
                         ]),
+                    TextInput::make('limit')
+                        ->label('LIMIT')
+                        ->numeric()
+                        ->default(10)
+                        ->minValue(1)
+                        ->maxValue(2000)
+                        ->required()
+                        ->suffix('registros')
+                        ->rules(['required', 'integer', 'min:1', 'max:2000']),
                 ])
                 ->action(function (array $data): void {
-                    $soql = (string) ($data['soql'] ?? '');
+                    $limitValue = max(1, (int) ($data['limit'] ?? 10));
+                    $soql = trim(preg_replace('/\s+limit\s+[0-9]+\s*$/i', '', trim((string) ($data['soql'] ?? ''))));
+                    $soql = $soql . ' LIMIT ' . $limitValue;
                     $startedAt = microtime(true);
 
                     try {
@@ -72,7 +83,7 @@ class ListSoqlQueryRuns extends ListRecords
 
                         Notification::make()
                             ->title('Consulta ejecutada')
-                            ->body('Registros recibidos: '.count($records).' | Duracion: '.$durationMs.' ms')
+                            ->body('Registros recibidos: ' . count($records) . ' | Duracion: ' . $durationMs . ' ms')
                             ->success()
                             ->send();
                     } catch (\Throwable $e) {
