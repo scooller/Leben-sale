@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\BrokerBenefit;
-use App\Models\BrokerCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,11 +18,9 @@ class BrokerBenefitFactory extends Factory
     public function definition(): array
     {
         return [
-            'broker_category_id' => BrokerCategory::factory(),
-            'section' => fake()->randomElement(['comunicacion', 'capacitacion', 'negocio', 'visitas', 'pagos', 'beneficios']),
+            'section' => fake()->randomElement(['Comunicación', 'Capacitación', 'Negocio', 'Visitas', 'Pagos', 'Beneficios Adicionales']),
             'title' => fake()->sentence(4),
             'description' => fake()->optional()->sentence(),
-            'status' => fake()->randomElement(['included', 'not_applicable']),
             'sort_order' => fake()->numberBetween(0, 50),
             'is_active' => true,
         ];

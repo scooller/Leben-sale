@@ -17,23 +17,21 @@ class BrokerBenefitsTable
         return $table
             ->defaultSort('sort_order')
             ->columns([
-                TextColumn::make('category.name')
-                    ->label('Categoria')
-                    ->badge()
-                    ->sortable(),
-
                 TextColumn::make('section')
-                    ->label('Seccion')
-                    ->badge(),
+                    ->label('Sección')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
 
                 TextColumn::make('title')
                     ->label('Beneficio')
                     ->searchable(),
 
-                TextColumn::make('status')
-                    ->label('Estado')
-                    ->formatStateUsing(fn(string $state): string => $state === 'included' ? 'Incluido' : 'No aplica')
-                    ->badge(),
+                TextColumn::make('categories.name')
+                    ->label('Categorías')
+                    ->badge()
+                    ->separator(',')
+                    ->placeholder('Sin categorías'),
 
                 IconColumn::make('is_active')
                     ->label('Activo')
@@ -44,19 +42,15 @@ class BrokerBenefitsTable
                     ->sortable(),
             ])
             ->filters([
-                SelectFilter::make('broker_category_id')
-                    ->label('Categoria')
-                    ->relationship('category', 'name'),
-
                 SelectFilter::make('section')
-                    ->label('Seccion')
+                    ->label('Sección')
                     ->options([
-                        'comunicacion' => 'Comunicacion',
-                        'capacitacion' => 'Capacitacion',
-                        'negocio' => 'Negocio',
-                        'visitas' => 'Visitas',
-                        'pagos' => 'Pagos',
-                        'beneficios' => 'Beneficios adicionales',
+                        'Comunicación' => 'Comunicación',
+                        'Capacitación' => 'Capacitación',
+                        'Negocio' => 'Negocio',
+                        'Visitas' => 'Visitas',
+                        'Pagos' => 'Pagos',
+                        'Beneficios Adicionales' => 'Beneficios Adicionales',
                     ]),
             ])
             ->recordActions([

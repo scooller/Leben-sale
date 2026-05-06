@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Brokers\BrokerCategories;
 use App\Filament\Resources\Brokers\BrokerCategories\Pages\CreateBrokerCategory;
 use App\Filament\Resources\Brokers\BrokerCategories\Pages\EditBrokerCategory;
 use App\Filament\Resources\Brokers\BrokerCategories\Pages\ListBrokerCategories;
+use App\Filament\Resources\Brokers\BrokerCategories\RelationManagers\BenefitsRelationManager;
 use App\Filament\Resources\Brokers\BrokerCategories\Schemas\BrokerCategoryForm;
 use App\Filament\Resources\Brokers\BrokerCategories\Tables\BrokerCategoriesTable;
 use App\Models\BrokerCategory;
@@ -65,7 +66,7 @@ class BrokerCategoryResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            BenefitsRelationManager::class,
         ];
     }
 

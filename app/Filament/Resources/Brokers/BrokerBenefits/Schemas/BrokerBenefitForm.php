@@ -17,44 +17,28 @@ class BrokerBenefitForm
             ->components([
                 Section::make('Beneficio')
                     ->schema([
-                        Select::make('broker_category_id')
-                            ->label('Categoria')
-                            ->relationship('category', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->required(),
-
                         Select::make('section')
-                            ->label('Seccion')
+                            ->label('Sección')
                             ->options([
-                                'comunicacion' => 'Comunicacion',
-                                'capacitacion' => 'Capacitacion',
-                                'negocio' => 'Negocio',
-                                'visitas' => 'Visitas',
-                                'pagos' => 'Pagos',
-                                'beneficios' => 'Beneficios adicionales',
+                                'Comunicación' => 'Comunicación',
+                                'Capacitación' => 'Capacitación',
+                                'Negocio' => 'Negocio',
+                                'Visitas' => 'Visitas',
+                                'Pagos' => 'Pagos',
+                                'Beneficios Adicionales' => 'Beneficios Adicionales',
                             ])
                             ->required(),
 
                         TextInput::make('title')
-                            ->label('Titulo')
+                            ->label('Título')
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                         Textarea::make('description')
-                            ->label('Descripcion')
+                            ->label('Descripción')
                             ->rows(2)
                             ->columnSpanFull(),
-
-                        Select::make('status')
-                            ->label('Estado')
-                            ->options([
-                                'included' => 'Incluido',
-                                'not_applicable' => 'No aplica',
-                            ])
-                            ->default('included')
-                            ->required(),
 
                         TextInput::make('sort_order')
                             ->label('Orden')

@@ -20,7 +20,7 @@ class BrokerController extends Controller
 
         if ($request->filled('category')) {
             $categorySlug = (string) $request->string('category');
-            $query->whereHas('category', fn($categoryQuery) => $categoryQuery->where('slug', $categorySlug));
+            $query->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $categorySlug));
         }
 
         $brokers = $query->get()->map(function (Broker $broker): array {
@@ -39,12 +39,12 @@ class BrokerController extends Controller
                         ->where('is_active', true)
                         ->sortBy('sort_order')
                         ->values()
-                        ->map(fn($benefit): array => [
+                        ->map(fn ($benefit): array => [
                             'id' => $benefit->id,
                             'section' => $benefit->section,
                             'title' => $benefit->title,
                             'description' => $benefit->description,
-                            'status' => $benefit->status,
+                            'status' => $benefit->pivot->status,
                         ])
                         ->all(),
                 ] : null,
@@ -63,7 +63,7 @@ class BrokerController extends Controller
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(fn($alliance): array => [
+            ->map(fn ($alliance): array => [
                 'id' => $alliance->id,
                 'name' => $alliance->name,
                 'url' => $alliance->url,
@@ -93,7 +93,7 @@ class BrokerController extends Controller
             $query->where('starts_at', '<=', $to);
         }
 
-        $events = $query->get()->map(fn($event): array => [
+        $events = $query->get()->map(fn ($event): array => [
             'id' => $event->id,
             'title' => $event->title,
             'description' => $event->description,
@@ -125,7 +125,7 @@ class BrokerController extends Controller
             $query->where('month', (int) $request->input('month'));
         }
 
-        $galleries = $query->get()->map(fn($gallery): array => [
+        $galleries = $query->get()->map(fn ($gallery): array => [
             'id' => $gallery->id,
             'title' => $gallery->title,
             'year' => $gallery->year,
@@ -142,7 +142,7 @@ class BrokerController extends Controller
 
         abort_unless($gallery->broker_id === $broker->id && $gallery->is_published, 404);
 
-        $gallery->load(['items' => fn($itemsQuery) => $itemsQuery
+        $gallery->load(['items' => fn ($itemsQuery) => $itemsQuery
             ->with('imageMedia')
             ->where('is_active', true)
             ->orderBy('sort_order')]);
@@ -153,7 +153,7 @@ class BrokerController extends Controller
                 'title' => $gallery->title,
                 'year' => $gallery->year,
                 'month' => $gallery->month,
-                'items' => $gallery->items->map(fn($item): array => [
+                'items' => $gallery->items->map(fn ($item): array => [
                     'id' => $item->id,
                     'caption' => $item->caption,
                     'image_url' => $item->imageMedia?->url,

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Brokers\BrokerCategories\Schemas;
 
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -27,9 +28,11 @@ class BrokerCategoryForm
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
 
-                        TextInput::make('headline')
+                        Textarea::make('headline')
                             ->label('Bajada')
-                            ->maxLength(255),
+                            ->rows(3)
+                            ->maxLength(500)
+                            ->columnSpanFull(),
 
                         TextInput::make('sort_order')
                             ->label('Orden')

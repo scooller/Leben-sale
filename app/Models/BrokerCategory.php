@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\LogsModelActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BrokerCategory extends Model
@@ -35,8 +36,11 @@ class BrokerCategory extends Model
         return $this->hasMany(Broker::class, 'broker_category_id');
     }
 
-    public function benefits(): HasMany
+    public function benefits(): BelongsToMany
     {
-        return $this->hasMany(BrokerBenefit::class)->orderBy('sort_order');
+        return $this->belongsToMany(BrokerBenefit::class, 'broker_benefit_category')
+            ->withPivot('status')
+            ->withTimestamps()
+            ->orderBy('sort_order');
     }
 }

@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Support\LogsModelActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BrokerBenefit extends Model
 {
@@ -15,11 +15,9 @@ class BrokerBenefit extends Model
     use LogsModelActivity;
 
     protected $fillable = [
-        'broker_category_id',
         'section',
         'title',
         'description',
-        'status',
         'sort_order',
         'is_active',
     ];
@@ -32,8 +30,11 @@ class BrokerBenefit extends Model
         ];
     }
 
-    public function category(): BelongsTo
+    public function categories(): BelongsToMany
     {
-        return $this->belongsTo(BrokerCategory::class, 'broker_category_id');
+        return $this->belongsToMany(BrokerCategory::class, 'broker_benefit_category')
+            ->withPivot('status')
+            ->withTimestamps()
+            ->orderBy('sort_order');
     }
 }

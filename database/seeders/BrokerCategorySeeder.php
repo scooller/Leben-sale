@@ -59,52 +59,30 @@ class BrokerCategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            [
-                'name' => 'Partner Black',
-                'slug' => 'partner-black',
-                'headline' => 'Ventas sobre 15.000 UF en un período de 3 meses',
-                'sort_order' => 1,
-                'key' => 'black',
-            ],
-            [
-                'name' => 'Partner Gold',
-                'slug' => 'partner-gold',
-                'headline' => 'Ventas desde 10.000 hasta 15.000 UF en un período de 3 meses',
-                'sort_order' => 2,
-                'key' => 'gold',
-            ],
-            [
-                'name' => 'Partner Silver',
-                'slug' => 'partner-silver',
-                'headline' => 'Ventas desde 0 hasta 10.000 UF en un período de 3 meses',
-                'sort_order' => 3,
-                'key' => 'silver',
-            ],
+            'black' => BrokerCategory::firstOrCreate(
+                ['slug' => 'partner-black'],
+                ['name' => 'Partner Black', 'headline' => 'Ventas sobre 15.000 UF en un período de 3 meses', 'sort_order' => 1, 'is_active' => true],
+            ),
+            'gold' => BrokerCategory::firstOrCreate(
+                ['slug' => 'partner-gold'],
+                ['name' => 'Partner Gold', 'headline' => 'Ventas desde 10.000 hasta 15.000 UF en un período de 3 meses', 'sort_order' => 2, 'is_active' => true],
+            ),
+            'silver' => BrokerCategory::firstOrCreate(
+                ['slug' => 'partner-silver'],
+                ['name' => 'Partner Silver', 'headline' => 'Ventas desde 0 hasta 10.000 UF en un período de 3 meses', 'sort_order' => 3, 'is_active' => true],
+            ),
         ];
 
-        foreach ($categories as $catData) {
-            $key = $catData['key'];
-            unset($catData['key']);
-
-            /** @var BrokerCategory $category */
-            $category = BrokerCategory::firstOrCreate(
-                ['slug' => $catData['slug']],
-                array_merge($catData, ['is_active' => true]),
+        foreach ($this->benefits as $sort => $data) {
+            $benefit = BrokerBenefit::firstOrCreate(
+                ['section' => $data['section'], 'title' => $data['title']],
+                ['sort_order' => $sort + 1, 'is_active' => true],
             );
 
-            foreach ($this->benefits as $sort => $benefit) {
-                BrokerBenefit::firstOrCreate(
-                    [
-                        'broker_category_id' => $category->id,
-                        'title' => $benefit['title'],
-                        'section' => $benefit['section'],
-                    ],
-                    [
-                        'status' => $benefit[$key],
-                        'sort_order' => $sort + 1,
-                        'is_active' => true,
-                    ],
-                );
+            foreach (['black', 'gold', 'silver'] as $key) {
+                $benefit->categories()->syncWithoutDetaching([
+                    $categories[$key]->id => ['status' => $data[$key]],
+                ]);
             }
         }
     }

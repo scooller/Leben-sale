@@ -19,12 +19,12 @@ class BrokerApiTest extends TestCase
     {
         $broker = Broker::factory()->create();
 
-        BrokerBenefit::factory()->create([
-            'broker_category_id' => $broker->broker_category_id,
+        $benefit = BrokerBenefit::factory()->create([
             'title' => 'Contacto semanal KAM',
-            'status' => 'included',
-            'section' => 'comunicacion',
+            'section' => 'Comunicación',
         ]);
+
+        $benefit->categories()->attach($broker->broker_category_id, ['status' => 'included']);
 
         $response = $this->getJson('/api/v1/brokers');
 
@@ -32,7 +32,8 @@ class BrokerApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $broker->id)
             ->assertJsonPath('data.0.category.id', $broker->broker_category_id)
-            ->assertJsonPath('data.0.category.benefits.0.title', 'Contacto semanal KAM');
+            ->assertJsonPath('data.0.category.benefits.0.title', 'Contacto semanal KAM')
+            ->assertJsonPath('data.0.category.benefits.0.status', 'included');
     }
 
     public function test_broker_related_endpoints_return_active_and_published_records(): void
