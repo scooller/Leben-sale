@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\BrokerBenefit;
 use App\Models\BrokerCategory;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class BrokerCategorySeeder extends Seeder
 {
@@ -74,9 +75,22 @@ class BrokerCategorySeeder extends Seeder
         ];
 
         foreach ($this->benefits as $sort => $data) {
+            $createAttributes = [
+                'sort_order' => $sort + 1,
+                'is_active' => true,
+            ];
+
+            if (Schema::hasColumn('broker_benefits', 'broker_category_id')) {
+                $createAttributes['broker_category_id'] = $categories['black']->id;
+            }
+
+            if (Schema::hasColumn('broker_benefits', 'status')) {
+                $createAttributes['status'] = $data['black'];
+            }
+
             $benefit = BrokerBenefit::firstOrCreate(
                 ['section' => $data['section'], 'title' => $data['title']],
-                ['sort_order' => $sort + 1, 'is_active' => true],
+                $createAttributes,
             );
 
             foreach (['black', 'gold', 'silver'] as $key) {

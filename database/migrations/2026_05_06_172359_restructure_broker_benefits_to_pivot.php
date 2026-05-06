@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,43 +12,64 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop FK and columns from broker_benefits
-        Schema::table('broker_benefits', function (Blueprint $table) {
-            // FK may or may not exist depending on deployment order
-            try {
-                $table->dropForeign(['broker_category_id']);
-            } catch (\Throwable) {
+        $databaseName = DB::getDatabaseName();
+        $driver = DB::getDriverName();
+
+        // Drop FK and columns from broker_benefits (MySQL production path)
+        if ($driver === 'mysql' && Schema::hasColumn('broker_benefits', 'broker_category_id')) {
+            if ($driver === 'mysql') {
+                $foreignKeyExists = DB::table('information_schema.TABLE_CONSTRAINTS')
+                    ->where('CONSTRAINT_SCHEMA', $databaseName)
+                    ->where('TABLE_NAME', 'broker_benefits')
+                    ->where('CONSTRAINT_NAME', 'broker_benefits_broker_category_id_foreign')
+                    ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+                    ->exists();
+
+                if ($foreignKeyExists) {
+                    DB::statement('ALTER TABLE broker_benefits DROP FOREIGN KEY broker_benefits_broker_category_id_foreign');
+                }
             }
 
-            try {
-                $table->dropIndex(['broker_category_id', 'section', 'sort_order']);
-            } catch (\Throwable) {
-            }
-
-            if (Schema::hasColumn('broker_benefits', 'broker_category_id')) {
+            Schema::table('broker_benefits', function (Blueprint $table) {
                 $table->dropColumn('broker_category_id');
-            }
+            });
+        }
 
-            if (Schema::hasColumn('broker_benefits', 'status')) {
+        if ($driver === 'mysql' && Schema::hasColumn('broker_benefits', 'status')) {
+            Schema::table('broker_benefits', function (Blueprint $table) {
                 $table->dropColumn('status');
-            }
-        });
+            });
+        }
 
         // New index without broker_category_id
-        Schema::table('broker_benefits', function (Blueprint $table) {
-            $table->index(['section', 'sort_order']);
-        });
+        $newIndexExists = false;
+
+        if ($driver === 'mysql') {
+            $newIndexExists = DB::table('information_schema.STATISTICS')
+                ->where('TABLE_SCHEMA', $databaseName)
+                ->where('TABLE_NAME', 'broker_benefits')
+                ->where('INDEX_NAME', 'broker_benefits_section_sort_order_index')
+                ->exists();
+        }
+
+        if (! $newIndexExists) {
+            Schema::table('broker_benefits', function (Blueprint $table) {
+                $table->index(['section', 'sort_order']);
+            });
+        }
 
         // Pivot table: benefit ↔ category with status
-        Schema::create('broker_benefit_category', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('broker_benefit_id')->constrained('broker_benefits')->cascadeOnDelete();
-            $table->foreignId('broker_category_id')->constrained('broker_categories')->cascadeOnDelete();
-            $table->enum('status', ['included', 'not_applicable'])->default('included');
-            $table->timestamps();
+        if (! Schema::hasTable('broker_benefit_category')) {
+            Schema::create('broker_benefit_category', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('broker_benefit_id')->constrained('broker_benefits')->cascadeOnDelete();
+                $table->foreignId('broker_category_id')->constrained('broker_categories')->cascadeOnDelete();
+                $table->enum('status', ['included', 'not_applicable'])->default('included');
+                $table->timestamps();
 
-            $table->unique(['broker_benefit_id', 'broker_category_id'], 'bbc_benefit_category_unique');
-        });
+                $table->unique(['broker_benefit_id', 'broker_category_id'], 'bbc_benefit_category_unique');
+            });
+        }
     }
 
     public function down(): void
