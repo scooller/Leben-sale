@@ -20,7 +20,7 @@ class BrokersTable
             ->columns([
                 ImageColumn::make('avatar_image_id')
                     ->label('Avatar')
-                    ->getStateUsing(fn ($record): ?string => $record->avatarImageMedia?->url)
+                    ->getStateUsing(fn($record): ?string => $record->avatarImageMedia?->url)
                     ->circular(),
 
                 TextColumn::make('salesforce_id')

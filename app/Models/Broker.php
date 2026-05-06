@@ -75,7 +75,7 @@ class Broker extends Model
             return (string) $this->display_name;
         }
 
-        return (string) ($this->user?->name ?? ('Broker #'.$this->id));
+        return (string) ($this->user?->name ?? ('Broker #' . $this->id));
     }
 
     public function getResolvedEmailAttribute(): ?string

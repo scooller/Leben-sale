@@ -94,8 +94,8 @@ class SyncBrokersActionTest extends TestCase
             $mock->shouldReceive('findBrokers')
                 ->once()
                 ->andReturn([
-                    ['id' => '', 'name' => 'Sin ID', 'email' => null, 'phone' => null],
-                    ['id' => 'SF-BRK-003', 'name' => 'Con ID', 'email' => null, 'phone' => null],
+                    ['id' => '', 'name' => 'Sin ID', 'email' => 'sin@id.com', 'phone' => null],
+                    ['id' => 'SF-BRK-003', 'name' => 'Con ID', 'email' => 'con@id.com', 'phone' => null],
                 ]);
         });
 
@@ -105,5 +105,26 @@ class SyncBrokersActionTest extends TestCase
         $this->assertSame(1, $result['created']);
         $this->assertDatabaseMissing('brokers', ['display_name' => 'Sin ID']);
         $this->assertDatabaseHas('brokers', ['salesforce_id' => 'SF-BRK-003']);
+    }
+
+    public function test_sync_brokers_skips_entries_without_email_and_phone(): void
+    {
+        $this->mock(SalesforceService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('findBrokers')
+                ->once()
+                ->andReturn([
+                    ['id' => 'SF-BRK-NOEMPTY', 'name' => 'Sin contacto', 'email' => null, 'phone' => null],
+                    ['id' => 'SF-BRK-HASEMAIL', 'name' => 'Con email', 'email' => 'broker@example.com', 'phone' => null],
+                    ['id' => 'SF-BRK-HASPHONE', 'name' => 'Con telefono', 'email' => null, 'phone' => '+56911111111'],
+                ]);
+        });
+
+        $result = SyncBrokersAction::execute();
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(2, $result['created']);
+        $this->assertDatabaseMissing('brokers', ['salesforce_id' => 'SF-BRK-NOEMPTY']);
+        $this->assertDatabaseHas('brokers', ['salesforce_id' => 'SF-BRK-HASEMAIL']);
+        $this->assertDatabaseHas('brokers', ['salesforce_id' => 'SF-BRK-HASPHONE']);
     }
 }
