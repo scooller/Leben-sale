@@ -210,7 +210,7 @@ class FinMailNotificationService
 
         return $project->asesores
             ->pluck('email')
-            ->filter(static fn (mixed $email): bool => is_string($email) && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false)
+            ->filter(static fn(mixed $email): bool => is_string($email) && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false)
             ->unique()
             ->values()
             ->all();
@@ -223,9 +223,9 @@ class FinMailNotificationService
     {
         return User::query()
             ->get()
-            ->filter(static fn (User $user): bool => $user->isAdmin())
-            ->map(static fn (User $user): ?string => $user->email)
-            ->filter(static fn (mixed $email): bool => is_string($email) && $email !== '')
+            ->filter(static fn(User $user): bool => $user->isAdmin())
+            ->map(static fn(User $user): ?string => $user->email)
+            ->filter(static fn(mixed $email): bool => is_string($email) && $email !== '')
             ->unique()
             ->values();
     }
@@ -254,6 +254,7 @@ class FinMailNotificationService
 
         $fields = is_array($submission->fields) ? $submission->fields : [];
         [$firstName, $lastName] = $this->resolveContactNameParts($submission, $fields);
+        $channelName = trim((string) ($submission->channel?->name ?? $submission->channel?->slug ?? ''));
 
         $this->sendTemplate(
             templateKey: 'contact-submission-received-admin',
@@ -264,6 +265,7 @@ class FinMailNotificationService
                 'rut' => new TokenValue($submission->rut ?: $this->extractFieldValue($fields, ['rut']) ?: '-'),
                 'telefono' => new TokenValue($submission->phone ?: $this->extractFieldValue($fields, ['telefono', 'phone', 'celular', 'whatsapp']) ?: '-'),
                 'email' => new TokenValue($submission->email ?: $this->extractFieldValue($fields, ['email', 'correo']) ?: '-'),
+                'channel' => new TokenValue($channelName !== '' ? $channelName : '-'),
                 'comuna' => new TokenValue($this->extractFieldValue($fields, ['comuna', 'commune', 'district', 'project_commune']) ?: '-'),
                 'proyecto' => new TokenValue($this->extractFieldValue($fields, ['proyecto', 'project', 'project_name', 'nombre_proyecto']) ?: '-'),
                 'medio' => new TokenValue($this->extractFieldValue($fields, ['medio', 'origen', 'lead_source', 'utm_source']) ?: 'Black'),
@@ -353,7 +355,7 @@ class FinMailNotificationService
             $ccRecipients = array_values(array_filter(array_unique([
                 ...$this->resolveTemplateCcRecipients($templateKey),
                 ...$additionalCcRecipients,
-            ]), static fn (mixed $email) => is_string($email) && $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false && \strcasecmp((string) $email, $recipient) !== 0));
+            ]), static fn(mixed $email) => is_string($email) && $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false && \strcasecmp((string) $email, $recipient) !== 0));
             $sentEmailLog = $this->createSentEmailLog($template, $recipient, $ccRecipients, $contextModel);
 
             $mail = TemplateMail::make($templateKey, app()->getLocale())
@@ -421,9 +423,9 @@ class FinMailNotificationService
         }
 
         return array_values(array_filter(array_unique(array_map(
-            static fn (mixed $email): string => trim((string) $email),
+            static fn(mixed $email): string => trim((string) $email),
             $configuredRecipients,
-        )), static fn (string $email): bool => $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false));
+        )), static fn(string $email): bool => $email !== '' && \filter_var($email, \FILTER_VALIDATE_EMAIL) !== false));
     }
 
     private function resolveStatusLabel(string|PaymentStatus|null $status): string

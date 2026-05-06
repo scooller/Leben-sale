@@ -66,18 +66,21 @@ class FinMailSpanishEmailTemplatesSeederTest extends TestCase
         $template = EmailTemplate::query()->where('key', 'contact-submission-received-admin')->first();
 
         $this->assertNotNull($template);
+        $this->assertSame('Contacto de {{ channel | "Canal" }}', $template->getTranslation('subject', 'es'));
 
         $spanishBody = $template->getTranslation('body', 'es');
 
         $this->assertStringContainsString('<span class="telefono">{{ telefono | "-" }}</span>', $spanishBody);
         $this->assertStringContainsString('<span class="email">{{ email | "-" }}</span>', $spanishBody);
-        $this->assertStringContainsString('<span class="mensaje">{{ mensaje | "" }}</span>', $spanishBody);
+        $this->assertStringContainsString('<span class="channel">{{ channel | "-" }}</span>', $spanishBody);
+        $this->assertStringContainsString('<b>Mensaje:</b><br><span class="mensaje">{{ mensaje | "-" }}</span>', $spanishBody);
         $this->assertStringNotContainsString('href="tel:{{ telefono | "-" }}"', $spanishBody);
         $this->assertStringNotContainsString('href="mailto:{{ email | "-" }}"', $spanishBody);
 
         $tokenSchema = collect($template->token_schema);
 
         $this->assertSame('telefono', $tokenSchema->firstWhere('token', 'telefono')['token'] ?? null);
+        $this->assertSame('channel', $tokenSchema->firstWhere('token', 'channel')['token'] ?? null);
         $this->assertSame('comuna', $tokenSchema->firstWhere('token', 'comuna')['token'] ?? null);
         $this->assertSame('proyecto', $tokenSchema->firstWhere('token', 'proyecto')['token'] ?? null);
     }

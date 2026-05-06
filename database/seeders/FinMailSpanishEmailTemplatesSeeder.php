@@ -229,16 +229,16 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'en' => 'Contact received (admin)',
                 ],
                 'subject' => [
-                    'es' => 'Campaña Sale',
-                    'en' => 'Sale Campaign',
+                    'es' => 'Contacto de {{ channel | "Canal" }}',
+                    'en' => 'Contact from {{ channel | "Channel" }}',
                 ],
                 'preheader' => [
                     'es' => 'Se recibio una nueva consulta desde el formulario de contacto.',
                     'en' => 'A new inquiry was received from the contact form.',
                 ],
                 'body' => [
-                    'es' => '<ul><li><b>Nombre:</b> <span class="nombre">{{ nombre | "-" }}</span></li><li><b>Apellido:</b> <span class="apellido">{{ apellido | "-" }}</span></li><li><b>RUT:</b> <span class="rut">{{ rut | "-" }}</span></li><li><b>Telefono:</b> <span class="telefono">{{ telefono | "-" }}</span></li><li><b>Email:</b> <span class="email">{{ email | "-" }}</span></li><li><b>Comuna:</b> <span class="comuna">{{ comuna | "-" }}</span></li><li><b>Proyecto:</b> <span class="proyecto">{{ proyecto | "-" }}</span></li><li><b>Medio de llegada:</b> <span class="medio">{{ medio | "Black" }}</span></li><li><b>¿En que rango se encuentra tu renta liquida?:</b> <span class="rango">{{ rango | "-" }}</span></li><li><b>¿Cuentas con posibilidad de codeudor?:</b> <span class="codeudor">{{ codeudor | "-" }}</span></li><li><b>¿Buscas tu nuevo depto para...?:</b> <span class="buscas">{{ buscas | "-" }}</span></li><li><b>¿Cual es tu estado laboral?:</b> <span class="elaboral">{{ elaboral | "-" }}</span></li></ul><p><span class="mensaje">{{ mensaje | "" }}</span></p><p>--<br>This e-mail was sent from a contact form on {{ site_name | "iLeben" }} ({{ site_url | "https://sale.ileben.cl" }})</p>',
-                    'en' => '<ul><li><b>Name:</b> <span class="nombre">{{ nombre | "-" }}</span></li><li><b>Last name:</b> <span class="apellido">{{ apellido | "-" }}</span></li><li><b>RUT:</b> <span class="rut">{{ rut | "-" }}</span></li><li><b>Phone:</b> <span class="telefono">{{ telefono | "-" }}</span></li><li><b>Email:</b> <span class="email">{{ email | "-" }}</span></li><li><b>District:</b> <span class="comuna">{{ comuna | "-" }}</span></li><li><b>Project:</b> <span class="proyecto">{{ proyecto | "-" }}</span></li><li><b>Lead source:</b> <span class="medio">{{ medio | "Black" }}</span></li><li><b>Income range:</b> <span class="rango">{{ rango | "-" }}</span></li><li><b>Co-signer available?:</b> <span class="codeudor">{{ codeudor | "-" }}</span></li><li><b>Looking for a new apartment for...?:</b> <span class="buscas">{{ buscas | "-" }}</span></li><li><b>Employment status:</b> <span class="elaboral">{{ elaboral | "-" }}</span></li></ul><p><span class="mensaje">{{ mensaje | "" }}</span></p><p>--<br>This e-mail was sent from a contact form on {{ site_name | "iLeben" }} ({{ site_url | "https://sale.ileben.cl" }})</p>',
+                    'es' => '<ul><li><b>Nombre:</b> <span class="nombre">{{ nombre | "-" }}</span></li><li><b>Apellido:</b> <span class="apellido">{{ apellido | "-" }}</span></li><li><b>RUT:</b> <span class="rut">{{ rut | "-" }}</span></li><li><b>Telefono:</b> <span class="telefono">{{ telefono | "-" }}</span></li><li><b>Email:</b> <span class="email">{{ email | "-" }}</span></li><li><b>Canal:</b> <span class="channel">{{ channel | "-" }}</span></li><li><b>Comuna:</b> <span class="comuna">{{ comuna | "-" }}</span></li><li><b>Proyecto:</b> <span class="proyecto">{{ proyecto | "-" }}</span></li><li><b>Medio de llegada:</b> <span class="medio">{{ medio | "Black" }}</span></li><li><b>¿En que rango se encuentra tu renta liquida?:</b> <span class="rango">{{ rango | "-" }}</span></li><li><b>¿Cuentas con posibilidad de codeudor?:</b> <span class="codeudor">{{ codeudor | "-" }}</span></li><li><b>¿Buscas tu nuevo depto para...?:</b> <span class="buscas">{{ buscas | "-" }}</span></li><li><b>¿Cual es tu estado laboral?:</b> <span class="elaboral">{{ elaboral | "-" }}</span></li></ul><p><b>Mensaje:</b><br><span class="mensaje">{{ mensaje | "-" }}</span></p><p>--<br>This e-mail was sent from a contact form on {{ site_name | "iLeben" }} ({{ site_url | "https://sale.ileben.cl" }})</p>',
+                    'en' => '<ul><li><b>Name:</b> <span class="nombre">{{ nombre | "-" }}</span></li><li><b>Last name:</b> <span class="apellido">{{ apellido | "-" }}</span></li><li><b>RUT:</b> <span class="rut">{{ rut | "-" }}</span></li><li><b>Phone:</b> <span class="telefono">{{ telefono | "-" }}</span></li><li><b>Email:</b> <span class="email">{{ email | "-" }}</span></li><li><b>Channel:</b> <span class="channel">{{ channel | "-" }}</span></li><li><b>District:</b> <span class="comuna">{{ comuna | "-" }}</span></li><li><b>Project:</b> <span class="proyecto">{{ proyecto | "-" }}</span></li><li><b>Lead source:</b> <span class="medio">{{ medio | "Black" }}</span></li><li><b>Income range:</b> <span class="rango">{{ rango | "-" }}</span></li><li><b>Co-signer available?:</b> <span class="codeudor">{{ codeudor | "-" }}</span></li><li><b>Looking for a new apartment for...?:</b> <span class="buscas">{{ buscas | "-" }}</span></li><li><b>Employment status:</b> <span class="elaboral">{{ elaboral | "-" }}</span></li></ul><p><b>Message:</b><br><span class="mensaje">{{ mensaje | "-" }}</span></p><p>--<br>This e-mail was sent from a contact form on {{ site_name | "iLeben" }} ({{ site_url | "https://sale.ileben.cl" }})</p>',
                 ],
                 'category' => 'transactional',
                 'tags' => ['contact', 'lead', 'admin'],
@@ -248,6 +248,7 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
                     'rut' => 'string',
                     'telefono' => 'string',
                     'email' => 'string',
+                    'channel' => 'string',
                     'comuna' => 'string',
                     'proyecto' => 'string',
                     'medio' => 'string',
@@ -351,6 +352,7 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
             'rut' => 'RUT del contacto',
             'telefono' => 'Telefono del contacto',
             'email' => 'Correo del contacto',
+            'channel' => 'Canal de contacto utilizado',
             'comuna' => 'Comuna seleccionada por el contacto',
             'proyecto' => 'Proyecto seleccionado por el contacto',
             'medio' => 'Origen o medio de llegada del lead',
@@ -361,7 +363,7 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
             'mensaje' => 'Mensaje enviado desde el formulario',
             'site_name' => 'Nombre del sitio configurado',
             'site_url' => 'URL del sitio configurado',
-            default => 'Valor disponible para el token '.$token,
+            default => 'Valor disponible para el token ' . $token,
         };
     }
 
@@ -373,6 +375,7 @@ class FinMailSpanishEmailTemplatesSeeder extends Seeder
             'rut' => '12345678-5',
             'telefono' => '+56912345678',
             'email' => 'juan@example.com',
+            'channel' => 'sale',
             'comuna' => 'Providencia',
             'proyecto' => 'Edificio Andes',
             'medio' => 'Meta Ads',
