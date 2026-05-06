@@ -55,8 +55,11 @@ class ListSoqlQueryRuns extends ListRecords
                 ])
                 ->action(function (array $data): void {
                     $limitValue = max(1, (int) ($data['limit'] ?? 10));
-                    $soql = trim(preg_replace('/\s+limit\s+[0-9]+\s*$/i', '', trim((string) ($data['soql'] ?? ''))));
-                    $soql = $soql . ' LIMIT ' . $limitValue;
+                    $inputSoql = trim((string) ($data['soql'] ?? ''));
+                    $soqlWithoutLimit = trim(preg_replace('/\s+limit\s+[0-9]+\s*$/i', '', $inputSoql));
+                    $isGlobalAggregate = preg_match('/^\s*select\s+(count\s*\(|sum\s*\(|avg\s*\(|min\s*\(|max\s*\()/i', $soqlWithoutLimit) === 1
+                        && preg_match('/\bgroup\s+by\b/i', $soqlWithoutLimit) !== 1;
+                    $soql = $isGlobalAggregate ? $soqlWithoutLimit : $soqlWithoutLimit . ' LIMIT ' . $limitValue;
                     $startedAt = microtime(true);
 
                     try {
@@ -70,7 +73,7 @@ class ListSoqlQueryRuns extends ListRecords
                             'status' => 'success',
                             'records_count' => count($records),
                             'duration_ms' => $durationMs,
-                            'limit_value' => (int) ($response['limit'] ?? 0),
+                            'limit_value' => $response['limit'] ?? null,
                             'result_preview' => [
                                 'total_size' => (int) ($response['total_size'] ?? count($records)),
                                 'done' => (bool) ($response['done'] ?? true),

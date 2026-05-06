@@ -53,7 +53,7 @@ class SalesforceService
     /**
      * Ejecuta una consulta SOQL sin caché.
      *
-     * @return array{records: array<int, array<string, mixed>>, total_size: int, done: bool, limit: int}
+     * @return array{records: array<int, array<string, mixed>>, total_size: int, done: bool, limit: ?int}
      */
     public function runSoqlWithoutCache(string $soql): array
     {
@@ -63,7 +63,13 @@ class SalesforceService
             throw new InvalidArgumentException('La consulta SOQL debe comenzar con SELECT.');
         }
 
-        if (! preg_match('/\blimit\s+([1-9][0-9]*)\b/i', $normalizedSoql, $matches)) {
+        $matches = [];
+        $limitRequested = preg_match('/\blimit\s+([1-9][0-9]*)\b/i', $normalizedSoql, $matches) === 1
+            ? (int) $matches[1]
+            : null;
+        $isAggregateQuery = preg_match('/^\s*select\s+.*\b(count\s*\(|sum\s*\(|avg\s*\(|min\s*\(|max\s*\()/i', $normalizedSoql) === 1;
+
+        if ($limitRequested === null && ! $isAggregateQuery) {
             throw new InvalidArgumentException('La consulta SOQL debe incluir LIMIT con un valor mayor a 0.');
         }
 
@@ -76,10 +82,10 @@ class SalesforceService
         }
 
         $records = is_array($result['records'] ?? null) ? $result['records'] : [];
-        $limitRequested = (int) $matches[1];
 
         // Paginar automáticamente si Salesforce devuelve más páginas
         while (
+            $limitRequested !== null &&
             empty($result['done']) &&
             ! empty($result['nextRecordsUrl']) &&
             count($records) < $limitRequested
@@ -96,7 +102,7 @@ class SalesforceService
         }
 
         // Respetar el LIMIT solicitado
-        if (count($records) > $limitRequested) {
+        if ($limitRequested !== null && count($records) > $limitRequested) {
             $records = array_slice($records, 0, $limitRequested);
         }
 
