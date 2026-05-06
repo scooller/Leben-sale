@@ -41,8 +41,7 @@ class SoqlQueryRunResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-        ];
+        return [];
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -67,7 +66,12 @@ class SoqlQueryRunResource extends Resource
 
     public static function canDelete($record): bool
     {
-        return false;
+        return Auth::user()?->isAdmin() ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()?->isAdmin() ?? false;
     }
 
     public static function getPages(): array

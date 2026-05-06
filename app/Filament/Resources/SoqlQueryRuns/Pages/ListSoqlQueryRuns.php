@@ -24,7 +24,7 @@ class ListSoqlQueryRuns extends ListRecords
                 ->icon('heroicon-o-play')
                 ->color('primary')
                 ->modalHeading('Ejecutar consulta SOQL')
-                ->modalDescription('La consulta debe comenzar con SELECT e incluir LIMIT.')
+                ->modalDescription('La consulta debe comenzar con SELECT e incluir LIMIT.<br>Ejemplo: SELECT FIELDS(ALL) FROM Product2 LIMIT 3')
                 ->modalSubmitActionLabel('Ejecutar')
                 ->form([
                     Textarea::make('soql')
