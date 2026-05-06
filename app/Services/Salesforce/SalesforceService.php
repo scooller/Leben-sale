@@ -76,12 +76,35 @@ class SalesforceService
         }
 
         $records = is_array($result['records'] ?? null) ? $result['records'] : [];
+        $limitRequested = (int) $matches[1];
+
+        // Paginar automáticamente si Salesforce devuelve más páginas
+        while (
+            empty($result['done']) &&
+            ! empty($result['nextRecordsUrl']) &&
+            count($records) < $limitRequested
+        ) {
+            try {
+                $result = Forrest::next($result['nextRecordsUrl']);
+            } catch (Throwable $e) {
+                Log::debug('Salesforce: Re-autenticando en paginación SOQL debido a: ' . $e->getMessage());
+                $this->authenticate();
+                $result = Forrest::next($result['nextRecordsUrl']);
+            }
+            $page = is_array($result['records'] ?? null) ? $result['records'] : [];
+            $records = array_merge($records, $page);
+        }
+
+        // Respetar el LIMIT solicitado
+        if (count($records) > $limitRequested) {
+            $records = array_slice($records, 0, $limitRequested);
+        }
 
         return [
             'records' => $records,
             'total_size' => (int) ($result['totalSize'] ?? count($records)),
             'done' => (bool) ($result['done'] ?? true),
-            'limit' => (int) $matches[1],
+            'limit' => $limitRequested,
         ];
     }
 
