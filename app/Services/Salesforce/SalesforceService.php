@@ -1419,4 +1419,55 @@ class SalesforceService
 
         return null;
     }
+
+    /**
+     * Obtener brokers desde Broker__c en Salesforce.
+     *
+     * @return list<array{id: string, name: string, email: string|null, phone: string|null}>
+     */
+    public function findBrokers(?int $cacheTtl = null): array
+    {
+        try {
+            Forrest::authenticate();
+        } catch (\Exception) {
+            // Si falla, continuar - el query lo intentará
+        }
+
+        $soql = 'SELECT Id, Name, Email_Broker__c, Telefono_Broker__c '
+            .'FROM Broker__c '
+            .'WHERE IsDeleted = false '
+            .'ORDER BY Name '
+            .'LIMIT 2000';
+
+        $ttl = $cacheTtl ?? $this->defaultCacheTtl;
+
+        $mapper = static function (array $entries): array {
+            return array_map(static function (array $entry): array {
+                return [
+                    'id' => $entry['Id'] ?? null,
+                    'name' => $entry['Name'] ?? null,
+                    'email' => $entry['Email_Broker__c'] ?? null,
+                    'phone' => $entry['Telefono_Broker__c'] ?? null,
+                ];
+            }, $entries);
+        };
+
+        return Cache::remember('salesforce:brokers', $ttl, function () use ($soql, $mapper) {
+            try {
+                $result = Forrest::query($soql);
+
+                return $mapper($result['records'] ?? []);
+            } catch (\Throwable) {
+                $this->authenticate();
+                $result = Forrest::query($soql);
+
+                return $mapper($result['records'] ?? []);
+            }
+        });
+    }
+
+    public function invalidateBrokersCache(): void
+    {
+        Cache::forget('salesforce:brokers');
+    }
 }

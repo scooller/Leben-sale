@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Brokers\Brokers\Pages;
 
+use App\Filament\Actions\SyncBrokersAction;
 use App\Filament\Resources\Brokers\Brokers\BrokerResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
@@ -14,6 +15,7 @@ class ListBrokers extends ListRecords
     {
         return [
             CreateAction::make(),
+            SyncBrokersAction::make(),
         ];
     }
 }
