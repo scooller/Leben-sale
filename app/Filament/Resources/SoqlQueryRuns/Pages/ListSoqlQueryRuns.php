@@ -74,7 +74,7 @@ class ListSoqlQueryRuns extends ListRecords
                             'result_preview' => [
                                 'total_size' => (int) ($response['total_size'] ?? count($records)),
                                 'done' => (bool) ($response['done'] ?? true),
-                                'sample_records' => array_slice($records, 0, 3),
+                                'sample_records' => $records,
                             ],
                             'meta' => [
                                 'source' => 'filament_soql_runner',
