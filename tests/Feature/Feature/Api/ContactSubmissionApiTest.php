@@ -485,6 +485,39 @@ class ContactSubmissionApiTest extends TestCase
             ->assertJsonMissingValidationErrors(['fields.rango']);
     }
 
+    public function test_it_accepts_freeform_income_range_value_without_in_validation_error(): void
+    {
+        SiteSetting::current()->update([
+            'contact_form_fields' => [
+                ['key' => 'name', 'label' => 'Nombre', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+                [
+                    'key' => 'rango',
+                    'label' => 'Rango de renta',
+                    'type' => 'select',
+                    'required' => false,
+                    'options' => [
+                        ['value' => 'best_1', 'label' => 'Best 1'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->postContactSubmission([
+            'fields' => [
+                'name' => 'Juan Perez',
+                'email' => 'juan@example.com',
+                'comuna' => 'Providencia',
+                'proyecto' => 'Proyecto Libre',
+                'rango' => 'texto-libre-rango',
+            ],
+        ]);
+
+        $response
+            ->assertStatus(201)
+            ->assertJsonMissingValidationErrors(['fields.rango']);
+    }
+
     public function test_it_ignores_required_conditional_field_when_selected_range_project_does_not_match(): void
     {
         SiteSetting::current()->update([

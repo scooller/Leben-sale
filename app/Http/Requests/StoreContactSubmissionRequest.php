@@ -85,7 +85,7 @@ class StoreContactSubmissionRequest extends FormRequest
 
                 $optionValues = array_keys($this->normalizedOptions($field));
 
-                if ($optionValues !== []) {
+                if ($optionValues !== [] && ! $this->isIncomeRangeFieldKey($key)) {
                     $fieldRules[] = Rule::in($optionValues);
                 }
             } else {
@@ -581,5 +581,10 @@ class StoreContactSubmissionRequest extends FormRequest
             static fn (mixed $project): string => Str::of((string) $project)->trim()->lower()->toString(),
             $projects
         ), static fn (string $project): bool => $project !== '')));
+    }
+
+    private function isIncomeRangeFieldKey(string $key): bool
+    {
+        return in_array($key, ['rango', 'renta', 'renta_liquida', 'income_range'], true);
     }
 }
