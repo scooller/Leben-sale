@@ -23,6 +23,8 @@ class PlantResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Real Estate';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationLabel = 'Plantas';
 
     protected static ?string $recordTitleAttribute = 'Plantas';

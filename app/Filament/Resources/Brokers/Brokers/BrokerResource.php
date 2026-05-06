@@ -1,42 +1,36 @@
 <?php
 
-namespace App\Filament\Resources\Asesores;
+namespace App\Filament\Resources\Brokers\Brokers;
 
-use App\Filament\Resources\Asesores\Pages\CreateAsesor;
-use App\Filament\Resources\Asesores\Pages\EditAsesor;
-use App\Filament\Resources\Asesores\Pages\ListAsesores;
-use App\Filament\Resources\Asesores\RelationManagers\ProyectosRelationManager;
-use App\Filament\Resources\Asesores\Schemas\AsesorForm;
-use App\Filament\Resources\Asesores\Tables\AsesoresTable;
-use App\Models\Asesor;
+use App\Filament\Resources\Brokers\Brokers\Pages\CreateBroker;
+use App\Filament\Resources\Brokers\Brokers\Pages\EditBroker;
+use App\Filament\Resources\Brokers\Brokers\Pages\ListBrokers;
+use App\Filament\Resources\Brokers\Brokers\Schemas\BrokerForm;
+use App\Filament\Resources\Brokers\Brokers\Tables\BrokersTable;
+use App\Models\Broker;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Schema as SchemaFacade;
 use UnitEnum;
 
-class AsesorResource extends Resource
+class BrokerResource extends Resource
 {
-    protected static ?string $model = Asesor::class;
+    protected static ?string $model = Broker::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Real Estate';
+    protected static ?string $navigationLabel = 'Brokers';
 
-    protected static ?int $navigationSort = 2;
+    protected static string|UnitEnum|null $navigationGroup = 'Brokers';
 
-    protected static ?string $navigationLabel = 'Asesores';
+    protected static ?int $navigationSort = 1;
 
-    protected static ?string $recordTitleAttribute = 'full_name';
+    protected static ?string $recordTitleAttribute = 'display_name';
 
     public static function getNavigationBadge(): ?string
     {
-        if (! SchemaFacade::hasTable((new (static::getModel()))->getTable())) {
-            return null;
-        }
-
         return (string) static::getModel()::count();
     }
 
@@ -72,27 +66,27 @@ class AsesorResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return AsesorForm::configure($schema);
+        return BrokerForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return AsesoresTable::configure($table);
+        return BrokersTable::configure($table);
     }
 
     public static function getRelations(): array
     {
         return [
-            ProyectosRelationManager::class,
+            //
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListAsesores::route('/'),
-            'create' => CreateAsesor::route('/create'),
-            'edit' => EditAsesor::route('/{record}/edit'),
+            'index' => ListBrokers::route('/'),
+            'create' => CreateBroker::route('/create'),
+            'edit' => EditBroker::route('/{record}/edit'),
         ];
     }
 }

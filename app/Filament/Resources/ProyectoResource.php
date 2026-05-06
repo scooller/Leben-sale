@@ -24,6 +24,8 @@ class ProyectoResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Real Estate';
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $recordTitleAttribute = 'Proyectos';
 
     public static function getNavigationBadge(): ?string

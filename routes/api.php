@@ -120,6 +120,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/plantas/filtros-ubicacion', [App\Http\Controllers\Api\PlantController::class, 'locationFilters']);
         Route::get('/plantas/proyecto/{projectSlug}/unidad/{unitName}', [App\Http\Controllers\Api\PlantController::class, 'showByProjectSlugAndUnitName']);
         Route::get('/plantas/{id}', [App\Http\Controllers\Api\PlantController::class, 'show']);
+
+        Route::get('/brokers', [App\Http\Controllers\Api\BrokerController::class, 'index']);
+        Route::get('/brokers/{broker}/alliances', [App\Http\Controllers\Api\BrokerController::class, 'alliances']);
+        Route::get('/brokers/{broker}/events', [App\Http\Controllers\Api\BrokerController::class, 'events']);
+        Route::get('/brokers/{broker}/galleries', [App\Http\Controllers\Api\BrokerController::class, 'galleries']);
+        Route::get('/brokers/{broker}/galleries/{gallery}', [App\Http\Controllers\Api\BrokerController::class, 'showGallery']);
     });
 
     // Endpoints públicos mínimos
