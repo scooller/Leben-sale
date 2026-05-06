@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             UserSeeder::class,
             FinMailSpanishEmailTemplatesSeeder::class,
+            BrokerCategorySeeder::class,
         ]);
 
         // User::factory(10)->create();
