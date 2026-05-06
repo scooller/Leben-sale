@@ -87,6 +87,7 @@ class SoqlQueryRunsTable
                     ->label('Ver Resultado')
                     ->icon('heroicon-o-eye')
                     ->modalHeading('Resultado SOQL')
+                    ->modalWidth('5xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->modalContent(function (SoqlQueryRun $record): View {
