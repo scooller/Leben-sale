@@ -13,9 +13,24 @@ return new class extends Migration
     {
         // Drop FK and columns from broker_benefits
         Schema::table('broker_benefits', function (Blueprint $table) {
-            $table->dropForeign(['broker_category_id']);
-            $table->dropIndex(['broker_category_id', 'section', 'sort_order']);
-            $table->dropColumn(['broker_category_id', 'status']);
+            // FK may or may not exist depending on deployment order
+            try {
+                $table->dropForeign(['broker_category_id']);
+            } catch (\Throwable) {
+            }
+
+            try {
+                $table->dropIndex(['broker_category_id', 'section', 'sort_order']);
+            } catch (\Throwable) {
+            }
+
+            if (Schema::hasColumn('broker_benefits', 'broker_category_id')) {
+                $table->dropColumn('broker_category_id');
+            }
+
+            if (Schema::hasColumn('broker_benefits', 'status')) {
+                $table->dropColumn('status');
+            }
         });
 
         // New index without broker_category_id
@@ -31,7 +46,7 @@ return new class extends Migration
             $table->enum('status', ['included', 'not_applicable'])->default('included');
             $table->timestamps();
 
-            $table->unique(['broker_benefit_id', 'broker_category_id']);
+            $table->unique(['broker_benefit_id', 'broker_category_id'], 'bbc_benefit_category_unique');
         });
     }
 
