@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->index(['broker_gallery_id', 'is_active', 'sort_order']);
+            $table->index(['broker_gallery_id', 'is_active', 'sort_order'], 'bgi_gallery_active_sort_idx');
         });
     }
 
