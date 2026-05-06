@@ -27,6 +27,16 @@ class BrokerEventResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'blue';
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isMarketing() ?? false);
