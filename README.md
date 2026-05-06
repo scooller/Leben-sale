@@ -656,7 +656,24 @@ php artisan storage:link
 # 9. Crear admin user en tinker
 php artisan tinker
 # User::create(['name' => 'Admin', 'email' => 'admin@ileben.com', 'password' => Hash::make('password')])
+
+# 10. Symlink en Cpanel
+# Asegúrate de que public_html NO exista antes de crear el symlink
+rm -rf /home/devleben/public_html
+ln -s /home/devleben/laravel/public /home/devleben/public_html
+
+# 11. Permisos de carpetas (IMPORTANTE: sin esto Apache devuelve 403)
+# El directorio raíz del usuario y la carpeta laravel deben tener permiso 755
+chmod 711 /home/devleben
+chmod 755 /home/devleben/laravel
+chmod 755 /home/devleben/laravel/public
+
+# storage y bootstrap/cache deben ser escribibles por el servidor web
+chmod -R 775 /home/devleben/laravel/storage
+chmod -R 775 /home/devleben/laravel/bootstrap/cache
 ```
+
+> **Nota:** El error 403 en cPanel después de crear el symlink suele ser causado por permisos incorrectos en los directorios padre, no por problemas de `.htaccess`. El directorio home del usuario necesita al menos `711` y `laravel/` necesita `755` para que Apache pueda atravesarlos.
 
 ## 📚 Documentación Específica
 
